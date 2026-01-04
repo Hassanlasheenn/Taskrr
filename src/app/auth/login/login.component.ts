@@ -5,6 +5,8 @@ import { IFieldControl } from "../../shared/interfaces/IFieldControl.interface";
 import { InputTypes } from "../../shared/enums/input-types.enum";
 import { ReactiveFormService } from "../../shared/services/reactive-form.service";
 import { RouterLink } from "@angular/router";
+import { ValidatorTypes } from "../../shared/enums/validator-types.enum";
+import { RegexPatterns } from "../../shared/enums/regex-patterns.enum";
 
 @Component({
     selector: 'app-login',
@@ -15,6 +17,7 @@ import { RouterLink } from "@angular/router";
 })
 export class LoginComponent implements OnInit {
     form: FormGroup = new FormGroup({});
+    isSubmitted: boolean = false;
     fields: IFieldControl[] = [
         {
             label: 'Email',
@@ -23,16 +26,22 @@ export class LoginComponent implements OnInit {
             placeholder: 'Enter your email',
             value: '',
             required: true,
-            validations: [],
+            validations: [
+                { type: ValidatorTypes.REQUIRED, message: 'Email is required' },
+                { type: ValidatorTypes.EMAIL, message: 'Please enter a valid email address', value: RegexPatterns.EMAIL }
+            ],
         },
         {
             label: 'Password',
-            type: InputTypes.TEXT,
+            type: InputTypes.PASSWORD,
             formControlName: 'password',
             placeholder: 'Enter your password',
             value: '',
             required: true,
-            validations: [],
+            validations: [
+                { type: ValidatorTypes.REQUIRED, message: 'Password is required' },
+                { type: ValidatorTypes.MINLENGTH, message: 'Password must be at least 8 characters', value: 8 }
+            ],
         },
     ];
     constructor(
@@ -45,5 +54,14 @@ export class LoginComponent implements OnInit {
 
     private initForm(): void {
         this.form = this._formService.initializeForm(this.fields);
+    }
+
+    loginUser(): void {
+        if(this.form?.invalid) {
+            this.isSubmitted = true;
+        } else if(this.form?.valid) {
+            this.isSubmitted = false;
+            console.log('Form submitted:', this.form.value);
+        }
     }
 }

@@ -14,7 +14,7 @@ export class ReactiveFormService {
     initializeForm(fields: IFieldControl[]): FormGroup {
         const controls: { [key: string]: any } = {};
         fields.forEach((field: IFieldControl) => {
-            const validators = this.buildValidators(field);
+            const validators = this.buildValidators(field, fields);
             controls[field.formControlName] = [
                 { value: field?.value || '', disabled: field?.disabled || false },
                 validators
@@ -23,7 +23,7 @@ export class ReactiveFormService {
         return this.fb.group(controls);
     }
 
-    private buildValidators(field: IFieldControl): ValidatorFn[] {
+    private buildValidators(field: IFieldControl, allFields: IFieldControl[]): ValidatorFn[] {
         const validators: ValidatorFn[] = [];
 
         if (field.required) {
@@ -36,7 +36,7 @@ export class ReactiveFormService {
 
         if (field.validations && field.validations.length > 0) {
             field.validations.forEach((validation: IValidations) => {
-                const validator = this.getValidator(validation);
+                const validator = this.getValidator(validation, field, allFields);
                 if (validator) {
                     validators.push(validator);
                 }
@@ -46,8 +46,9 @@ export class ReactiveFormService {
         return validators;
     }
 
-    private getValidator(validation: IValidations): ValidatorFn | null {
-        switch (validation.type.toLowerCase()) {
+    private getValidator(validation: IValidations, field: IFieldControl, allFields: IFieldControl[]): ValidatorFn | null {
+        const validationType = validation.type.toLowerCase();
+        switch (validationType) {
             case ValidatorTypes.MINLENGTH:
                 return Validators.minLength(validation.value || 0);
             case ValidatorTypes.MAXLENGTH:
@@ -56,9 +57,31 @@ export class ReactiveFormService {
                 return Validators.pattern(validation.value || '');
             case ValidatorTypes.EMAIL:
                 return Validators.email;
+            case 'passwordmatch':
+                return this.passwordMatchValidator(validation.value || 'password');
             default:
                 return null;
         }
+    }
+
+    private passwordMatchValidator(passwordFieldName: string): ValidatorFn {
+        return (control: AbstractControl): { [key: string]: any } | null => {
+            if (!control.parent) return null;
+
+            const passwordControl = control.parent.get(passwordFieldName);
+            if (!passwordControl) return null;
+
+            const passwordValue = passwordControl.value;
+            const confirmPasswordValue = control.value;
+
+            if (!passwordValue && !confirmPasswordValue) return null;
+
+            if (passwordValue !== confirmPasswordValue) {
+                return { passwordMatch: true };
+            }
+
+            return null;
+        };
     }
 
     getValidationError(control: AbstractControl | null, field: IFieldControl, showErrors: boolean = false): string | null {
@@ -110,6 +133,10 @@ export class ReactiveFormService {
             return 'Please enter a valid email address';
         }
 
+        if (errors['passwordMatch']) {
+            return 'Passwords do not match';
+        }
+
         return null;
     }
 
@@ -121,6 +148,8 @@ export class ReactiveFormService {
                 return 'maxlength';
             case ValidatorTypes.PATTERN:
                 return 'pattern';
+            case ValidatorTypes.PASSWORD_MATCH:
+                return 'passwordMatch';
             default:
                 return validationType;
         }

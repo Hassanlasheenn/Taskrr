@@ -4,4 +4,5 @@ export enum ValidatorTypes {
     MINLENGTH = 'minlength',
     MAXLENGTH = 'maxlength',
     PATTERN = 'pattern',
+    PASSWORD_MATCH = 'passwordMatch',
 }

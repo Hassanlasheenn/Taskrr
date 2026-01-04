@@ -21,7 +21,7 @@ export class DynamicFormComponent implements OnChanges {
     trackById = trackById;
 
     ngOnChanges(changes: SimpleChanges): void {
-        if (changes['isSubmitted'] && this.isSubmitted && this.form.invalid) {
+        if (changes['isSubmitted'] && this.isSubmitted) {
             this.form.markAllAsTouched();
             this.form.updateValueAndValidity({ emitEvent: true });
         }

@@ -6,11 +6,21 @@
     <div class="input-form__input" [formGroup]="formGroup">
         <input
             id="input-{{ name }}"
-            [type]="type"
+            [type]="inputType"
             [placeholder]="placeholder"
             [formControlName]="name"
             [ngStyle]="customInputStyle"
             [ngClass]="getInputClasses()"
+            [class.input-with-icon]="isPasswordField"
         />
+        <button
+            *ngIf="isPasswordField"
+            type="button"
+            class="input-form__toggle-password"
+            (click)="togglePasswordVisibility()"
+            tabindex="-1"
+        >
+            <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+        </button>
     </div>
 </section>

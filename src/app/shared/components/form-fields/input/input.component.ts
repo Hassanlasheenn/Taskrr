@@ -26,6 +26,7 @@ export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
     @Input() showErrors: boolean = false;
     
     errorMessage: string | null = null;
+    showPassword: boolean = false;
     private readonly subscriptions: Subscription[] = [];
     
     constructor(
@@ -86,5 +87,17 @@ export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
         if (this.field) {
             this.errorMessage = this.formService.getValidationError(this.control, this.field, this.showErrors);
         }
+    }
+
+    get isPasswordField(): boolean {
+        return this.type === InputTypes.PASSWORD;
+    }
+
+    get inputType(): string {
+        return this.isPasswordField && this.showPassword ? 'text' : this.type;
+    }
+
+    togglePasswordVisibility(): void {
+        this.showPassword = !this.showPassword;
     }
 }

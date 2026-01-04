@@ -44,7 +44,7 @@ export class RegisterComponent implements OnInit {
         },
         {
             label: 'Password',
-            type: InputTypes.TEXT,
+            type: InputTypes.PASSWORD,
             formControlName: 'password',
             placeholder: 'Enter your password',
             value: '',
@@ -56,13 +56,14 @@ export class RegisterComponent implements OnInit {
         },
         {
             label: 'Confirm Password',
-            type: InputTypes.TEXT,
+            type: InputTypes.PASSWORD,
             formControlName: 'confirmPassword',
             placeholder: 'Confim Password',
             value: '',
             required: true,
             validations: [
                 { type: ValidatorTypes.REQUIRED, message: 'Confirm Password is required' },
+                { type: ValidatorTypes.PASSWORD_MATCH, message: 'Passwords do not match', value: 'password' },
             ],
         },
     ];
@@ -80,6 +81,13 @@ export class RegisterComponent implements OnInit {
     onSubmit(): void {
         if (this.form?.invalid) {
             this.isSubmitted = true;
+            const passwordControl = this.form.get('password');
+            const confirmPasswordControl = this.form.get('confirmPassword');
+            
+            if (passwordControl && confirmPasswordControl) {
+                passwordControl.updateValueAndValidity({ emitEvent: false });
+                confirmPasswordControl.updateValueAndValidity({ emitEvent: false });
+            }
         } else if (this.form?.valid) {
             this.isSubmitted = false;
             console.log('Form submitted:', this.form.value);
