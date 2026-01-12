@@ -64,6 +64,11 @@
             font-size: 1.5rem;
             margin-bottom: 1.5rem;
         }
+        
+        // Auth helper text (e.g., "New to TODO?", "Already a User?")
+        span {
+            color: var(--text-secondary);
+        }
     }
 }
 
