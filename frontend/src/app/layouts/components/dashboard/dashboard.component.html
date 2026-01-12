@@ -1,27 +1,54 @@
-<section class="dashboard-container p-2 p-sm-3 p-lg-4">
-    <div class="dashboard-header d-flex justify-content-center align-items-center px-3 py-3 px-sm-4 py-sm-4 px-lg-5 py-lg-4">
-        <h1>Hi, {{ userData?.username }}!</h1>
+<section class="dashboard-wrapper p-2 p-sm-3 p-lg-4">
+    <div class="dashboard-container d-flex flex-column flex-lg-row align-items-stretch gap-3 gap-lg-4">
+        <!-- Side Navigation -->
+        <div class="side-nav-wrapper">
+            <app-dashboard-side-nav
+                [activeSection]="activeSection"
+                (sectionChange)="onSectionChange($event)"
+            />
+        </div>
+
+        <!-- Main Content -->
+        <div class="dashboard-content flex-grow-1 d-flex flex-column">
+            <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.COMPLETED" class="dashboard-header d-flex justify-content-center align-items-center px-3 py-3 px-sm-4 py-sm-4 px-lg-5 py-lg-4">
+                <h1>Hi, {{ userData?.username }}!</h1>
+            </div>
+            
+            <!-- Calendar View -->
+            <app-calendar 
+                *ngIf="activeSection === DashboardSections.CALENDAR"
+                [todos]="todos"
+            />
+
+            <!-- Todo List View -->
+            <app-todo-list 
+                *ngIf="activeSection !== DashboardSections.CALENDAR"
+                [todos]="filteredTodos"
+                [totalCount]="activeSection === DashboardSections.DASHBOARD ? totalTodos : filteredTodos.length"
+                [showAddButton]="activeSection !== DashboardSections.COMPLETED"
+                [showIndex]="activeSection !== DashboardSections.COMPLETED"
+                [sectionTitle]="activeSection === DashboardSections.COMPLETED ? 'Completed Todos' : 'Your Todos'"
+                (addTodo)="onAddTodo()"
+                (toggleTodo)="onToggleTodo($event)"
+                (deleteTodo)="onDeleteTodo($event)"
+                (editTodo)="onEditTodo($event)"
+            />
+        </div>
     </div>
-    
-    <app-todo-list 
-        [todos]="todos"
-        [totalCount]="totalTodos"
-        (addTodo)="onAddTodo()"
-        (toggleTodo)="onToggleTodo($event)"
-        (deleteTodo)="onDeleteTodo($event)"
-    />
 </section>
 
-<!-- Add Todo Sidebar -->
+<!-- Add/Edit Todo Sidebar -->
 <app-sidebar
     [isOpen]="isSidebarOpen"
-    [title]="'Add New Todo'"
+    [title]="sidebarTitle"
     [width]="'450px'"
     (closed)="onSidebarClose()"
 >
     <app-todo-form
         #todoForm
+        [editingTodo]="editingTodo"
         (submitTodo)="onTodoSubmit($event)"
+        (updateTodo)="onTodoUpdate($event)"
         (cancel)="onSidebarClose()"
     />
 </app-sidebar>

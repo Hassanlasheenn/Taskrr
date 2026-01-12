@@ -53,12 +53,13 @@ class TodoResponse(BaseModel):
     priority: str
     order_index: int = 0
     created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     user_id: int
 
     class Config:
         from_attributes = True
 
-    @field_serializer('created_at')
+    @field_serializer('created_at', 'updated_at')
     def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
         """Serialize datetime without timezone (Z) suffix"""
         if value is None:

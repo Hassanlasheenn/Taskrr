@@ -9,6 +9,7 @@ export interface ITodo {
     priority: 'low' | 'medium' | 'high';
     order_index: number;
     created_at?: string;
+    updated_at?: string;
     user_id?: number;
 }
 
@@ -22,6 +23,9 @@ export interface ITodo {
 export class TodoListComponent {
     @Input() todos: ITodo[] = [];
     @Input() totalCount: number = 0;
+    @Input() showAddButton: boolean = true;
+    @Input() showIndex: boolean = true;
+    @Input() sectionTitle: string = 'Your Todos';
     @Output() addTodo = new EventEmitter<void>();
     @Output() toggleTodo = new EventEmitter<ITodo>();
     @Output() deleteTodo = new EventEmitter<ITodo>();

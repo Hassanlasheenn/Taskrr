@@ -7,7 +7,7 @@
             </div>
             <h3 class="empty-title">No todos yet</h3>
             <p class="empty-description">Start organizing your tasks by adding your first todo</p>
-            <button type="button" class="add-todo-btn" (click)="onAddTodo()">
+            <button *ngIf="showAddButton" type="button" class="add-todo-btn" (click)="onAddTodo()">
                 <i class="bi bi-plus-lg me-2"></i>
                 Add Todo
             </button>
@@ -18,10 +18,10 @@
     <div *ngIf="todos.length > 0" class="todo-grid">
         <div class="todo-header d-flex justify-content-between align-items-center mb-4">
             <div class="d-flex align-items-center gap-2">
-                <h2 class="todo-section-title">Your Todos</h2>
+                <h2 class="todo-section-title">{{ sectionTitle }}</h2>
                 <span class="todo-count-badge">{{ totalCount }}</span>
             </div>
-            <button type="button" class="add-todo-btn-small" (click)="onAddTodo()">
+            <button *ngIf="showAddButton" type="button" class="add-todo-btn-small" (click)="onAddTodo()">
                 <i class="bi bi-plus-lg me-1"></i>
                 Add
             </button>
@@ -35,23 +35,18 @@
                 [ngClass]="getPriorityClass(todo.priority)"
             >
                 <div class="todo-card-header">
-                    <span class="todo-index">#{{ todo.order_index }}</span>
+                    <span *ngIf="showIndex" class="todo-index">#{{ todo.order_index }}</span>
                     <span class="priority-badge" [ngClass]="getPriorityClass(todo.priority)">
                         <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
                         {{ todo.priority }}
                     </span>
                 </div>
                 <div class="todo-card-content">
-                    <button 
-                        type="button" 
-                        class="todo-checkbox"
-                        [class.checked]="todo.completed"
-                        (click)="onToggleTodo(todo)"
-                    >
-                        <i *ngIf="todo.completed" class="bi bi-check"></i>
-                    </button>
                     <div class="todo-info">
-                        <h4 class="todo-title">{{ todo.title }}</h4>
+                        <div class="todo-title-wrapper d-flex align-items-center gap-2 flex-wrap">
+                            <h4 class="todo-title">{{ todo.title }}</h4>
+                            <span *ngIf="todo.completed" class="done-badge">Done</span>
+                        </div>
                         <p *ngIf="todo.description" class="todo-description">{{ todo.description }}</p>
                     </div>
                     <button 
@@ -71,17 +66,37 @@
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
-                <div class="todo-card-footer" *ngIf="formatDate(todo.created_at) as dateInfo">
-                    <div class="created-at">
-                        <i class="bi bi-calendar3"></i>
-                        <div class="date-info">
-                            <span class="date-day">{{ dateInfo.day }}</span>
-                            <span class="date-full">{{ dateInfo.date }}</span>
-                        </div>
-                        <div class="time-info">
-                            <i class="bi bi-clock"></i>
-                            <span>{{ dateInfo.time }}</span>
-                        </div>
+                <div class="todo-card-footer">
+                    <div class="date-timestamps">
+                        <!-- Created At - Always shown -->
+                        <ng-container *ngIf="formatDate(todo.created_at) as createdInfo">
+                            <div class="created-at">
+                                <i class="bi bi-calendar3"></i>
+                                <span class="date-label">Created</span>
+                                <div class="date-info">
+                                    <span class="date-full">{{ createdInfo.date }}</span>
+                                </div>
+                                <div class="time-info">
+                                    <i class="bi bi-clock"></i>
+                                    <span>{{ createdInfo.time }}</span>
+                                </div>
+                            </div>
+                        </ng-container>
+                        
+                        <!-- Updated At - Shown only if exists -->
+                        <ng-container *ngIf="todo.updated_at && formatDate(todo.updated_at) as updatedInfo">
+                            <div class="updated-at">
+                                <i class="bi bi-pencil-square"></i>
+                                <span class="date-label">Updated</span>
+                                <div class="date-info">
+                                    <span class="date-full">{{ updatedInfo.date }}</span>
+                                </div>
+                                <div class="time-info">
+                                    <i class="bi bi-clock"></i>
+                                    <span>{{ updatedInfo.time }}</span>
+                                </div>
+                            </div>
+                        </ng-container>
                     </div>
                 </div>
             </div>

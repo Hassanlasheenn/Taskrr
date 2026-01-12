@@ -24,14 +24,24 @@
         </div>
     </fieldset>
 
+    <!-- Completed Toggle - Only in Edit Mode -->
+    <div *ngIf="isEditMode" class="completed-section">
+        <label class="completed-toggle-label">
+            <span class="toggle-label-text">Completed</span>
+            <div class="toggle-switch" [class.active]="isCompleted" (click)="toggleCompleted()">
+                <div class="toggle-slider"></div>
+            </div>
+        </label>
+    </div>
+
     <!-- Form Actions -->
     <div class="form-actions d-flex flex-column flex-sm-row gap-2 gap-sm-3">
         <button type="button" class="btn-cancel order-2 order-sm-1" (click)="onCancel()">
             Cancel
         </button>
         <button type="button" class="btn-submit flex-grow-1 order-1 order-sm-2" [disabled]="form.invalid" (click)="onSubmit()">
-            <i class="bi bi-plus-lg me-2"></i>
-            Create Todo
+            <i [class]="isEditMode ? 'bi bi-check-lg me-2' : 'bi bi-plus-lg me-2'"></i>
+            {{ isEditMode ? 'Update Todo' : 'Create Todo' }}
         </button>
     </div>
 </div>

@@ -1,0 +1,103 @@
+<div class="calendar-container">
+    <!-- Calendar Month View -->
+    <div *ngIf="!isDayView" class="calendar-month-view">
+        <div class="calendar-header">
+            <button type="button" class="calendar-nav-btn" (click)="previousMonth()" aria-label="Previous month">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <h2 class="calendar-title">{{ getMonthYearLabel() }}</h2>
+            <button type="button" class="calendar-nav-btn" (click)="nextMonth()" aria-label="Next month">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+
+        <button type="button" class="today-btn" (click)="goToToday()">
+            <i class="bi bi-calendar-check"></i>
+            Today
+        </button>
+
+        <div class="calendar-grid">
+            <!-- Week day headers -->
+            <div class="calendar-weekday" *ngFor="let day of weekDays">
+                {{ day }}
+            </div>
+
+            <!-- Calendar days -->
+            <div
+                *ngFor="let date of calendarDays; trackBy: trackByDate"
+                class="calendar-day"
+                [class.empty]="date === null"
+                [class.today]="isToday(date)"
+                [class.current-month]="isCurrentMonth(date)"
+                [class.selected]="selectedDate && date && selectedDate.getTime() === date.getTime()"
+                (click)="onDayClick(date)"
+            >
+                <div *ngIf="date" class="day-content">
+                    <span class="day-number">{{ date.getDate() }}</span>
+                    <div class="day-todos" *ngIf="getTodosForDate(date).length > 0">
+                        <div
+                            *ngFor="let todo of getTodosForDate(date)"
+                            class="todo-badge"
+                            [ngClass]="getPriorityClass(todo.priority)"
+                            [title]="todo.title"
+                        >
+                            {{ todo.title }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Day View -->
+    <div *ngIf="isDayView && selectedDate" class="calendar-day-view">
+        <div class="day-view-header">
+            <button type="button" class="back-btn" (click)="closeDayView()" aria-label="Back to calendar">
+                <i class="bi bi-arrow-left"></i>
+                Back
+            </button>
+            <h2 class="day-view-title">{{ formatSelectedDate() }}</h2>
+        </div>
+
+        <div class="day-timeline">
+            <div *ngFor="let hour of hours" class="time-slot">
+                <div class="time-label">
+                    <span class="hour-text">{{ getHourLabel(hour) }}</span>
+                </div>
+                <div class="time-content">
+                    <div *ngIf="getTodosForHour(hour).length === 0" class="empty-hour">
+                        <span class="empty-indicator"></span>
+                    </div>
+                    <div *ngIf="getTodosForHour(hour).length > 0" class="hour-todos-wrapper">
+                        <div class="hour-todos">
+                            <div
+                                *ngFor="let todo of getTodosForHour(hour); trackBy: trackByTodo"
+                                class="hour-todo-item"
+                                [ngClass]="getPriorityClass(todo.priority)"
+                            >
+                                <!-- Todo card -->
+                                <div class="todo-card-content">
+                                    <div class="todo-time-badge">
+                                        <i class="bi bi-clock"></i>
+                                        {{ formatTime(todo.created_at) }}
+                                    </div>
+                                    <div class="todo-content">
+                                        <div class="todo-header-row">
+                                            <h4 class="todo-title">{{ todo.title }}</h4>
+                                            <span *ngIf="todo.completed" class="done-badge-small">Done</span>
+                                        </div>
+                                        <p *ngIf="todo.description" class="todo-description">{{ todo.description }}</p>
+                                        <span class="todo-priority-badge" [ngClass]="getPriorityClass(todo.priority)">
+                                            {{ todo.priority }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

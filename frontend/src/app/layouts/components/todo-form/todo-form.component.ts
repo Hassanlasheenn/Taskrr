@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit } from "@angular/core";
+import { Component, Output, EventEmitter, OnInit, Input } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormGroup } from "@angular/forms";
 import { DynamicFormComponent } from "../../../shared/components/dynamic-form/dynamic-form.component";
@@ -6,7 +6,8 @@ import { ReactiveFormService } from "../../../shared/services/reactive-form.serv
 import { IFieldControl } from "../../../shared/interfaces/IFieldControl.interface";
 import { InputTypes } from "../../../shared/enums/input-types.enum";
 import { ValidatorTypes } from "../../../shared/enums/validator-types.enum";
-import { ITodoCreate } from "../../../core/services/todo.service";
+import { ITodoCreate, ITodoUpdate } from "../../../core/services/todo.service";
+import { ITodo } from "../todo-list/todo-list.component";
 
 @Component({
     selector: 'app-todo-form',
@@ -16,12 +17,15 @@ import { ITodoCreate } from "../../../core/services/todo.service";
     imports: [CommonModule, DynamicFormComponent],
 })
 export class TodoFormComponent implements OnInit {
+    @Input() editingTodo: ITodo | null = null;
     @Output() submitTodo = new EventEmitter<ITodoCreate>();
+    @Output() updateTodo = new EventEmitter<{ id: number; data: ITodoUpdate }>();
     @Output() cancel = new EventEmitter<void>();
 
     form: FormGroup = new FormGroup({});
     isSubmitted: boolean = false;
     errorSummary: string | null = null;
+    isEditMode: boolean = false;
 
     fields: IFieldControl[] = [
         {
@@ -54,6 +58,7 @@ export class TodoFormComponent implements OnInit {
     ];
 
     selectedPriority: 'low' | 'medium' | 'high' = 'medium';
+    isCompleted: boolean = false;
 
     constructor(private readonly _formService: ReactiveFormService) {}
 
@@ -71,13 +76,26 @@ export class TodoFormComponent implements OnInit {
             return;
         }
 
-        const todo: ITodoCreate = {
+        const todoData: ITodoCreate = {
             title: this.form.get('title')?.value,
             description: this.form.get('description')?.value || undefined,
             priority: this.selectedPriority
         };
 
-        this.submitTodo.emit(todo);
+        if (this.isEditMode && this.editingTodo) {
+            const updateData: ITodoUpdate = {
+                title: todoData.title,
+                description: todoData.description,
+                priority: todoData.priority,
+                completed: this.isCompleted
+            };
+            this.updateTodo.emit({ 
+                id: this.editingTodo.id, 
+                data: updateData
+            });
+        } else {
+            this.submitTodo.emit(todoData);
+        }
     }
 
     onCancel(): void {
@@ -87,8 +105,26 @@ export class TodoFormComponent implements OnInit {
     resetForm(): void {
         this.form.reset();
         this.selectedPriority = 'medium';
+        this.isCompleted = false;
         this.isSubmitted = false;
         this.errorSummary = null;
+        this.isEditMode = false;
+        this.editingTodo = null;
+    }
+
+    populateForm(todo: ITodo): void {
+        this.isEditMode = true;
+        this.editingTodo = todo;
+        this.form.patchValue({
+            title: todo.title,
+            description: todo.description || ''
+        });
+        this.selectedPriority = todo.priority;
+        this.isCompleted = todo.completed;
+    }
+
+    toggleCompleted(): void {
+        this.isCompleted = !this.isCompleted;
     }
 }
 

@@ -58,6 +58,26 @@ def create_todo(
     db.refresh(db_todo)
     return db_todo
 
+@router.put("/{todo_id}", response_model=schemas.TodoResponse)
+def update_todo(todo_id: int, todo: schemas.TodoUpdate, user_id: int, db: Session = Depends(database.get_db)):
+    """Update a todo by ID"""
+    todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    if not todo_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+    if todo_db.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to update this todo")
+    if todo.title:
+        todo_db.title = todo.title
+    if todo.description is not None:
+        todo_db.description = todo.description
+    if todo.priority:
+        todo_db.priority = todo.priority.value
+    if todo.completed is not None:
+        todo_db.completed = todo.completed
+    db.commit()
+    db.refresh(todo_db)
+    return todo_db
+
 @router.delete("/{todo_id}")
 def delete_todo(
     todo_id: int,
