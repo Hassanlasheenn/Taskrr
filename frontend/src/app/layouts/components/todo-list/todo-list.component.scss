@@ -122,6 +122,21 @@
         color: var(--text-primary);
         margin: 0;
     }
+
+    .todo-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 28px;
+        padding: 0 0.5rem;
+        border-radius: 8px;
+        background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+        color: var(--text-white);
+        font-size: 0.875rem;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(107, 207, 209, 0.3);
+    }
 }
 
 // Using Bootstrap row-cols for responsive grid
@@ -166,14 +181,81 @@
     .todo-card-header {
         padding: 0.75rem 1.25rem 0;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .todo-index {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-light);
+        background: var(--btn-secondary-bg);
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
     }
 
     .todo-card-content {
         display: flex;
         align-items: flex-start;
         gap: 1rem;
-        padding: 0.75rem 1.25rem 1.25rem;
+        padding: 0.75rem 1.25rem 0.75rem;
+    }
+
+    .todo-card-footer {
+        padding: 0 1.25rem 1rem;
+        border-top: 1px solid var(--card-border-color);
+        margin: 0.5rem 1rem 0;
+        padding-top: 0.75rem;
+
+        .created-at {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.75rem;
+
+            > i {
+                font-size: 0.875rem;
+                color: var(--primary-gradient-start);
+            }
+
+            .date-info {
+                display: flex;
+                flex-direction: column;
+                gap: 0.125rem;
+
+                .date-day {
+                    font-weight: 600;
+                    color: var(--text-secondary);
+                    font-size: 0.75rem;
+                }
+
+                .date-full {
+                    font-size: 0.6875rem;
+                    color: var(--text-light);
+                }
+            }
+
+            .time-info {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                margin-left: auto;
+                background: var(--btn-secondary-bg);
+                padding: 0.25rem 0.5rem;
+                border-radius: 6px;
+
+                i {
+                    font-size: 0.75rem;
+                    color: var(--primary-gradient-start);
+                }
+
+                span {
+                    font-weight: 500;
+                    color: var(--text-secondary);
+                }
+            }
+        }
     }
 }
 
@@ -263,7 +345,7 @@
     }
 }
 
-.todo-delete-btn {
+.todo-delete-btn, .todo-edit-btn {
     flex-shrink: 0;
     width: 32px;
     height: 32px;
@@ -279,8 +361,8 @@
     padding: 0;
 
     &:hover {
-        background: var(--priority-high-bg);
-        color: var(--priority-high-text);
+        background: var(--primary-gradient-start);
+        color: var(--text-white);
     }
 
     i {

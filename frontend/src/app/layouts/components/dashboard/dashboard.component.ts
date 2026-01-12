@@ -3,6 +3,7 @@ import { Component, OnInit, ViewChild } from "@angular/core";
 import { AuthService } from "../../../auth/services";
 import { TodoService, ITodoCreate } from "../../../core/services/todo.service";
 import { LoaderService } from "../../../core/services/loader.service";
+import { ToastService } from "../../../core/services/toast.service";
 import { TodoListComponent, ITodo } from "../todo-list/todo-list.component";
 import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.component";
 import { TodoFormComponent } from "../todo-form/todo-form.component";
@@ -19,12 +20,14 @@ export class DashboardComponent implements OnInit {
     
     userData: any;
     todos: ITodo[] = [];
+    totalTodos: number = 0;
     isSidebarOpen: boolean = false;
     
     constructor(
         private readonly _authService: AuthService,
         private readonly _todoService: TodoService,
-        private readonly _loaderService: LoaderService
+        private readonly _loaderService: LoaderService,
+        private readonly _toastService: ToastService
     ) {}
 
     ngOnInit(): void {
@@ -40,10 +43,11 @@ export class DashboardComponent implements OnInit {
         this._todoService.getTodos(userId).subscribe({
             next: (response) => {
                 this.todos = response.todos as ITodo[];
+                this.totalTodos = response.total;
                 this._loaderService.hide();
             },
             error: (error) => {
-                console.error('Error loading todos:', error);
+                this._toastService.error(error?.error?.detail || 'Failed to load todos');
                 this._loaderService.hide();
             }
         });
@@ -68,14 +72,16 @@ export class DashboardComponent implements OnInit {
         this._todoService.createTodo(userId, todoData).subscribe({
             next: (newTodo) => {
                 this.todos = [newTodo as ITodo, ...this.todos];
+                this.totalTodos++;
                 this.isSidebarOpen = false;
                 if (this.todoFormComponent) {
                     this.todoFormComponent.resetForm();
                 }
                 this._loaderService.hide();
+                this._toastService.success('Todo created successfully');
             },
             error: (error) => {
-                console.error('Error creating todo:', error);
+                this._toastService.error(error?.error?.detail || 'Failed to create todo');
                 this._loaderService.hide();
             }
         });
@@ -91,7 +97,20 @@ export class DashboardComponent implements OnInit {
     }
 
     onDeleteTodo(todo: ITodo): void {
-        // Delete locally for instant feedback
-        this.todos = this.todos.filter(t => t.id !== todo.id);
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+
+        this._loaderService.show();
+        this._todoService.deleteTodo(userId, todo.id).subscribe({
+            next: (response) => {
+                // Reload all todos to get updated indices
+                this.loadTodos();
+                this._toastService.success(response?.message || 'Todo deleted successfully');
+            },
+            error: (error) => {
+                this._toastService.error(error?.error?.detail || 'Failed to delete todo');
+                this._loaderService.hide();
+            }
+        });
     }
 }

@@ -2,6 +2,7 @@ import { Component, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { AuthService } from "../../../auth/services/auth.service";
 import { UserService } from "../../../core/services/user.service";
+import { ToastService } from "../../../core/services/toast.service";
 import { IUserResponse } from "../../../auth/interfaces";
 import { ProfileSections } from "../../enums/profile-sections.enum";
 import { ProfileSideNavComponent } from "./components/profile-side-nav/profile-side-nav.component";
@@ -27,7 +28,8 @@ export class ProfileComponent implements OnInit {
 
     constructor(
         private readonly _authService: AuthService,
-        private readonly _userService: UserService
+        private readonly _userService: UserService,
+        private readonly _toastService: ToastService
     ) {}
 
     ngOnInit(): void {
@@ -58,9 +60,10 @@ export class ProfileComponent implements OnInit {
                 this._authService.setCurrentUserData(updatedUser);
                 this.userData = updatedUser;
                 event.updateCallback(updatedUser);
+                this._toastService.success('Profile updated successfully');
             },
             error: (error) => {
-                console.error('Error updating profile:', error);
+                this._toastService.error(error?.error?.detail || 'Failed to update profile');
             }
         });
     }

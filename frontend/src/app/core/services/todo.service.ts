@@ -15,6 +15,7 @@ export interface ITodoResponse {
     description?: string;
     completed: boolean;
     priority: string;
+    order_index: number;
     created_at?: string;
     user_id: number;
 }
@@ -43,6 +44,14 @@ export class TodoService {
     createTodo(userId: number, todo: ITodoCreate): Observable<ITodoResponse> {
         return this._http
             .post<ITodoResponse>(`${this._baseUrl}?user_id=${userId}`, todo, {
+                withCredentials: true
+            })
+            .pipe(take(1));
+    }
+
+    deleteTodo(userId: number, todoId: number): Observable<{ message: string }> {
+        return this._http
+            .delete<{ message: string }>(`${this._baseUrl}/${todoId}?user_id=${userId}`, {
                 withCredentials: true
             })
             .pipe(take(1));

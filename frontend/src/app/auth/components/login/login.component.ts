@@ -5,6 +5,7 @@ import { SharedModule } from "../../../shared/shared.module";
 import { IFieldControl } from "../../../shared/interfaces/IFieldControl.interface";
 import { InputTypes } from "../../../shared/enums/input-types.enum";
 import { ReactiveFormService } from "../../../shared/services/reactive-form.service";
+import { ToastService } from "../../../core/services/toast.service";
 import { Router, RouterLink } from "@angular/router";
 import { ValidatorTypes } from "../../../shared/enums/validator-types.enum";
 import { RegexPatterns } from "../../../shared/enums/regex-patterns.enum";
@@ -55,6 +56,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         private readonly _formService: ReactiveFormService,
         private readonly _authService: AuthService,
         private readonly _router: Router,
+        private readonly _toastService: ToastService
     ) {}
 
     ngOnInit(): void {
@@ -98,11 +100,14 @@ export class LoginComponent implements OnInit, OnDestroy {
                     this._authService.setCurrentUserId(res.data.id);
                     this._authService.setCurrentUserData(res.data);
                 }
+                this._toastService.success('Login successful');
                 this._router.navigate([LayoutPaths.DASHBOARD]);
             },
             error: (err: HttpErrorResponse) => {
                 this.isSubmitted = true;
-                this.errorSummary = err?.error?.detail || err?.error?.message || err?.message || 'An error occurred during login. Please try again.';
+                const errorMessage = err?.error?.detail || err?.error?.message || err?.message || 'An error occurred during login. Please try again.';
+                this.errorSummary = errorMessage;
+                this._toastService.error(errorMessage);
             }
         });
     }

@@ -5,6 +5,7 @@
     
     <app-todo-list 
         [todos]="todos"
+        [totalCount]="totalTodos"
         (addTodo)="onAddTodo()"
         (toggleTodo)="onToggleTodo($event)"
         (deleteTodo)="onDeleteTodo($event)"

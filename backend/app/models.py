@@ -32,8 +32,9 @@ class Todo(Base):
     description = Column(Text, nullable=True)
     completed = Column(Boolean, default=False)
     priority = Column(String(20), default=PriorityLevel.MEDIUM.value)  # low, medium, high
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    order_index = Column(Integer, default=0)  # Position index for ordering
+    created_at = Column(DateTime, server_default=func.now())  # Store local time
+    updated_at = Column(DateTime, onupdate=func.now())  # Store local time
     
     # Foreign key to user
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)

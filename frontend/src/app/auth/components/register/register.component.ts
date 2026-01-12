@@ -3,6 +3,7 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { SharedModule } from "../../../shared/shared.module";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { ReactiveFormService } from "../../../shared/services/reactive-form.service";
+import { ToastService } from "../../../core/services/toast.service";
 import { IFieldControl } from "../../../shared/interfaces";
 import { InputTypes, RegexPatterns, ValidatorTypes } from "../../../shared/enums";
 import { Router, RouterLink } from "@angular/router";
@@ -79,6 +80,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
         private readonly _formService: ReactiveFormService,
         private readonly _authService: AuthService,
         private readonly _router: Router,
+        private readonly _toastService: ToastService
     ) {}
 
     ngOnInit() {
@@ -134,11 +136,14 @@ export class RegisterComponent implements OnInit, OnDestroy {
                         email: res.email
                     });
                 }
+                this._toastService.success('Account created successfully');
                 this._router.navigate([LayoutPaths.DASHBOARD]);
             },
             error: (err: HttpErrorResponse) => {
                 this.isSubmitted = true;
-                this.errorSummary = err?.error?.detail || err?.error?.message || err?.message || 'An error occurred during registration. Please try again.';
+                const errorMessage = err?.error?.detail || err?.error?.message || err?.message || 'An error occurred during registration. Please try again.';
+                this.errorSummary = errorMessage;
+                this._toastService.error(errorMessage);
             }
         });
     }

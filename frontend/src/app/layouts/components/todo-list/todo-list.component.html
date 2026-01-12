@@ -17,7 +17,10 @@
     <!-- Todo List -->
     <div *ngIf="todos.length > 0" class="todo-grid">
         <div class="todo-header d-flex justify-content-between align-items-center mb-4">
-            <h2 class="todo-section-title">Your Todos</h2>
+            <div class="d-flex align-items-center gap-2">
+                <h2 class="todo-section-title">Your Todos</h2>
+                <span class="todo-count-badge">{{ totalCount }}</span>
+            </div>
             <button type="button" class="add-todo-btn-small" (click)="onAddTodo()">
                 <i class="bi bi-plus-lg me-1"></i>
                 Add
@@ -32,6 +35,7 @@
                 [ngClass]="getPriorityClass(todo.priority)"
             >
                 <div class="todo-card-header">
+                    <span class="todo-index">#{{ todo.order_index }}</span>
                     <span class="priority-badge" [ngClass]="getPriorityClass(todo.priority)">
                         <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
                         {{ todo.priority }}
@@ -52,12 +56,33 @@
                     </div>
                     <button 
                         type="button" 
+                        class="todo-edit-btn"
+                        (click)="onEditTodo(todo)"
+                        aria-label="Edit todo"
+                    >
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button 
+                        type="button" 
                         class="todo-delete-btn"
                         (click)="onDeleteTodo(todo)"
                         aria-label="Delete todo"
                     >
                         <i class="bi bi-trash"></i>
                     </button>
+                </div>
+                <div class="todo-card-footer" *ngIf="formatDate(todo.created_at) as dateInfo">
+                    <div class="created-at">
+                        <i class="bi bi-calendar3"></i>
+                        <div class="date-info">
+                            <span class="date-day">{{ dateInfo.day }}</span>
+                            <span class="date-full">{{ dateInfo.date }}</span>
+                        </div>
+                        <div class="time-info">
+                            <i class="bi bi-clock"></i>
+                            <span>{{ dateInfo.time }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             </div>
