@@ -103,8 +103,11 @@ export class DashboardComponent implements OnInit {
         this._loaderService.show();
         this._todoService.deleteTodo(userId, todo.id).subscribe({
             next: (response) => {
-                // Reload all todos to get updated indices
-                this.loadTodos();
+                this.todos = this.todos
+                    .filter(t => t.id !== todo.id)
+                    .map((t, idx) => ({ ...t, order_index: idx + 1 }));
+                this.totalTodos = Math.max(0, this.totalTodos - 1);
+                this._loaderService.hide();
                 this._toastService.success(response?.message || 'Todo deleted successfully');
             },
             error: (error) => {

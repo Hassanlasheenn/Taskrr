@@ -1,0 +1,174 @@
+@use '../../../assets/components/auth' as *;
+
+.auth-wrapper {
+    width: 100%;
+    height: 100%;
+    min-height: calc(100vh - var(--header-total-height, 80px));
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+.slider-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+// Forms panel - slides between left and right
+.forms-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background: var(--bg-primary);
+    z-index: 1;
+    transition: left 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+    overflow: hidden;
+
+    .login-mode & {
+        left: 50%;
+    }
+}
+
+// Branding panel - slides between right and left
+.branding-panel {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+    z-index: 2;
+    transition: left 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+    overflow: hidden;
+
+    .login-mode & {
+        left: 0;
+    }
+}
+
+// Form content wrapper
+.form-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.95);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+
+    &.active {
+        opacity: 1;
+        pointer-events: auto;
+        transform: scale(1);
+        transition-delay: 0.35s; // Delay appearance until branding starts sliding
+    }
+}
+
+// Branding content wrapper
+.branding-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+
+    &.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+.auth-form {
+    @include auth-form();
+    max-width: 420px;
+    width: 100%;
+}
+
+.logo-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.logo-text {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 700;
+    color: white;
+    margin: 0;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.logo-subtitle {
+    font-size: clamp(0.875rem, 2vw, 1.125rem);
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    font-weight: 400;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.overlay-btn {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+    padding: 0.75rem 2.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+
+    &:hover {
+        background: white;
+        color: var(--primary-gradient-start);
+        transform: scale(1.05);
+    }
+}
+
+// Mobile: show only forms with swipe
+@media (max-width: 767.98px) {
+    .forms-panel {
+        width: 100%;
+        left: 0;
+
+        .login-mode & {
+            left: 0;
+        }
+    }
+
+    .branding-panel {
+        display: none;
+    }
+
+    .form-content {
+        opacity: 1;
+        pointer-events: auto;
+        position: relative;
+        
+        &:not(.active) {
+            display: none;
+        }
+    }
+}
+

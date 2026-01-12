@@ -13,7 +13,5 @@ export class CardComponent implements OnInit {
     @Input() card: ICard = { title: 'Title' };
 
     constructor() {}
-    ngOnInit() {
-        console.log('CardComponent');
-    }
+    ngOnInit() {}
 }

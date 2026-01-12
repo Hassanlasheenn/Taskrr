@@ -1,0 +1,67 @@
+<div class="auth-wrapper" [class.login-mode]="currentMode === 'login'">
+    <!-- Sliding container -->
+    <div class="slider-container">
+        <!-- Forms side (slides between left and right) -->
+        <div class="forms-panel">
+            <!-- Register Form -->
+            <div class="form-content register-form" [class.active]="currentMode === 'register'">
+                <app-card [card]="{ title: 'Create Account' }" class="auth-form">
+                    <app-dynamic-form 
+                        [fields]="registerFields" 
+                        [form]="registerForm" 
+                        [isSubmitted]="registerSubmitted"
+                        [errorSummary]="registerError"
+                    />
+                    <div class="mt-4">
+                        <button type="button" class="card-button" (click)="onRegisterSubmit()">Register</button>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-center align-items-center gap-1 d-md-none">
+                        <span>Already a User?</span>
+                        <button type="button" class="link-button" (click)="switchToLogin()">Sign In</button>
+                    </div>
+                </app-card>
+            </div>
+            
+            <!-- Login Form -->
+            <div class="form-content login-form" [class.active]="currentMode === 'login'">
+                <app-card [card]="{ title: 'Login' }" class="auth-form">
+                    <app-dynamic-form 
+                        [fields]="loginFields" 
+                        [form]="loginForm" 
+                        [isSubmitted]="loginSubmitted" 
+                        [errorSummary]="loginError"
+                    />
+                    <div class="mt-4">
+                        <button type="button" class="card-button" (click)="onLoginSubmit()">Login</button>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-center align-items-center gap-1 d-md-none">
+                        <span>New to TODO?</span>
+                        <button type="button" class="link-button" (click)="switchToRegister()">Sign Up</button>
+                    </div>
+                </app-card>
+            </div>
+        </div>
+
+        <!-- Branding side (slides between right and left) -->
+        <div class="branding-panel">
+            <!-- Register Branding -->
+            <div class="branding-content register-branding" [class.active]="currentMode === 'register'">
+                <div class="logo-content">
+                    <h1 class="logo-text">TODO</h1>
+                    <p class="logo-subtitle">Continue tracking your tasks and organize your life</p>
+                    <button type="button" class="overlay-btn" (click)="switchToLogin()">Sign In</button>
+                </div>
+            </div>
+            
+            <!-- Login Branding -->
+            <div class="branding-content login-branding" [class.active]="currentMode === 'login'">
+                <div class="logo-content">
+                    <h1 class="logo-text">TODO</h1>
+                    <p class="logo-subtitle">Organize your life, one task at a time</p>
+                    <button type="button" class="overlay-btn" (click)="switchToRegister()">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

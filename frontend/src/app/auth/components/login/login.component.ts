@@ -100,7 +100,6 @@ export class LoginComponent implements OnInit, OnDestroy {
                     this._authService.setCurrentUserId(res.data.id);
                     this._authService.setCurrentUserData(res.data);
                 }
-                this._toastService.success('Login successful');
                 this._router.navigate([LayoutPaths.DASHBOARD]);
             },
             error: (err: HttpErrorResponse) => {
