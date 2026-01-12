@@ -1,0 +1,46 @@
+<section class="upload-photo">
+    <label class="upload-photo__label" [for]="'upload-photo-' + label">{{ label }}</label>
+    
+    <div class="upload-photo__wrapper">
+        <button 
+            type="button"
+            class="upload-photo__circle"
+            (click)="triggerFileInput()"
+            [attr.aria-label]="'Upload ' + label"
+        >
+            <input
+                #fileInput
+                [id]="'upload-photo-' + label"
+                type="file"
+                accept="image/*"
+                class="upload-photo__input"
+                (change)="onFileSelected($event)"
+            />
+            
+            <!-- Photo Preview -->
+            <div class="upload-photo__preview" *ngIf="displayPhoto">
+                <img [src]="displayPhoto" alt="Profile preview" />
+                <div class="upload-photo__overlay">
+                    <i class="bi bi-camera"></i>
+                </div>
+            </div>
+            
+            <!-- Camera Icon (when no photo) -->
+            <div class="upload-photo__icon" *ngIf="!displayPhoto">
+                <i class="bi bi-camera"></i>
+            </div>
+        </button>
+        
+        <!-- Remove Button (only show when photo exists) -->
+        <button 
+            *ngIf="displayPhoto"
+            type="button" 
+            class="upload-photo__remove"
+            (click)="removePhoto(); $event.stopPropagation()"
+            aria-label="Remove photo"
+        >
+            <i class="bi bi-x-circle"></i>
+        </button>
+    </div>
+</section>
+

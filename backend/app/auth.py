@@ -9,7 +9,7 @@ from fastapi import HTTPException, status
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
-from . import models, schemas, database, auth
+from . import models, schemas, database
 
 # Load environment variables from .env file
 load_dotenv()
@@ -49,14 +49,22 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     if db_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
     
-    hashed_password = auth.hash_password(user.password)
+    hashed_password = hash_password(user.password)
 
     # save to sql
     new_user = models.User(email=user.email, username=user.username, hashed_password=hashed_password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    
+    # Map profile_pic to photo for response (handle case where column might not exist)
+    user_dict = {
+        "id": new_user.id,
+        "username": new_user.username,
+        "email": new_user.email,
+        "photo": getattr(new_user, 'profile_pic', None)  # Safely get profile_pic, default to None if doesn't exist
+    }
+    return schemas.UserResponse(**user_dict)
 
 
 # login user
@@ -68,10 +76,10 @@ def login(
 ):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
 
-    if not user or not auth.verify_password(form_data.password, user.hashed_password):
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password", headers={"WWW-Authenticate": "Bearer"})
     
-    access_token = auth.create_access_token(data={"sub": user.email})
+    access_token = create_access_token(data={"sub": user.email})
     
     # Set httpOnly cookie with secure settings
     # Token expires in 7 days
@@ -88,9 +96,17 @@ def login(
         path="/"
     )
     
+    # Map profile_pic to photo for response (handle case where column might not exist)
+    user_dict = {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "photo": getattr(user, 'profile_pic', None)  # Safely get profile_pic, default to None if doesn't exist
+    }
+    
     return { 
         "token_type": "bearer", 
-        "data": user 
+        "data": schemas.UserResponse(**user_dict)
     }
 
 

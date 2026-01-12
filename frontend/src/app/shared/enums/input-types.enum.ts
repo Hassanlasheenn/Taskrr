@@ -5,4 +5,6 @@ export enum InputTypes {
     NUMBER = 'number',
     DATE = 'date',
     TIME = 'time',
+    FILE = 'file',
+    UPLOAD_PHOTO = 'upload-photo',
 }

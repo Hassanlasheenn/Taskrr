@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Text
 from .database import Base
 
 class User(Base):
@@ -8,3 +8,4 @@ class User(Base):
     username = Column(String(255), index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    profile_pic = Column(Text, nullable=True)  # Stores base64 encoded image

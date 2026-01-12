@@ -1,5 +1,5 @@
 import { Component, HostListener, OnInit, OnDestroy } from "@angular/core";
-import { Router, NavigationEnd } from "@angular/router";
+import { Router, NavigationEnd, RouterLink } from "@angular/router";
 import { NgIf } from "@angular/common";
 import { filter, Subject, takeUntil } from "rxjs";
 import { AuthService } from "../../../auth/services";
@@ -10,13 +10,15 @@ import { LayoutPaths } from "../../enums";
     templateUrl: './header.component.html',
     standalone: true,
     styleUrls: ['./header.component.scss'],
-    imports: [NgIf]
+    imports: [NgIf, RouterLink]
 })
 export class HeaderComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
     isDropdownOpen = false;
     isAuthenticated = false;
     userEmail: string = '';
+    userPhoto: string | null = null;
+    LayoutPaths = LayoutPaths;
 
     constructor(
         private readonly _authService: AuthService,
@@ -42,8 +44,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
         if (this.isAuthenticated) {
             const userData = this._authService.getCurrentUserData();
             this.userEmail = userData?.email || '';
+            this.userPhoto = userData?.photo || null;
         } else {
             this.userEmail = '';
+            this.userPhoto = null;
         }
     }
 
@@ -76,6 +80,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
                 this._router.navigate(['/login']);
             }
         });
+    }
+
+    getPhotoUrl(): string {
+        // Photo is stored as base64 data URL in database, return directly
+        return this.userPhoto || '';
     }
 
     ngOnDestroy(): void {

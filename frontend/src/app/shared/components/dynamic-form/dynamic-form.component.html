@@ -1,5 +1,4 @@
 <section class="dynamic-form-wrapper">
-    <!-- Error Summary Display -->
     <div *ngIf="errorSummary" class="error-summary-box">
         <h4 class="error-summary-title">Error</h4>
         <p class="error-summary-message">{{ errorSummary }}</p>
@@ -7,7 +6,19 @@
 
     <form [formGroup]="form">
         <ng-container *ngFor="let field of fields; trackBy: trackById">
+            <div *ngIf="field.type === InputTypes.UPLOAD_PHOTO || field.type === InputTypes.FILE" [formGroup]="form">
+                <app-upload-photo
+                    [label]="field.label"
+                    [formControlName]="field.formControlName"
+                    [currentPhotoUrl]="field.photoUrl || null"
+                    (photoSelected)="onPhotoSelected(field.formControlName, $event)"
+                    (validationError)="onValidationError($event)"
+                    (photoRemoved)="onPhotoRemoved(field.formControlName)"
+                />
+            </div>
+
             <app-input-form
+                *ngIf="field.type === InputTypes.TEXT || field.type === InputTypes.EMAIL || field.type === InputTypes.PASSWORD || field.type === InputTypes.NUMBER || field.type === InputTypes.DATE || field.type === InputTypes.TIME"
                 [label]="field.label"
                 [type]="field.type"
                 [formGroup]="form"

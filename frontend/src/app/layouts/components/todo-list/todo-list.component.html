@@ -1,0 +1,59 @@
+<section class="todo-list-container">
+    <!-- Empty State -->
+    <div *ngIf="todos.length === 0" class="empty-state">
+        <div class="empty-state-content">
+            <div class="empty-icon">
+                <i class="bi bi-clipboard-check"></i>
+            </div>
+            <h3 class="empty-title">No todos yet</h3>
+            <p class="empty-description">Start organizing your tasks by adding your first todo</p>
+            <button type="button" class="add-todo-btn" (click)="onAddTodo()">
+                <i class="bi bi-plus-lg me-2"></i>
+                Add Todo
+            </button>
+        </div>
+    </div>
+
+    <!-- Todo List -->
+    <div *ngIf="todos.length > 0" class="todo-grid">
+        <div class="todo-header d-flex justify-content-between align-items-center mb-4">
+            <h2 class="todo-section-title">Your Todos</h2>
+            <button type="button" class="add-todo-btn-small" (click)="onAddTodo()">
+                <i class="bi bi-plus-lg me-1"></i>
+                Add
+            </button>
+        </div>
+        
+        <div class="todo-cards">
+            <div 
+                *ngFor="let todo of todos; trackBy: trackById" 
+                class="todo-card"
+                [class.completed]="todo.completed"
+            >
+                <div class="todo-card-content">
+                    <button 
+                        type="button" 
+                        class="todo-checkbox"
+                        [class.checked]="todo.completed"
+                        (click)="onToggleTodo(todo)"
+                    >
+                        <i *ngIf="todo.completed" class="bi bi-check"></i>
+                    </button>
+                    <div class="todo-info">
+                        <h4 class="todo-title">{{ todo.title }}</h4>
+                        <p *ngIf="todo.description" class="todo-description">{{ todo.description }}</p>
+                    </div>
+                    <button 
+                        type="button" 
+                        class="todo-delete-btn"
+                        (click)="onDeleteTodo(todo)"
+                        aria-label="Delete todo"
+                    >
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+

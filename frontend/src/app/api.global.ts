@@ -10,5 +10,6 @@ export const API_URLS = {
     },
     user: {
         getUserById: `${API_BASE_URL}`,
+        updateUser: `${API_BASE_URL}`,
     },
 };

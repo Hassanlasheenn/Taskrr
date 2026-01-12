@@ -12,6 +12,8 @@ export interface IFieldControl {
     options?: IDropdownOptions[];
     validations: IValidations[];
     customInputClass?: string;
+    photoUrl?: string | null;
+    onPhotoSelected?: (file: File) => void;
 }
 
 export interface IDropdownOptions {

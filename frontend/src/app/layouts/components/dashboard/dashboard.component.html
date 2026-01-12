@@ -1,5 +1,12 @@
 <section class="dashboard-container">
-    <div class="dashboard-header">
-        <h1 class="text-white">Welcome {{ userData?.username }}</h1>
+    <div class="dashboard-header d-flex justify-content-center align-items-center">
+        <h1>Hi, {{ userData?.username }}!</h1>
     </div>
+    
+    <app-todo-list 
+        [todos]="todos"
+        (addTodo)="onAddTodo()"
+        (toggleTodo)="onToggleTodo($event)"
+        (deleteTodo)="onDeleteTodo($event)"
+    />
 </section>

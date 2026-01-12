@@ -1,0 +1,20 @@
+<app-card [card]="{ title: 'Personal Data' }" class="profile-card">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <app-dynamic-form
+            [fields]="fields"
+            [form]="form"
+            [isSubmitted]="isSubmitted"
+            [errorSummary]="errorSummary"
+            (photoSelected)="onPhotoSelected()"
+            (errorSummaryChange)="onErrorSummaryChange($event)"
+            (photoRemoved)="onPhotoRemoved()"
+        />
+
+        <div class="mt-4">
+            <button type="submit" class="card-button" [disabled]="form.invalid">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</app-card>
+
