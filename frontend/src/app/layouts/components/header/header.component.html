@@ -34,18 +34,16 @@
                         <i *ngIf="!userPhoto" class="bi bi-person"></i>
                     </button>
                     <div class="dropdown-menu" [class.show]="isDropdownOpen">
-                        <div class="dropdown-header">
-                            <div class="user-email">{{ userEmail }}</div>
+                        <div class="dropdown-actions">
+                            <button class="dropdown-item" (click)="onProfile()" aria-label="Profile">
+                                <i class="bi bi-person-circle"></i>
+                                <span class="item-label">Profile</span>
+                            </button>
+                            <button class="dropdown-item" (click)="onLogout()" aria-label="Logout">
+                                <i class="bi bi-box-arrow-right"></i>
+                                <span class="item-label">Logout</span>
+                            </button>
                         </div>
-                        <div class="dropdown-divider"></div>
-                        <button class="dropdown-item" (click)="onProfile()">
-                            <i class="bi bi-person-circle me-2"></i>
-                            Profile
-                        </button>
-                        <button class="dropdown-item" (click)="onLogout()">
-                            <i class="bi bi-box-arrow-right me-2"></i>
-                            Logout
-                        </button>
                     </div>
                 </div>
             </ng-container>

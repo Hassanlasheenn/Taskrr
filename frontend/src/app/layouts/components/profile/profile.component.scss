@@ -8,7 +8,12 @@
 
     .side-nav-wrapper {
         flex-shrink: 0;
-        // Using Bootstrap classes for responsive width
+        width: 100%;
+
+        // Fixed width on large screens
+        @media (min-width: 992px) {
+            width: 220px;
+        }
 
         ::ng-deep .profile-side-nav {
             height: 100%;

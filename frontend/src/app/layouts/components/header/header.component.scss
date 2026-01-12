@@ -161,73 +161,125 @@
 .dropdown-menu {
     position: absolute;
     top: calc(100% + 0.75rem);
-    right: 0;
-    min-width: 12rem;
-    background: var(--dropdown-bg);
-    backdrop-filter: var(--glass-blur-strong);
-    -webkit-backdrop-filter: var(--glass-blur-strong);
-    border: 1px solid var(--dropdown-border);
-    border-radius: 16px;
-    box-shadow: var(--card-shadow);
-    padding: 0.5rem;
+    right: 50%;
+    transform: translateX(50%);
+    min-width: auto;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
     margin: 0;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-0.5rem);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.2s ease;
     z-index: 1000;
-    overflow: hidden;
+    overflow: visible;
 
     &.show {
         opacity: 1;
         visibility: visible;
-        transform: translateY(0);
+
+        .dropdown-item {
+            // Vertical column positioning
+            &:nth-child(1) {
+                transform: translateY(0) scale(1);
+                transition-delay: 0.05s;
+            }
+
+            &:nth-child(2) {
+                transform: translateY(calc(3rem + 0.75rem)) scale(1);
+                transition-delay: 0.1s;
+            }
+        }
     }
 
     .dropdown-header {
-        padding: 0.75rem 1rem;
-        background: var(--dropdown-item-hover);
-        border-bottom: 1px solid var(--dropdown-divider);
-        border-radius: 12px 12px 0 0;
-
-        .user-email {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-primary);
-            word-break: break-word;
-        }
+        display: none;
     }
 
     .dropdown-divider {
-        height: 1px;
-        background: var(--dropdown-divider);
-        margin: 0.25rem 0;
+        display: none;
+    }
+
+    // Vertical column container
+    .dropdown-actions {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 0;
+        height: 0;
     }
 
     .dropdown-item {
-        width: 100%;
-        padding: 0.75rem 1rem;
+        position: absolute;
+        left: 50%;
+        margin-left: -1.5rem;
+        width: 3rem;
+        height: 3rem;
+        padding: 0;
         border: none;
-        background: transparent;
-        text-align: left;
+        background: var(--dropdown-bg);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        text-align: center;
         cursor: pointer;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 0.75rem;
+        justify-content: center;
         color: var(--text-primary);
-        font-size: 0.9375rem;
-        transition: all 0.2s ease;
-        border-radius: 8px;
-        margin: 0.25rem 0;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        border-radius: 50%;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        transform: translateY(0) scale(0);
 
         &:hover {
-            background: var(--dropdown-item-hover);
-            transform: translateX(4px);
+            background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+            box-shadow: 0 8px 24px rgba(107, 207, 209, 0.5);
+            color: white;
+            z-index: 10;
+
+            i {
+                color: white;
+                transform: scale(1.15);
+            }
+
+            .item-label {
+                opacity: 1;
+                transform: translateY(-50%) translateX(0);
+            }
+        }
+
+        &:active {
+            transform: scale(0.9) !important;
         }
 
         i {
-            font-size: 1.125rem;
+            font-size: 1.25rem;
             color: var(--primary-gradient-start);
+            transition: all 0.3s ease;
+        }
+
+        // Label appears to the left on hover
+        .item-label {
+            position: absolute;
+            top: 50%;
+            right: calc(100% + 0.75rem);
+            transform: translateY(-50%) translateX(4px);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            opacity: 0;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            background: var(--dropdown-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
     }
 }
