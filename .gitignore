@@ -28,6 +28,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+requirements.txt
 
 # Virtual environments
 backend/venv/
