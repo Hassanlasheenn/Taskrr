@@ -55,18 +55,18 @@ app-root {
   height: 100vh;
   max-height: 100vh;
   background: transparent;
-  padding: 0 1.25rem 1.25rem 1.25rem;
+  padding: var(--header-top-margin, 1.25rem) 1.25rem 0 1.25rem;
   position: relative;
   z-index: 1;
   overflow: hidden;
   box-sizing: border-box;
 
   @media (max-width: 768px) {
-    padding: 0 1rem 1rem 1rem;
+    padding: var(--header-top-margin, 1rem) 1rem 0 1rem;
   }
 
   @media (max-width: 576px) {
-    padding: 0 0.75rem 0.75rem 0.75rem;
+    padding: var(--header-top-margin, 0.75rem) 0.75rem 0 0.75rem;
   }
 }
 

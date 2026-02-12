@@ -6,15 +6,15 @@
     border: 1px solid var(--header-border);
     box-shadow: var(--card-shadow);
     padding: 1.25rem 2rem;
-    position: fixed;
-    top: var(--header-top-margin);
-    left: var(--header-top-margin);
-    right: var(--header-top-margin);
+    position: sticky;
+    top: var(--header-top-margin, 1.25rem);
     z-index: 1000;
     transition: all 0.3s ease;
-    width: calc(100% - calc(var(--header-top-margin) * 2));
+    width: 100%;
     box-sizing: border-box;
     height: var(--header-height);
+    margin-bottom: var(--header-spacing, 1.25rem);
+    flex-shrink: 0;
 
     &:hover {
         box-shadow: var(--card-shadow-hover);
@@ -23,10 +23,8 @@
     @media (max-width: 768px) {
         --header-top-margin: 1rem;
         --header-height: 4rem;
-        top: var(--header-top-margin);
-        left: var(--header-top-margin);
-        right: var(--header-top-margin);
-        width: calc(100% - calc(var(--header-top-margin) * 2));
+        top: var(--header-top-margin, 1rem);
+        width: 100%;
         padding: 1rem 1.5rem;
         height: var(--header-height);
     }
@@ -35,10 +33,8 @@
         --header-top-margin: 0.75rem;
         --header-height: 3.75rem;
         --header-spacing: 0.75rem;
-        top: var(--header-top-margin);
-        left: var(--header-top-margin);
-        right: var(--header-top-margin);
-        width: calc(100% - calc(var(--header-top-margin) * 2));
+        top: var(--header-top-margin, 0.75rem);
+        width: 100%;
         padding: 0.875rem 1.25rem;
         border-radius: 16px;
         height: var(--header-height);

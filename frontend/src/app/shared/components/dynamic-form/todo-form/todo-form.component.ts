@@ -78,8 +78,8 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         { value: 'high', label: 'High', icon: 'bi-arrow-up', color: '#dc3545' },
     ];
 
-    selectedPriority: PriorityLevel = 'medium';
-    selectedCategory: string = 'Other';
+    selectedPriority: PriorityLevel | null = null;
+    selectedCategory: string = '';
     customCategory: string = '';
     isOtherCategory: boolean = false;
     isCompleted: boolean = false;
@@ -148,7 +148,8 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     }
 
     selectPriority(priority: PriorityLevel): void {
-        this.selectedPriority = priority;
+        // Toggle: if same priority is clicked, deselect it
+        this.selectedPriority = this.selectedPriority === priority ? null : priority;
     }
 
     selectCategory(category: string): void {
@@ -206,7 +207,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         const todoData: ITodoCreate = {
             title: this.form.get('title')?.value,
             description: this.form.get('description')?.value || undefined,
-            priority: this.selectedPriority,
+            priority: this.selectedPriority || 'medium', // Default to medium if not selected
             category: categoryToUse,
             assigned_to_user_id: assignedUserId
         };
@@ -215,7 +216,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             const updateData: ITodoUpdate = {
                 title: todoData.title,
                 description: todoData.description,
-                priority: todoData.priority,
+                priority: this.selectedPriority || undefined, // Only include if selected
                 category: todoData.category,
                 completed: this.isCompleted,
                 assigned_to_user_id: assignedUserId ?? null
@@ -239,8 +240,8 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         if (this.isAdmin && this.form.get('assigned_to_user_id')) {
             this.form.patchValue({ assigned_to_user_id: 0 });
         }
-        this.selectedPriority = 'medium';
-        this.selectedCategory = 'Other';
+        this.selectedPriority = null;
+        this.selectedCategory = '';
         this.customCategory = '';
         this.isOtherCategory = false;
         this.isCompleted = false;
@@ -284,7 +285,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         }
         
         // Set priority first (before form patching)
-        this.selectedPriority = (todo.priority || 'medium') as PriorityLevel;
+        this.selectedPriority = (todo.priority || null) as PriorityLevel | null;
         
         // Set category state
         if (todo.category) {
@@ -298,7 +299,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 this.customCategory = todo.category;
             }
         } else {
-            this.selectedCategory = 'Other';
+            this.selectedCategory = '';
             this.isOtherCategory = false;
             this.customCategory = '';
         }

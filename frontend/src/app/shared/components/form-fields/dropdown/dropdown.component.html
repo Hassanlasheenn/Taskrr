@@ -12,7 +12,6 @@
             [ngClass]="getInputClasses()"
             [ngStyle]="customInputStyle"
         >
-            <option [value]="null">Select</option>
             <option *ngFor="let option of field?.options" [value]="option.key">
                 {{ option.value }}
             </option>

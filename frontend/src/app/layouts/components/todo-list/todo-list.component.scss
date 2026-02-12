@@ -16,11 +16,6 @@
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    &:hover {
-        box-shadow: var(--card-shadow-hover);
-        transform: translateY(-2px);
-    }
-
     .category-group-header {
         display: flex;
         align-items: center;
@@ -287,11 +282,6 @@
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--card-shadow-hover);
-    }
 
     &.completed {
         opacity: 0.7;

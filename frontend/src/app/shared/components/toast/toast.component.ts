@@ -24,7 +24,11 @@ export class ToastComponent implements OnInit, OnDestroy {
             });
     }
 
-    removeToast(id: string): void {
+    removeToast(id: string, event?: Event): void {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
         this.toastService.remove(id);
     }
 
