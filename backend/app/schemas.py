@@ -43,6 +43,8 @@ class UserRoleUpdate(BaseModel):
     role: Literal["user", "admin"]
 
 class LoginResponse(BaseModel):
+    token_type: str = "bearer"
+    access_token: Optional[str] = None  # Optional for backward compatibility, but included for header-based auth
     data: UserResponse
 
 
@@ -88,3 +90,27 @@ class TodoResponse(BaseModel):
 class TodoListResponse(BaseModel):
     todos: List[TodoResponse]
     total: int
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    user_id: int
+    todo_id: Optional[int] = None
+    message: str
+    is_read: bool
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @field_serializer('created_at')
+    def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        if value is None:
+            return None
+        return value.strftime('%Y-%m-%dT%H:%M:%S')
+
+
+class NotificationListResponse(BaseModel):
+    notifications: List[NotificationResponse]
+    total: int
+    unread_count: int

@@ -9,6 +9,7 @@ import { AuthHttpService } from "./auth-http.service";
     providedIn: 'root',
 })
 export class AuthService {
+    private readonly ACCESS_TOKEN_KEY = 'access_token';
     private readonly USER_ID_KEY = 'currentUserId';
     private readonly USER_DATA_KEY = 'currentUserData';
     private currentUserId: number | null = null;
@@ -51,10 +52,26 @@ export class AuthService {
         return userData?.role === 'admin';
     }
 
+    getToken(): string | null {
+        // First try sessionStorage (per-tab), then fall back to checking cookies via document.cookie
+        const token = sessionStorage.getItem(this.ACCESS_TOKEN_KEY);
+        if (token) {
+            return token;
+        }
+        // If not in sessionStorage, token is likely in cookies (handled by backend with withCredentials)
+        return null;
+    }
+
+    setToken(token: string): void {
+        if (token) {
+            sessionStorage.setItem(this.ACCESS_TOKEN_KEY, token);
+        }
+    }
+
     // ========== User ID Management ==========
     setCurrentUserId(userId: number): void {
         this.currentUserId = userId;
-        localStorage.setItem(this.USER_ID_KEY, userId.toString());
+        sessionStorage.setItem(this.USER_ID_KEY, userId.toString());
     }
 
     getCurrentUserId(): number | null {
@@ -67,7 +84,7 @@ export class AuthService {
     // ========== User Data Management ==========
     setCurrentUserData(userData: IUserResponse): void {
         this.currentUserData = userData;
-        localStorage.setItem(this.USER_DATA_KEY, JSON.stringify(userData));
+        sessionStorage.setItem(this.USER_DATA_KEY, JSON.stringify(userData));
     }
 
     getCurrentUserData(): IUserResponse | null {
@@ -84,8 +101,9 @@ export class AuthService {
     clearCurrentUser(): void {
         this.currentUserId = null;
         this.currentUserData = null;
-        localStorage.removeItem(this.USER_ID_KEY);
-        localStorage.removeItem(this.USER_DATA_KEY);
+        sessionStorage.removeItem(this.ACCESS_TOKEN_KEY);
+        sessionStorage.removeItem(this.USER_ID_KEY);
+        sessionStorage.removeItem(this.USER_DATA_KEY);
     }
 
     // ========== Private Helper Methods ==========
@@ -115,11 +133,11 @@ export class AuthService {
     }
 
     private loadUserIdFromStorage(): void {
-        const storedUserId = localStorage.getItem(this.USER_ID_KEY);
+        const storedUserId = sessionStorage.getItem(this.USER_ID_KEY);
         if (storedUserId) {
             const userId = Number.parseInt(storedUserId, 10);
             if (Number.isNaN(userId)) {
-                localStorage.removeItem(this.USER_ID_KEY);
+                sessionStorage.removeItem(this.USER_ID_KEY);
             } else {
                 this.currentUserId = userId;
             }
@@ -127,12 +145,12 @@ export class AuthService {
     }
 
     private loadUserDataFromStorage(): void {
-        const storedUserData = localStorage.getItem(this.USER_DATA_KEY);
+        const storedUserData = sessionStorage.getItem(this.USER_DATA_KEY);
         if (storedUserData) {
             try {
                 this.currentUserData = JSON.parse(storedUserData);
             } catch {
-                localStorage.removeItem(this.USER_DATA_KEY);
+                sessionStorage.removeItem(this.USER_DATA_KEY);
                 this.currentUserData = null;
             }
         }

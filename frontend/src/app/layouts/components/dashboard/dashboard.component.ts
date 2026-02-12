@@ -1,30 +1,41 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnInit, ViewChild } from "@angular/core";
+import { Component, OnInit, OnDestroy, ViewChild } from "@angular/core";
 import { Subject, takeUntil } from "rxjs";
 import { AuthService } from "../../../auth/services";
 import { TodoService } from "../../../core/services/todo.service";
-import { ITodoCreate, ITodoUpdate, ITodoResponse } from "../../../core/interfaces/todo.interface";
+import { NotificationService } from "../../../core/services/notification.service";
+import { ITodoCreate, ITodoUpdate } from "../../../core/interfaces/todo.interface";
 import { LoaderService } from "../../../core/services/loader.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
 import { TodoListComponent, ITodo } from "../todo-list/todo-list.component";
 import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.component";
-import { TodoFormComponent } from "../todo-form/todo-form.component";
 import { DashboardSideNavComponent } from "./components/dashboard-side-nav/dashboard-side-nav.component";
 import { CalendarComponent } from "./components/calendar/calendar.component";
 import { SearchBarComponent } from "./components/search-bar/search-bar.component";
 import { QuickFiltersComponent, QuickFilterType } from "./components/quick-filters/quick-filters.component";
 import { AdminPanelComponent } from "./components/admin-panel/admin-panel.component";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
+import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-form/todo-form.component";
 
 @Component({
     selector: 'app-dashboard',
     templateUrl: './dashboard.component.html',
     styleUrls: ['./dashboard.component.scss'],
     standalone: true,
-    imports: [CommonModule, TodoListComponent, SidebarComponent, TodoFormComponent, DashboardSideNavComponent, CalendarComponent, SearchBarComponent, QuickFiltersComponent, AdminPanelComponent],
+    imports: [
+        CommonModule, 
+        TodoListComponent, 
+        SidebarComponent, 
+        DashboardSideNavComponent, 
+        CalendarComponent, 
+        SearchBarComponent, 
+        QuickFiltersComponent, 
+        AdminPanelComponent,
+        TodoFormComponent
+    ],
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
     @ViewChild('todoForm') todoFormComponent!: TodoFormComponent;
     private readonly _destroy$ = new Subject<void>();
     
@@ -38,10 +49,11 @@ export class DashboardComponent implements OnInit {
     searchQuery: string = '';
     activeFilter: QuickFilterType = 'all';
     selectedCategory: string | null = null;
-    
+
     constructor(
         private readonly _authService: AuthService,
         private readonly _todoService: TodoService,
+        private readonly _notificationService: NotificationService,
         private readonly _loaderService: LoaderService,
         private readonly _toastService: ToastService,
         private readonly _confirmationDialog: ConfirmationDialogService
@@ -50,22 +62,37 @@ export class DashboardComponent implements OnInit {
     ngOnInit(): void {
         this.userData = this._authService.getCurrentUserData();
         this.loadTodos();
+
+        this._notificationService.notificationEvents$
+            .pipe(takeUntil(this._destroy$))
+            .subscribe((notification) => {
+                // Refresh todo list for any notification (create, update, delete, assign)
+                // Deleted todos have todo_id: null, but we still need to refresh
+                this.loadTodos(false);
+            });
     }
 
-    loadTodos(): void {
+    loadTodos(showLoader: boolean = true): void {
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
 
-        this._loaderService.show();
+        if (showLoader) {
+            this._loaderService.show();
+        }
+        
         this._todoService.getTodos(userId).subscribe({
             next: (response) => {
                 this.todos = response.todos as ITodo[];
                 this.totalTodos = response.total;
-                this._loaderService.hide();
+                if (showLoader) {
+                    this._loaderService.hide();
+                }
             },
             error: (error) => {
                 this._toastService.error(error?.error?.detail || 'Failed to load todos');
-                this._loaderService.hide();
+                if (showLoader) {
+                    this._loaderService.hide();
+                }
             }
         });
     }
@@ -168,11 +195,12 @@ export class DashboardComponent implements OnInit {
         this.editingTodo = todo;
         this.isSidebarOpen = true;
         
+        // Wait for sidebar to open and form component to be ready
         setTimeout(() => {
             if (this.todoFormComponent) {
                 this.todoFormComponent.populateForm(todo);
             }
-        }, 100);
+        }, 200);
     }
 
     onTodoUpdate(event: { id: number; data: ITodoUpdate }): void {
@@ -291,5 +319,10 @@ export class DashboardComponent implements OnInit {
 
     onCategorySelect(category: string | null): void {
         this.selectedCategory = category;
+    }
+
+    ngOnDestroy(): void {
+        this._destroy$.next();
+        this._destroy$.complete();
     }
 }

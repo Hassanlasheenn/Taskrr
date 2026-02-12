@@ -4,3 +4,4 @@ export { ConfirmationDialogComponent } from './confirmation-dialog/confirmation-
 export { UploadPhotoComponent } from './form-fields/upload-photo/upload-photo.component';
 export { DynamicFormComponent } from './dynamic-form/dynamic-form.component';
 export { NotFoundComponent } from './not-found/not-found.component';
+export { NotificationsComponent } from './notifications/notifications.component';

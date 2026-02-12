@@ -8,6 +8,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     const router = inject(Router);
     const authService = inject(AuthService);
 
+    // Add Authorization header if token exists (for multi-tab support)
+    const token = authService.getToken();
+    if (token && !req.headers.has('Authorization')) {
+        req = req.clone({
+            setHeaders: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+    }
+
     return next(req).pipe(
         catchError((error: HttpErrorResponse) => {
             if (error.status === 401) {

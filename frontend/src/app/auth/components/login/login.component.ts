@@ -96,6 +96,9 @@ export class LoginComponent implements OnInit, OnDestroy {
         .subscribe({
             next: (res: ILoginResponse) => {
                 this.errorSummary = null;
+                if (res.access_token) {
+                    this._authService.setToken(res.access_token);
+                }
                 if (res.data?.id) {
                     this._authService.setCurrentUserId(res.data.id);
                     this._authService.setCurrentUserData(res.data);

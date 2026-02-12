@@ -178,6 +178,9 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
             .subscribe({
                 next: (res: ILoginResponse) => {
                     this.loginError = null;
+                    if (res.access_token) {
+                        this._authService.setToken(res.access_token);
+                    }
                     if (res.data?.id) {
                         this._authService.setCurrentUserId(res.data.id);
                         this._authService.setCurrentUserData(res.data);

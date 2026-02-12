@@ -19,4 +19,16 @@ export const API_URLS = {
         deleteUser: `${API_BASE_URL}/admin/users`,
         updateUserRole: `${API_BASE_URL}/admin/users`,
     },
+    notifications: {
+        getNotifications: `${API_BASE_URL}/notifications`,
+        markAsRead: (id: number) => `${API_BASE_URL}/notifications/${id}/read`,
+        markAllAsRead: `${API_BASE_URL}/notifications/read-all`,
+        deleteNotification: (id: number) => `${API_BASE_URL}/notifications/${id}`,
+        websocket: (userId: number) => {
+            // Use backend API URL for WebSocket connection
+            const apiUrl = new URL(API_BASE_URL);
+            const protocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+            return `${protocol}//${apiUrl.host}/notifications/ws/${userId}`;
+        },
+    },
 };

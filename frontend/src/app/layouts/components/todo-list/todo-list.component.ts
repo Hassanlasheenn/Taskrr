@@ -1,5 +1,6 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from "@angular/core";
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges } from "@angular/core";
+import { AuthService } from "../../../auth/services";
 
 export interface ITodo {
     id: number;
@@ -38,6 +39,12 @@ export class TodoListComponent implements OnInit, OnChanges {
     @Output() editTodo = new EventEmitter<ITodo>();
 
     expandedCategories: Set<string | null> = new Set();
+
+    constructor(private readonly _authService: AuthService) {}
+
+    get isAdmin(): boolean {
+        return this._authService.isAdmin();
+    }
 
     get groupedTodos(): { category: string | null; todos: ITodo[] }[] {
         if (!this.groupByCategory) {

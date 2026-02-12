@@ -7,7 +7,15 @@ from .config import SECRET_KEY, ALGORITHM
 
 
 def get_current_user(request: Request, db: Session = Depends(database.get_db)) -> models.User:
-    token = request.cookies.get("access_token")
+    # Try to get token from Authorization header first (for multi-tab support)
+    token = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split("Bearer ")[1]
+    
+    # Fall back to cookie if no Authorization header (backward compatibility)
+    if not token:
+        token = request.cookies.get("access_token")
     
     if not token:
         raise HTTPException(

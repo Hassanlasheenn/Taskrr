@@ -1,0 +1,55 @@
+<div class="notifications-container">
+    <button 
+        type="button" 
+        class="notifications-toggle"
+        (click)="toggleDropdown()"
+        [attr.aria-expanded]="isOpen"
+        aria-label="Notifications"
+    >
+        <i class="bi bi-bell"></i>
+        <span *ngIf="unreadCount > 0" class="notification-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+    </button>
+
+    <div *ngIf="isOpen" class="notifications-dropdown">
+        <div class="notifications-header">
+            <h3>Notifications</h3>
+            <button 
+                *ngIf="unreadCount > 0"
+                type="button"
+                class="mark-all-read-btn"
+                (click)="markAllAsRead()"
+            >
+                Mark all as read
+            </button>
+        </div>
+
+        <div class="notifications-list">
+            <div *ngIf="notifications.length === 0" class="no-notifications">
+                <i class="bi bi-bell-slash"></i>
+                <p>No notifications</p>
+            </div>
+
+            <div 
+                *ngFor="let notification of notifications; trackBy: trackById"
+                class="notification-item"
+                [class.unread]="!notification.is_read"
+                (click)="markAsRead(notification)"
+                (keydown)="onNotificationKeyDown($event, notification)"
+                [attr.aria-label]="'Notification: ' + notification.message"
+            >
+                <div class="notification-content">
+                    <p class="notification-message">{{ notification.message }}</p>
+                    <span class="notification-time">{{ formatDate(notification.created_at) }}</span>
+                </div>
+                <button
+                    type="button"
+                    class="delete-notification-btn"
+                    (click)="deleteNotification(notification.id, $event)"
+                    aria-label="Delete notification"
+                >
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
