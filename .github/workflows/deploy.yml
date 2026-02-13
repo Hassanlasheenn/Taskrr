@@ -70,29 +70,46 @@ jobs:
         env:
           API_BASE_URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.yourdomain.com' }}
         run: |
-          # Ensure scripts directory exists
-          mkdir -p scripts
+          echo "🔧 Preparing to set API URL: $API_BASE_URL"
           
-          # Check if script exists
-          if [ ! -f scripts/replace-api-url.js ]; then
-            echo "❌ Error: replace-api-url.js not found"
+          # Check if environment file exists
+          if [ ! -f src/environments/environment.prod.ts ]; then
+            echo "❌ Error: environment.prod.ts not found"
             exit 1
           fi
           
-          # Make script executable
-          chmod +x scripts/replace-api-url.js || true
+          # Show current API URL before replacement
+          echo "📄 Current API URL in environment.prod.ts:"
+          grep "apiBaseUrl" src/environments/environment.prod.ts || echo "apiBaseUrl not found"
           
-          # Replace API URL in environment.prod.ts before building
-          echo "🔧 Setting API URL to: $API_BASE_URL"
-          node scripts/replace-api-url.js "$API_BASE_URL"
+          # Try to use the script if it exists, otherwise do manual replacement
+          if [ -f scripts/replace-api-url.js ]; then
+            echo "📜 Using replace-api-url.js script"
+            if node scripts/replace-api-url.js "$API_BASE_URL"; then
+              echo "✅ Script executed successfully"
+            else
+              echo "⚠️  Script failed, trying manual replacement..."
+              # Fallback: manual replacement using sed
+              sed -i "s|apiBaseUrl: '.*'|apiBaseUrl: '$API_BASE_URL'|g" src/environments/environment.prod.ts || \
+              sed -i "s|apiBaseUrl: \".*\"|apiBaseUrl: '$API_BASE_URL'|g" src/environments/environment.prod.ts
+              echo "✅ Manual replacement completed"
+            fi
+          else
+            echo "⚠️  Script not found, using manual replacement"
+            # Manual replacement using sed
+            sed -i "s|apiBaseUrl: '.*'|apiBaseUrl: '$API_BASE_URL'|g" src/environments/environment.prod.ts || \
+            sed -i "s|apiBaseUrl: \".*\"|apiBaseUrl: '$API_BASE_URL'|g" src/environments/environment.prod.ts
+            echo "✅ Manual replacement completed"
+          fi
           
           # Verify the replacement
-          if grep -q "apiBaseUrl: '$API_BASE_URL'" src/environments/environment.prod.ts; then
-            echo "✅ API URL successfully set in environment.prod.ts"
+          echo "📄 Verifying replacement..."
+          if grep -q "apiBaseUrl:" src/environments/environment.prod.ts; then
+            echo "✅ API URL found in environment.prod.ts:"
+            grep "apiBaseUrl" src/environments/environment.prod.ts
           else
-            echo "⚠️  Warning: Could not verify API URL replacement"
-            echo "Current content:"
-            grep "apiBaseUrl" src/environments/environment.prod.ts || true
+            echo "❌ Error: apiBaseUrl not found after replacement"
+            exit 1
           fi
 
       - name: Build Angular application (Production)
@@ -266,7 +283,7 @@ jobs:
 
   deploy:
     name: Deploy Application
-    needs: [detect-changes, deploy-database]
+    needs: [detect-changes]
     if: |
       (needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.backend == 'true') &&
       github.event_name == 'push' &&
@@ -401,17 +418,52 @@ EOF
           }
           
           echo "🚀 Deploying to Vercel..."
+          echo "📦 Project ID: $VERCEL_PROJECT_ID"
+          echo "🏢 Organization ID: $VERCEL_ORG_ID"
+          echo "📁 Working directory: $(pwd)"
+          echo "📂 Contents:"
+          ls -la | head -10
+          
           # Deploy as static files (no build) - use --prebuilt to skip build
           # The vercel.json in this directory should prevent any build attempts
-          vercel deploy --prod --yes --token $VERCEL_TOKEN --prebuilt --force || {
-            echo "❌ Error: Vercel deployment with --prebuilt failed"
-            echo "Attempting alternative deployment method..."
-            # Try deploying with explicit no-build configuration
-            vercel deploy --prod --yes --token $VERCEL_TOKEN --force
-          }
+          echo "🔄 Running: vercel deploy --prod --yes --token [HIDDEN] --prebuilt --force"
+          DEPLOYMENT_OUTPUT=$(vercel deploy --prod --yes --token $VERCEL_TOKEN --prebuilt --force 2>&1)
+          DEPLOYMENT_EXIT_CODE=$?
           
-          echo "✅ Deployment completed!"
-        continue-on-error: true
+          echo "$DEPLOYMENT_OUTPUT"
+          
+          if [ $DEPLOYMENT_EXIT_CODE -eq 0 ]; then
+            echo "✅ Deployment completed successfully!"
+            
+            # Extract deployment URL from output
+            DEPLOYMENT_URL=$(echo "$DEPLOYMENT_OUTPUT" | grep -oE 'https://[a-zA-Z0-9-]+\.vercel\.app' | head -1 || echo "")
+            if [ -n "$DEPLOYMENT_URL" ]; then
+              echo "🌐 Deployment URL: $DEPLOYMENT_URL"
+              echo "::notice title=Deployment Success::Frontend deployed to $DEPLOYMENT_URL"
+            else
+              echo "ℹ️  Check Vercel dashboard for deployment URL"
+              echo "🔗 https://vercel.com/$VERCEL_ORG_ID/$VERCEL_PROJECT_ID"
+            fi
+          else
+            echo "❌ Error: Vercel deployment failed with exit code $DEPLOYMENT_EXIT_CODE"
+            echo "Attempting alternative deployment method (without --prebuilt)..."
+            
+            # Try deploying without --prebuilt flag
+            vercel deploy --prod --yes --token $VERCEL_TOKEN --force
+            
+            if [ $? -eq 0 ]; then
+              echo "✅ Alternative deployment method succeeded"
+            else
+              echo "❌ All deployment methods failed"
+              echo ""
+              echo "Troubleshooting steps:"
+              echo "1. Verify VERCEL_TOKEN is valid (Settings → Tokens in Vercel)"
+              echo "2. Verify VERCEL_PROJECT_ID matches your project"
+              echo "3. Verify VERCEL_ORG_ID matches your team/org"
+              echo "4. Check Vercel dashboard: https://vercel.com"
+              exit 1
+            fi
+          fi
 
       # Alternative Method 2: Use Vercel Action (deploys from source)
       # Uncomment this if Method 1 doesn't work and comment out Method 1 above
