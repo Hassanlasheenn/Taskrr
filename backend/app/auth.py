@@ -48,7 +48,6 @@ def register(user: schemas.UserCreate, response: Response, db: Session = Depends
     db.commit()
     db.refresh(new_user)
     
-    # Create access token and set cookie (same as login)
     user_role = getattr(new_user, 'role', 'user')
     access_token = create_access_token(data={"sub": new_user.email, "role": user_role})
     

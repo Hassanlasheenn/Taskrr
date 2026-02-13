@@ -24,7 +24,6 @@ export class AuthService {
         this.ensureUserDataLoaded();
     }
 
-    // ========== API Methods (delegated to AuthHttpService) ==========
     registerUser(payload: IRegisterPayload): Observable<IRegisterResponse> {
         return this._authHttpService.registerUser(payload);
     }
@@ -38,14 +37,12 @@ export class AuthService {
         return this._authHttpService.logout();
     }
 
-    // ========== Authentication State ==========
     isAuthenticated(): boolean {
         return this.getCurrentUserId() !== null;
     }
 
     isAdmin(): boolean {
         const userData = this.getCurrentUserData();
-        // If userData doesn't have role, try to fetch fresh data
         if (userData && !userData.role && this.currentUserId) {
             this.fetchUserData();
         }
