@@ -389,7 +389,6 @@ async def delete_todo(
     user_id: int,
     db: Session = Depends(database.get_db)
 ):
-    """Delete a todo by ID and reorder remaining todos"""
     todo = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
     if not todo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
