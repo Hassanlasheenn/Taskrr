@@ -302,7 +302,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         
         this.isCompleted = todo.completed || false;
         
-        // Prepare form values
         const formValue: any = {
             title: todo.title || '',
             description: todo.description || ''

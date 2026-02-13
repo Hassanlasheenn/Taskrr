@@ -571,9 +571,42 @@ jobs:
           echo "📦 Project ID: $VERCEL_PROJECT_ID"
           echo "🏢 Organization ID: $VERCEL_ORG_ID"
           
+          # Verify project exists by checking Vercel API
+          echo "🔍 Verifying project access..."
+          PROJECT_CHECK=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID" 2>&1)
+          
+          if echo "$PROJECT_CHECK" | grep -q '"id"'; then
+            echo "✅ Project found and accessible"
+            PROJECT_NAME=$(echo "$PROJECT_CHECK" | grep -o '"name":"[^"]*"' | head -1 | cut -d'"' -f4)
+            echo "📝 Project name: $PROJECT_NAME"
+          elif echo "$PROJECT_CHECK" | grep -q "NOT_FOUND\|not found\|404"; then
+            echo "❌ Error: Project not found with ID: $VERCEL_PROJECT_ID"
+            echo ""
+            echo "🔧 Troubleshooting steps:"
+            echo "1. Verify the project exists in Vercel dashboard:"
+            echo "   https://vercel.com/$VERCEL_ORG_ID"
+            echo ""
+            echo "2. Get the correct Project ID:"
+            echo "   - Go to: https://vercel.com/$VERCEL_ORG_ID/[your-project-name]/settings/general"
+            echo "   - Find 'Project ID' in the General settings"
+            echo ""
+            echo "3. Or create a new project and link it:"
+            echo "   - Create project in Vercel dashboard"
+            echo "   - Copy the Project ID from settings"
+            echo ""
+            exit 1
+          else
+            echo "⚠️  Could not verify project (might be a token issue)"
+            echo "📋 API response: $PROJECT_CHECK"
+          fi
+          
           # Create .vercel directory with project configuration
           mkdir -p .vercel
           echo "{\"projectId\":\"$VERCEL_PROJECT_ID\",\"orgId\":\"$VERCEL_ORG_ID\"}" > .vercel/project.json
+          
+          echo "✅ Created .vercel/project.json"
+          cat .vercel/project.json
           
           echo "📁 Working directory: $(pwd)"
           echo "📂 Contents:"

@@ -349,7 +349,6 @@ async def update_todo(
         ).first()
         
         if assigned_user and assigned_user.id != user_id and assigned_user.role != models.UserRole.ADMIN.value:
-            # Map field names to user-friendly names
             field_names = {
                 'title': 'title',
                 'description': 'description',
