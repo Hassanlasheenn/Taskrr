@@ -395,21 +395,7 @@ jobs:
             echo "✅ Copied vercel.json to build output"
           else
             echo "⚠️  vercel.json not found, creating one that disables build"
-            cat > frontend-dist/vercel.json << 'EOF'
-{
-  "version": 2,
-  "buildCommand": "",
-  "outputDirectory": ".",
-  "installCommand": "",
-  "framework": null,
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
-EOF
+            echo '{"version":2,"buildCommand":"","outputDirectory":".","installCommand":"","framework":null,"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}' > frontend-dist/vercel.json
           fi
           
           # Verify vercel.json
