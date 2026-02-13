@@ -7,7 +7,6 @@ import { IUserResponse } from "../../../auth/interfaces";
 import { ProfileSections } from "../../enums/profile-sections.enum";
 import { ProfileSideNavComponent } from "./components/profile-side-nav/profile-side-nav.component";
 import { PersonalDataComponent } from "./components/personal-data/personal-data.component";
-import { CardComponent } from "../../../shared/components/card/card.component";
 
 @Component({
     selector: 'app-profile',
@@ -17,8 +16,7 @@ import { CardComponent } from "../../../shared/components/card/card.component";
     imports: [
         CommonModule,
         ProfileSideNavComponent,
-        PersonalDataComponent,
-        CardComponent
+        PersonalDataComponent
     ],
 })
 export class ProfileComponent implements OnInit {
