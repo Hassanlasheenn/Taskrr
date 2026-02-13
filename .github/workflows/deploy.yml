@@ -204,31 +204,72 @@ jobs:
       - name: Verify build output
         working-directory: ./frontend
         run: |
-          # Check if build output exists
-          if [ ! -d "dist/frontend" ]; then
-            echo "❌ Error: Build output directory not found"
+          echo "🔍 Checking build output structure..."
+          echo "📁 Contents of dist directory:"
+          ls -la dist/ 2>/dev/null || echo "dist directory not found"
+          
+          # Check multiple possible output locations
+          BUILD_OUTPUT=""
+          if [ -d "dist/frontend" ]; then
+            BUILD_OUTPUT="dist/frontend"
+            echo "✅ Found output at: dist/frontend"
+          elif [ -d "dist/frontend/browser" ]; then
+            BUILD_OUTPUT="dist/frontend/browser"
+            echo "✅ Found output at: dist/frontend/browser"
+          elif [ -d "dist/browser" ]; then
+            BUILD_OUTPUT="dist/browser"
+            echo "✅ Found output at: dist/browser"
+          elif [ -f "dist/index.html" ]; then
+            BUILD_OUTPUT="dist"
+            echo "✅ Found output at: dist"
+          else
+            echo "❌ Error: Build output not found in expected locations"
+            echo "Searching for index.html..."
+            find dist -name "index.html" -type f 2>/dev/null || echo "No index.html found"
+            echo ""
+            echo "Full dist structure:"
+            find dist -type f -o -type d | head -30
             exit 1
           fi
           
           # Check for essential files
-          if [ ! -f "dist/frontend/index.html" ]; then
-            echo "❌ Error: index.html not found in build output"
+          if [ ! -f "$BUILD_OUTPUT/index.html" ]; then
+            echo "❌ Error: index.html not found in $BUILD_OUTPUT"
+            echo "Files in $BUILD_OUTPUT:"
+            ls -la "$BUILD_OUTPUT/" | head -20
             exit 1
           fi
           
-          echo "✅ Build output verified:"
-          echo "📁 Files in dist/frontend:"
-          ls -la dist/frontend/ | head -20
+          echo "✅ Build output verified at: $BUILD_OUTPUT"
+          echo "📁 Files in $BUILD_OUTPUT:"
+          ls -la "$BUILD_OUTPUT/" | head -20
           
           # Check file sizes
           echo "📊 Build output size:"
-          du -sh dist/frontend/
+          du -sh "$BUILD_OUTPUT/"
+          
+          # Save the output path for later steps
+          echo "BUILD_OUTPUT_PATH=$BUILD_OUTPUT" >> $GITHUB_ENV
 
+      - name: Prepare frontend artifacts for upload
+        working-directory: ./frontend
+        run: |
+          # Use the detected build output path
+          BUILD_OUTPUT="${BUILD_OUTPUT_PATH:-dist/frontend}"
+          echo "📦 Preparing artifacts from: $BUILD_OUTPUT"
+          
+          # Create a consistent structure for deployment
+          mkdir -p ../frontend-dist
+          cp -r "$BUILD_OUTPUT"/* ../frontend-dist/ 2>/dev/null || cp -r "$BUILD_OUTPUT"/. ../frontend-dist/ 2>/dev/null || true
+          
+          echo "✅ Artifacts prepared in frontend-dist"
+          ls -la ../frontend-dist/ | head -10
+          
       - name: Upload frontend build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: frontend/dist/frontend
+          path: frontend-dist
           retention-days: 7
           
       - name: Verify artifact structure
@@ -371,10 +412,11 @@ jobs:
 
   deploy:
     name: Deploy Application
-    needs: [detect-changes]
+    needs: [detect-changes, build-frontend, build-backend, deploy-database]
     if: |
+      always() &&
       (needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.backend == 'true') &&
-      github.event_name == 'push' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     steps:
@@ -382,11 +424,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download frontend artifacts
-        if: needs.detect-changes.outputs.frontend == 'true'
+        if: |
+          needs.detect-changes.outputs.frontend == 'true' &&
+          needs.build-frontend.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
           path: frontend-dist
+          continue-on-error: false
           
       - name: Verify and fix artifact structure
         if: needs.detect-changes.outputs.frontend == 'true'
@@ -420,11 +465,14 @@ jobs:
           echo "✅ index.html found at: frontend-dist/index.html"
 
       - name: Download backend artifacts
-        if: needs.detect-changes.outputs.backend == 'true'
+        if: |
+          needs.detect-changes.outputs.backend == 'true' &&
+          needs.build-backend.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: backend-artifact
           path: backend-artifact
+          continue-on-error: false
 
       - name: Display deployment summary
         run: |

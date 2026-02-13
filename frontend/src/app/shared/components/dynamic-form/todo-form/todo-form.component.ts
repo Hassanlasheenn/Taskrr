@@ -284,10 +284,8 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             this.updateUserDropdownField();
         }
         
-        // Set priority first (before form patching)
         this.selectedPriority = (todo.priority || null) as PriorityLevel | null;
         
-        // Set category state
         if (todo.category) {
             if (this.availableCategories.includes(todo.category)) {
                 this.selectedCategory = todo.category;

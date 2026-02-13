@@ -358,7 +358,6 @@ async def update_todo(
                 'completed': 'completion status'
             }
             
-            # Get user-friendly field names for changed fields
             updated_field_names = [field_names.get(field, field) for field in changed_fields]
             
             if updated_field_names:
