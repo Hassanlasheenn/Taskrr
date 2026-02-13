@@ -70,15 +70,59 @@ jobs:
         env:
           API_BASE_URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.yourdomain.com' }}
         run: |
+          # Ensure scripts directory exists
+          mkdir -p scripts
+          
+          # Check if script exists
+          if [ ! -f scripts/replace-api-url.js ]; then
+            echo "❌ Error: replace-api-url.js not found"
+            exit 1
+          fi
+          
+          # Make script executable
+          chmod +x scripts/replace-api-url.js || true
+          
           # Replace API URL in environment.prod.ts before building
+          echo "🔧 Setting API URL to: $API_BASE_URL"
           node scripts/replace-api-url.js "$API_BASE_URL"
-          echo "✅ API URL set to: $API_BASE_URL"
+          
+          # Verify the replacement
+          if grep -q "apiBaseUrl: '$API_BASE_URL'" src/environments/environment.prod.ts; then
+            echo "✅ API URL successfully set in environment.prod.ts"
+          else
+            echo "⚠️  Warning: Could not verify API URL replacement"
+            echo "Current content:"
+            grep "apiBaseUrl" src/environments/environment.prod.ts || true
+          fi
 
       - name: Build Angular application (Production)
         working-directory: ./frontend
         run: npm run build -- --configuration production
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
+
+      - name: Verify build output
+        working-directory: ./frontend
+        run: |
+          # Check if build output exists
+          if [ ! -d "dist/frontend" ]; then
+            echo "❌ Error: Build output directory not found"
+            exit 1
+          fi
+          
+          # Check for essential files
+          if [ ! -f "dist/frontend/index.html" ]; then
+            echo "❌ Error: index.html not found in build output"
+            exit 1
+          fi
+          
+          echo "✅ Build output verified:"
+          echo "📁 Files in dist/frontend:"
+          ls -la dist/frontend/ | head -20
+          
+          # Check file sizes
+          echo "📊 Build output size:"
+          du -sh dist/frontend/
 
       - name: Upload frontend build artifacts
         uses: actions/upload-artifact@v4
@@ -272,16 +316,37 @@ jobs:
       - name: Prepare Vercel deployment
         if: needs.detect-changes.outputs.frontend == 'true'
         run: |
-          # Copy vercel.json to the build output directory
-          cp frontend/vercel.json frontend-dist/vercel.json || echo "vercel.json not found, will create one"
+          # Verify build output exists
+          if [ ! -d "frontend-dist" ]; then
+            echo "❌ Error: frontend-dist directory not found"
+            exit 1
+          fi
           
-          # Create vercel.json if it doesn't exist
-          if [ ! -f frontend-dist/vercel.json ]; then
+          # Check if index.html exists
+          if [ ! -f "frontend-dist/index.html" ]; then
+            echo "❌ Error: index.html not found in build output"
+            echo "Contents of frontend-dist:"
+            ls -la frontend-dist/ || true
+            exit 1
+          fi
+          
+          echo "✅ Build output verified:"
+          ls -la frontend-dist/ | head -10
+          
+          # Copy vercel.json to the build output directory
+          if [ -f "frontend/vercel.json" ]; then
+            cp frontend/vercel.json frontend-dist/vercel.json
+            echo "✅ Copied vercel.json to build output"
+          else
+            echo "⚠️  vercel.json not found, creating default one"
             echo '{"buildCommand": null, "outputDirectory": ".", "framework": null, "rewrites": [{"source": "/(.*)", "destination": "/index.html"}]}' > frontend-dist/vercel.json
           fi
           
-          # Set production environment variables for Vercel
-          echo "✅ Frontend build ready for deployment with production API: ${{ secrets.PRODUCTION_API_URL || 'https://api.yourdomain.com' }}"
+          # Verify vercel.json
+          cat frontend-dist/vercel.json
+          
+          echo "✅ Frontend build ready for deployment"
+          echo "📦 Production API URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.yourdomain.com' }}"
 
       - name: Deploy to Vercel (Pre-built Static Files)
         if: needs.detect-changes.outputs.frontend == 'true'
@@ -291,11 +356,35 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          # Link the project (only needed first time, but safe to run multiple times)
-          vercel link --yes --token $VERCEL_TOKEN --project $VERCEL_PROJECT_ID --scope $VERCEL_ORG_ID || true
+          # Verify required secrets
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "❌ Error: VERCEL_TOKEN secret is not set"
+            exit 1
+          fi
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "❌ Error: VERCEL_PROJECT_ID secret is not set"
+            exit 1
+          fi
+          if [ -z "$VERCEL_ORG_ID" ]; then
+            echo "❌ Error: VERCEL_ORG_ID secret is not set"
+            exit 1
+          fi
           
+          echo "🔗 Linking Vercel project..."
+          # Link the project (only needed first time, but safe to run multiple times)
+          vercel link --yes --token $VERCEL_TOKEN --project $VERCEL_PROJECT_ID --scope $VERCEL_ORG_ID || {
+            echo "⚠️  Warning: Project linking failed, continuing anyway..."
+          }
+          
+          echo "🚀 Deploying to Vercel..."
           # Deploy as static files (no build)
-          vercel deploy --prod --yes --token $VERCEL_TOKEN --prebuilt
+          vercel deploy --prod --yes --token $VERCEL_TOKEN --prebuilt || {
+            echo "❌ Error: Vercel deployment failed"
+            echo "Trying without --prebuilt flag..."
+            vercel deploy --prod --yes --token $VERCEL_TOKEN
+          }
+          
+          echo "✅ Deployment completed!"
         continue-on-error: true
 
       # Alternative Method 2: Use Vercel Action (deploys from source)
