@@ -104,7 +104,8 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./frontend
@@ -218,8 +219,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: backend/requirements.txt
+          # Cache disabled since requirements.txt might not exist
+          # Will install dependencies manually
 
       - name: Install dependencies
         working-directory: ./backend
@@ -581,11 +582,25 @@ jobs:
       # Deploy Backend to Railway (Recommended for FastAPI)
       - name: Deploy Backend to Railway
         if: needs.detect-changes.outputs.backend == 'true'
-        uses: bervProject/railway-deploy@v1.0.0
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          service: backend
-          detach: true
+        run: |
+          echo "🚀 Deploying backend to Railway..."
+          echo "⚠️  Railway deployment requires Railway CLI or API setup"
+          echo ""
+          echo "Option 1: Use Railway CLI"
+          echo "  - Install: npm install -g @railway/cli"
+          echo "  - Login: railway login"
+          echo "  - Deploy: railway up"
+          echo ""
+          echo "Option 2: Use Railway API"
+          echo "  - Set RAILWAY_TOKEN secret"
+          echo "  - Use Railway API to trigger deployment"
+          echo ""
+          echo "Option 3: Use Railway GitHub integration"
+          echo "  - Connect Railway to GitHub in Railway dashboard"
+          echo "  - Railway will auto-deploy on push"
+          echo ""
+          echo "📝 For now, skipping Railway deployment"
+          echo "   Configure Railway deployment manually or use Railway's GitHub integration"
         continue-on-error: true
 
       # Alternative: Deploy Backend to Render
