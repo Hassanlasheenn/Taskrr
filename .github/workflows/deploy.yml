@@ -25,23 +25,70 @@ jobs:
     name: Detect Changes
     runs-on: ubuntu-latest
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.set-outputs.outputs.frontend }}
+      backend: ${{ steps.set-outputs.outputs.backend }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0  # Fetch full history for better change detection
+
+      - name: Check if first push
+        id: first-push
+        run: |
+          # Check if this is the first push (no previous commit)
+          if [ -z "${{ github.event.before }}" ] || [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
+            echo "first=true" >> $GITHUB_OUTPUT
+            echo "🚀 First push detected - will build and deploy everything"
+          else
+            echo "first=false" >> $GITHUB_OUTPUT
+            echo "📝 Comparing against commit: ${{ github.event.before }}"
+          fi
 
       - name: Detect changes
         uses: dorny/paths-filter@v2
         id: filter
+        if: steps.first-push.outputs.first != 'true'
         with:
+          base: ${{ github.event.before }}
           filters: |
             frontend:
               - 'frontend/**'
             backend:
               - 'backend/**'
+          list-files: shell
+          
+      - name: Set outputs (first push or detected changes)
+        id: set-outputs
+        run: |
+          if [ "${{ steps.first-push.outputs.first }}" == "true" ]; then
+            # First push - build and deploy everything
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "✅ First deployment: Building frontend and backend"
+          else
+            # Use detected changes
+            echo "frontend=${{ steps.filter.outputs.frontend }}" >> $GITHUB_OUTPUT
+            echo "backend=${{ steps.filter.outputs.backend }}" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Debug - Show detected changes
+        run: |
+          echo "🔍 Change Detection Results:"
+          echo "Is first push: ${{ steps.first-push.outputs.first }}"
+          echo "Frontend changes detected: ${{ steps.set-outputs.outputs.frontend }}"
+          echo "Backend changes detected: ${{ steps.set-outputs.outputs.backend }}"
+          if [ "${{ steps.first-push.outputs.first }}" != "true" ]; then
+            echo ""
+            echo "Frontend files changed:"
+            echo "${{ steps.filter.outputs.frontend_files }}"
+            echo ""
+            echo "Backend files changed:"
+            echo "${{ steps.filter.outputs.backend_files }}"
+            echo ""
+            echo "All changed files:"
+            git diff --name-only ${{ github.event.before }} HEAD || echo "No previous commit to compare"
+          fi
 
   build-frontend:
     name: Build Frontend
