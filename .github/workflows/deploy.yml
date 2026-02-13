@@ -97,7 +97,7 @@ jobs:
 
       - name: Build Angular application (Production)
         working-directory: ./frontend
-        run: npm run build -- --configuration production
+        run: npm run build
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
