@@ -4,13 +4,16 @@ services:
   sqlserver:
     image: mcr.microsoft.com/azure-sql-edge:latest
     container_name: todo_app_sqlserver
-    platform: linux/arm64
+    # Platform will be auto-detected, but can be overridden via environment variable
+    # For Intel Macs/Windows: remove platform line or set to linux/amd64
+    # For Apple Silicon (M1/M2/M3): use linux/arm64
+    platform: ${DOCKER_PLATFORM:-linux/arm64}
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
       MSSQL_PID: "Developer"
     ports:
-      - "1433:1433"
+      - "${SQL_SERVER_PORT:-1433}:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
@@ -18,8 +21,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     restart: unless-stopped
+    networks:
+      - todo_app_network
 
 volumes:
   sqlserver_data:
     driver: local
+
+networks:
+  todo_app_network:
+    driver: bridge
