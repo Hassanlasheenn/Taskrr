@@ -318,7 +318,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             }
         }
         
-        // Use setTimeout to ensure form is ready and DOM is updated
         setTimeout(() => {
             if (this.form) {
                 // Patch all form values at once
