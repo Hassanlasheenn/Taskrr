@@ -247,47 +247,44 @@ jobs:
             pip install fastapi uvicorn sqlalchemy pyodbc python-dotenv argon2-cffi PyJWT
           fi
 
-      # Option 1: Run migrations for Azure SQL Database
-      - name: Run Database Migrations (Azure SQL)
-        if: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+      # Run database migrations
+      # Configure which database to use by setting the appropriate secret
+      - name: Run Database Migrations
         env:
-          DATABASE_URL: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+          RENDER_DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
+          AWS_RDS_CONNECTION_STRING: ${{ secrets.AWS_RDS_CONNECTION_STRING }}
         run: |
-          echo "Running migrations for Azure SQL Database..."
-          # Add your migration command here
-          # python -m alembic upgrade head
-          # Or use your custom migration script
-          echo "Migrations completed (placeholder - add your migration command)"
-
-      # Option 2: Run migrations for Railway database
-      - name: Run Database Migrations (Railway)
-        if: ${{ secrets.RAILWAY_DATABASE_URL }}
-        env:
-          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-        run: |
-          echo "Running migrations for Railway database..."
-          # Add your migration command here
-          echo "Migrations completed (placeholder - add your migration command)"
-
-      # Option 3: Run migrations for Render database
-      - name: Run Database Migrations (Render)
-        if: ${{ secrets.RENDER_DATABASE_URL }}
-        env:
-          DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
-        run: |
-          echo "Running migrations for Render database..."
-          # Add your migration command here
-          echo "Migrations completed (placeholder - add your migration command)"
-
-      # Option 4: Run migrations for AWS RDS
-      - name: Run Database Migrations (AWS RDS)
-        if: ${{ secrets.AWS_RDS_CONNECTION_STRING }}
-        env:
-          DATABASE_URL: ${{ secrets.AWS_RDS_CONNECTION_STRING }}
-        run: |
-          echo "Running migrations for AWS RDS..."
-          # Add your migration command here
-          echo "Migrations completed (placeholder - add your migration command)"
+          # Determine which database connection string to use
+          DATABASE_URL=""
+          
+          if [ -n "$AZURE_SQL_CONNECTION_STRING" ]; then
+            DATABASE_URL="$AZURE_SQL_CONNECTION_STRING"
+            echo "🔧 Using Azure SQL Database"
+          elif [ -n "$RAILWAY_DATABASE_URL" ]; then
+            DATABASE_URL="$RAILWAY_DATABASE_URL"
+            echo "🔧 Using Railway database"
+          elif [ -n "$RENDER_DATABASE_URL" ]; then
+            DATABASE_URL="$RENDER_DATABASE_URL"
+            echo "🔧 Using Render database"
+          elif [ -n "$AWS_RDS_CONNECTION_STRING" ]; then
+            DATABASE_URL="$AWS_RDS_CONNECTION_STRING"
+            echo "🔧 Using AWS RDS"
+          else
+            echo "⚠️  No database connection string found in secrets"
+            echo "Skipping migrations. Set one of: AZURE_SQL_CONNECTION_STRING, RAILWAY_DATABASE_URL, RENDER_DATABASE_URL, or AWS_RDS_CONNECTION_STRING"
+            exit 0
+          fi
+          
+          if [ -n "$DATABASE_URL" ]; then
+            echo "🚀 Running database migrations..."
+            export DATABASE_URL
+            # Add your migration command here
+            # Example: python -m alembic upgrade head
+            # Or: python migrations/run_all_migrations.py
+            echo "✅ Migrations completed (placeholder - add your migration command)"
+          fi
 
   deploy:
     name: Deploy Application
