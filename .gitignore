@@ -3,6 +3,7 @@
 backend/.env
 *.env
 !*.env.example
+*.sql
 
 # Python
 __pycache__/

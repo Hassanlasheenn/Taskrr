@@ -30,8 +30,8 @@ def create_access_token(data: dict) -> str:
 
 router = APIRouter(tags=["auth"])
 
-@router.post("/register", response_model=schemas.UserResponse)
-def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+@router.post("/register", response_model=schemas.LoginResponse)
+def register(user: schemas.UserCreate, response: Response, db: Session = Depends(database.get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
@@ -48,6 +48,23 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     db.commit()
     db.refresh(new_user)
     
+    # Create access token and set cookie (same as login)
+    user_role = getattr(new_user, 'role', 'user')
+    access_token = create_access_token(data={"sub": new_user.email, "role": user_role})
+    
+    max_age = 7 * 24 * 60 * 60
+    is_production = os.getenv("ENVIRONMENT", "development") == "production"
+    
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=max_age,
+        httponly=True,
+        secure=is_production,
+        samesite="lax",
+        path="/"
+    )
+    
     user_dict = {
         "id": new_user.id,
         "username": new_user.username,
@@ -55,7 +72,12 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
         "photo": getattr(new_user, 'profile_pic', None),
         "role": getattr(new_user, 'role', 'user')
     }
-    return schemas.UserResponse(**user_dict)
+    
+    return { 
+        "token_type": "bearer",
+        "access_token": access_token,
+        "data": schemas.UserResponse(**user_dict)
+    }
 
 
 @router.post("/login", response_model=schemas.LoginResponse)

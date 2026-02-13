@@ -228,13 +228,12 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
             .subscribe({
                 next: (res: IRegisterResponse) => {
                     this.registerError = null;
-                    if (res?.id) {
-                        this._authService.setCurrentUserId(res.id);
-                        this._authService.setCurrentUserData({
-                            id: res.id,
-                            username: res.username,
-                            email: res.email
-                        });
+                    if (res.access_token) {
+                        this._authService.setToken(res.access_token);
+                    }
+                    if (res.data?.id) {
+                        this._authService.setCurrentUserId(res.data.id);
+                        this._authService.setCurrentUserData(res.data);
                     }
                     this._toastService.success('Account created successfully');
                     this._router.navigate([LayoutPaths.DASHBOARD]);

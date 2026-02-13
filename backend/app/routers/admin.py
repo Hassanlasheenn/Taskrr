@@ -45,6 +45,15 @@ def delete_user(
             detail="User not found"
         )
     
+    # Delete related notifications for this user
+    db.query(models.Notification).filter(models.Notification.user_id == user_id).delete()
+    
+    # Handle todos assigned to this user (set assigned_to_user_id to NULL)
+    db.query(models.Todo).filter(models.Todo.assigned_to_user_id == user_id).update(
+        {models.Todo.assigned_to_user_id: None}
+    )
+    
+    # Delete the user (todos owned by user will be cascade deleted via relationship)
     db.delete(user)
     db.commit()
     

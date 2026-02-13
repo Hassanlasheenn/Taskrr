@@ -5,9 +5,9 @@ export interface IRegisterPayload {
 }
 
 export interface IRegisterResponse {
-    id: number;
-    username: string;
-    email: string;
+    access_token?: string;
+    token_type: string;
+    data: IUserResponse;
 }
 
 export interface ILoginPayload {
