@@ -401,7 +401,6 @@ async def delete_todo(
     ).delete()
     db.flush()
     
-    # Get creator/deleter info for notification
     deleter = db.query(models.User).filter(models.User.id == user_id).first()
     deleter_username = deleter.username if deleter else "Admin"
     
