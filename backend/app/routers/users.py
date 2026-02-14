@@ -87,7 +87,6 @@ def get_users_with_role_user(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """Get all users with role 'user' (for assignment dropdown) - requires authentication"""
     users = db.query(models.User).filter(
         models.User.role == models.UserRole.USER.value
     ).all()

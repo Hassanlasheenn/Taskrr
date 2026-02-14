@@ -236,7 +236,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
 
     resetForm(): void {
         this.form.reset();
-        // Reset assigned_to_user_id to 0 (Unassigned) if admin
         if (this.isAdmin && this.form.get('assigned_to_user_id')) {
             this.form.patchValue({ assigned_to_user_id: 0 });
         }
