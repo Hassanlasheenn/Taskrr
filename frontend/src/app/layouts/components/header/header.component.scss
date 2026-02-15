@@ -207,7 +207,6 @@
         visibility: visible;
 
         .dropdown-item {
-            // Vertical column positioning
             &:nth-child(1) {
                 transform: translateY(0) scale(1);
                 transition-delay: 0.05s;
@@ -216,6 +215,11 @@
             &:nth-child(2) {
                 transform: translateY(calc(3rem + 0.75rem)) scale(1);
                 transition-delay: 0.1s;
+            }
+
+            &:nth-child(3) {
+                transform: translateY(calc(6rem + 1.5rem)) scale(1);
+                transition-delay: 0.15s;
             }
         }
     }

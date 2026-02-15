@@ -1,4 +1,4 @@
-import { Injectable, Renderer2, RendererFactory2 } from "@angular/core";
+ import { Injectable, Renderer2, RendererFactory2 } from "@angular/core";
 import { BehaviorSubject, Observable } from "rxjs";
 
 export type ThemeMode = 'light' | 'dark';
@@ -40,7 +40,6 @@ export class ThemeService {
     }
 
     private getInitialTheme(): ThemeMode {
-        // Check localStorage first
         const savedTheme = localStorage.getItem(this.STORAGE_KEY) as ThemeMode;
         if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
             return savedTheme;
@@ -51,7 +50,7 @@ export class ThemeService {
             return 'dark';
         }
 
-        return 'light';
+        return 'dark';
     }
 
     private applyTheme(theme: ThemeMode): void {

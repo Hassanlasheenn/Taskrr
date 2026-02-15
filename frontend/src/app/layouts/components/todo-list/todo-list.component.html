@@ -29,7 +29,6 @@
             <div *ngFor="let group of groupedTodos" class="category-group-card">
                 <div class="category-group-header" (click)="toggleCategory(group.category)">
                     <div class="category-header-content">
-                        <i class="bi bi-folder-fill category-icon"></i>
                         <h3 class="category-title">
                             {{ group.category || 'Other' }}
                             <span class="category-count">({{ group.todos.length }})</span>

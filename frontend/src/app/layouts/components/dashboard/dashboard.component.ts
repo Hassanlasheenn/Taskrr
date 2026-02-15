@@ -66,8 +66,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this._notificationService.notificationEvents$
             .pipe(takeUntil(this._destroy$))
             .subscribe((notification) => {
-                // Refresh todo list for any notification (create, update, delete, assign)
-                // Deleted todos have todo_id: null, but we still need to refresh
                 this.loadTodos(false);
             });
     }
@@ -272,7 +270,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
             filtered = filtered.filter(todo => todo.category === this.selectedCategory);
         }
 
-        return filtered;
+        return filtered.sort((a, b) => {
+            const categoryA = a.category || '\uffff';
+            const categoryB = b.category || '\uffff';
+            if (categoryA !== categoryB) {
+                return categoryA.localeCompare(categoryB);
+            }
+
+            if (a.completed !== b.completed) {
+                return a.completed ? 1 : -1;
+            }
+
+            return (a.order_index || 0) - (b.order_index || 0);
+        });
     }
 
     private applyQuickFilter(todos: ITodo[]): ITodo[] {

@@ -11,27 +11,17 @@
             <app-theme-toggle />
             
             <ng-container *ngIf="isAuthenticated">
-                <button 
-                    *ngIf="isAdmin"
-                    type="button" 
-                    class="admin-btn"
-                    [routerLink]="[LayoutPaths.ADMIN]"
-                    aria-label="Admin Panel"
-                    title="Admin Panel"
-                >
-                    <i class="bi bi-shield-check"></i>
-                </button>
                 <app-notifications />
                 <div class="dropdown" [class.show]="isDropdownOpen">
                     <button 
-                        class="user-circle" 
+                        class="user-circle"
                         type="button" 
                         (click)="toggleDropdown()"
                         aria-expanded="false"
                     >
                         <img 
                             *ngIf="userPhoto" 
-                            [src]="getPhotoUrl()" 
+                            [src]="getPhotoUrl()"
                             alt="User profile"
                             class="user-photo"
                         />
@@ -42,6 +32,16 @@
                             <button class="dropdown-item" (click)="onProfile()" aria-label="Profile">
                                 <i class="bi bi-person-circle"></i>
                                 <span class="item-label">Profile</span>
+                            </button>
+                            <button 
+                                *ngIf="isAdmin"
+                                class="dropdown-item" 
+                                [routerLink]="[LayoutPaths.ADMIN]"
+                                (click)="isDropdownOpen = false"
+                                aria-label="User management"
+                            >
+                                <i class="bi bi-people"></i>
+                                <span class="item-label">User management</span>
                             </button>
                             <button class="dropdown-item" (click)="onLogout()" aria-label="Logout">
                                 <i class="bi bi-box-arrow-right"></i>
