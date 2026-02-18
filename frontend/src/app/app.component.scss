@@ -8,9 +8,19 @@
   overflow-x: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
   
   &::-webkit-scrollbar {
     display: none;
+  }
+
+  @media (max-width: 767.98px) {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
   }
 
   ::ng-deep app-auth-container {
@@ -22,6 +32,7 @@
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
   }
 }

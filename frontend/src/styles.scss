@@ -7,8 +7,9 @@ html {
   background: var(--bg-primary);
   height: 100%;
   overflow-x: hidden;
-  // Hide scrollbar for Firefox
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 body {
@@ -21,17 +22,15 @@ body {
   overflow-x: hidden;
   color: var(--text-primary);
   transition: background 0.3s ease, color 0.3s ease;
-  // Hide scrollbar for Firefox
   scrollbar-width: none;
-  // Hide scrollbar for IE and Edge
   -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   
-  // Hide scrollbar for Chrome, Safari and Opera
   &::-webkit-scrollbar {
     display: none;
   }
   
-  // Subtle texture overlay
   &::before {
     content: '';
     position: fixed;
@@ -48,7 +47,6 @@ body {
   }
 }
 
-// App root component styles
 app-root {
   display: flex;
   flex-direction: column;
@@ -60,6 +58,8 @@ app-root {
   z-index: 1;
   overflow: hidden;
   box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 
   @media (max-width: 768px) {
     padding: var(--header-top-margin, 1rem) 1rem 0 1rem;
@@ -70,12 +70,22 @@ app-root {
   }
 }
 
-// Global transition for theme changes
 * {
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-// Disable transitions during initial load
+@media (max-width: 768px) {
+  * {
+    will-change: auto;
+  }
+  
+  .page-wrapper,
+  app-root {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+}
+
 .no-transitions * {
   transition: none !important;
 }
