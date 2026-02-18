@@ -1,4 +1,4 @@
-# Todo Application
+# TaskHub Application
 
 A full-stack task management application that enables users to create, organize, and track their tasks with features like user authentication, task assignment, priority management, categories, and real-time notifications.
 
