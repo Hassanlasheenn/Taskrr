@@ -90,7 +90,6 @@
                                 <div class="todo-card-header d-flex flex-column gap-1 gap-sm-2">
                                     <div class="d-flex align-items-center justify-content-end w-100">
                                         <div class="d-flex align-items-center gap-1 gap-sm-2 flex-wrap">
-                                            <span *ngIf="todo.category" class="category-badge">{{ todo.category }}</span>
                                             <span class="status-badge" [ngClass]="getStatusClass(todo.status)">
                                                 {{ getStatusLabel(todo.status) }}
                                             </span>
@@ -187,7 +186,6 @@
                     <div class="todo-list-content d-flex align-items-center justify-content-between gap-2">
                         <div class="todo-list-left d-flex align-items-center gap-2 flex-wrap">
                             <h4 class="todo-list-title">{{ todo.title }}</h4>
-                            <span *ngIf="todo.category" class="category-badge">{{ todo.category }}</span>
                             <span class="status-badge" [ngClass]="getStatusClass(todo.status)">
                                 {{ getStatusLabel(todo.status) }}
                             </span>
@@ -231,7 +229,6 @@
                         <div class="todo-card-header d-flex flex-column gap-1 gap-sm-2">
                             <div class="d-flex align-items-center justify-content-end w-100">
                                 <div class="d-flex align-items-center gap-1 gap-sm-2 flex-wrap">
-                                    <span *ngIf="todo.category" class="category-badge">{{ todo.category }}</span>
                                     <span class="status-badge" [ngClass]="getStatusClass(todo.status)">
                                         {{ getStatusLabel(todo.status) }}
                                     </span>
