@@ -1,0 +1,107 @@
+<section class="todo-view-wrapper p-2 p-sm-3 p-lg-4">
+    <div class="todo-view-container">
+        <a [routerLink]="['/' + LayoutPaths.DASHBOARD]" class="back-link">
+            <i class="bi bi-arrow-left"></i>
+            Back to Dashboard
+        </a>
+
+        <div *ngIf="!todo" class="loading-state">
+            <p>Loading...</p>
+        </div>
+
+        <article *ngIf="todo" class="todo-view-card" [ngClass]="'priority-' + todo.priority">
+            <header class="todo-view-header">
+                <div class="todo-view-title-row">
+                    <h1 class="todo-view-title">{{ todo.title }}</h1>
+                    <span *ngIf="todo.category" class="todo-view-category-tag">
+                        <i class="bi bi-tag-fill"></i>
+                        <span class="todo-view-category-tag-text">{{ todo.category }}</span>
+                    </span>
+                </div>
+                <div class="todo-view-header-actions">
+                    <div class="todo-view-badges">
+                        <div *ngIf="isAdmin" class="todo-view-dropdown-wrap">
+                            <select
+                                class="todo-view-select assigned-select"
+                                [(ngModel)]="todo.assigned_to_user_id"
+                                aria-label="Assigned to"
+                            >
+                                <option [ngValue]="null">Unassigned</option>
+                                <option
+                                    *ngIf="todo.assigned_to_user_id && !userInList(todo.assigned_to_user_id)"
+                                    [ngValue]="todo.assigned_to_user_id"
+                                >{{ todo.assigned_to_username || ('User #' + todo.assigned_to_user_id) }}</option>
+                                <option *ngFor="let u of users" [ngValue]="u.id">{{ u.username }}</option>
+                            </select>
+                        </div>
+                        <div class="todo-view-dropdown-wrap">
+                            <select
+                                class="todo-view-select status-select"
+                                [ngClass]="'status-' + todo.status"
+                                [(ngModel)]="todo.status"
+                                aria-label="Status"
+                            >
+                                <option *ngFor="let opt of statusOptions" [value]="opt.value">{{ opt.label }}</option>
+                            </select>
+                        </div>
+                        <div class="todo-view-dropdown-wrap">
+                            <select
+                                class="todo-view-select priority-select"
+                                [ngClass]="'priority-' + todo.priority"
+                                [(ngModel)]="todo.priority"
+                                aria-label="Priority"
+                            >
+                                <option *ngFor="let opt of priorityOptions" [value]="opt.value">{{ opt.label }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="todo-view-save-btn"
+                        (click)="onSave()"
+                        [disabled]="!hasChanges || saving"
+                        aria-label="Save changes"
+                    >
+                        {{ saving ? 'Saving...' : 'Save' }}
+                    </button>
+                </div>
+            </header>
+
+            <div class="todo-view-body">
+                <div class="todo-view-description-field">
+                    <label for="todo-description" class="todo-view-label">Description</label>
+                    <textarea
+                        id="todo-description"
+                        class="todo-view-description-input"
+                        [(ngModel)]="todo.description"
+                        placeholder="No description"
+                        rows="4"
+                        aria-label="Description"
+                    ></textarea>
+                </div>
+
+                <div *ngIf="isAdmin && (todo.assigned_to_username || todo.assigned_to_user_id)" class="todo-view-assigned">
+                    <span class="label">Assigned to:</span>
+                    <span>{{ todo.assigned_to_username || 'Unassigned' }}</span>
+                </div>
+
+                <div class="todo-view-dates">
+                    <ng-container *ngIf="formatDate(todo.created_at) as created">
+                        <div class="date-row">
+                            <i class="bi bi-calendar3"></i>
+                            <span class="date-label">Created</span>
+                            <span class="date-value">{{ created.date }} at {{ created.time }}</span>
+                        </div>
+                    </ng-container>
+                    <ng-container *ngIf="todo.updated_at && formatDate(todo.updated_at) as updated">
+                        <div class="date-row">
+                            <i class="bi bi-pencil-square"></i>
+                            <span class="date-label">Updated</span>
+                            <span class="date-value">{{ updated.date }} at {{ updated.time }}</span>
+                        </div>
+                    </ng-container>
+                </div>
+            </div>
+        </article>
+    </div>
+</section>

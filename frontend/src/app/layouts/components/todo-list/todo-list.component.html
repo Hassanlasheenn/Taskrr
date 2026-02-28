@@ -111,24 +111,22 @@
                                             <span class="assigned-to-username">{{ todo.assigned_to_username || 'Unassigned' }}</span>
                                         </div>
                                     </div>
-                                    <button 
-                                        *ngIf="!isCompletedSection"
-                                        type="button" 
-                                        class="todo-edit-btn"
-                                        (click)="onEditTodo(todo)"
-                                        aria-label="Edit todo"
-                                    >
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button 
-                                        *ngIf="isAdmin && !isCompletedSection"
-                                        type="button" 
-                                        class="todo-delete-btn"
-                                        (click)="onDeleteTodo(todo)"
-                                        aria-label="Delete todo"
-                                    >
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <div *ngIf="!isCompletedSection" class="todo-actions-dropdown-wrapper" (click)="$event.stopPropagation()" (keydown)="onActionsWrapperKeyDown($event)">
+                                        <button type="button" class="todo-actions-trigger" (click)="toggleActionsMenu(todo.id)" aria-label="Todo actions">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <div class="todo-actions-dropdown" *ngIf="openActionsTodoId === todo.id">
+                                            <button type="button" class="todo-actions-item" (click)="onViewTodo(todo); closeActionsMenu()">
+                                                <i class="bi bi-eye"></i> View
+                                            </button>
+                                            <button type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                            <button *ngIf="isAdmin" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="todo-card-footer px-3 px-sm-4 py-2 py-sm-3">
                                     <div class="date-timestamps d-flex flex-column gap-2 gap-sm-3">
@@ -182,6 +180,7 @@
                     *ngFor="let todo of todos; trackBy: trackById" 
                     class="todo-list-item"
                     [class.completed]="todo.status === 'done'"
+                    [class.actions-dropdown-open]="openActionsTodoId === todo.id"
                     [ngClass]="getPriorityClass(todo.priority)"
                 >
                     <div class="todo-list-content d-flex align-items-center justify-content-between gap-2">
@@ -195,24 +194,21 @@
                                 {{ todo.priority }}
                             </span>
                         </div>
-                        <div class="todo-list-actions d-flex align-items-center gap-1" *ngIf="!isCompletedSection">
-                            <button 
-                                type="button" 
-                                class="todo-action-btn"
-                                (click)="onEditTodo(todo)"
-                                aria-label="Edit todo"
-                            >
-                                <i class="bi bi-pencil"></i>
+                        <div *ngIf="!isCompletedSection" class="todo-actions-dropdown-wrapper todo-list-actions" (click)="$event.stopPropagation()" (keydown)="onActionsWrapperKeyDown($event)">
+                            <button type="button" class="todo-actions-trigger" (click)="toggleActionsMenu(todo.id)" aria-label="Todo actions">
+                                <i class="bi bi-three-dots-vertical"></i>
                             </button>
-                            <button 
-                                *ngIf="isAdmin"
-                                type="button" 
-                                class="todo-action-btn todo-action-btn--delete"
-                                (click)="onDeleteTodo(todo)"
-                                aria-label="Delete todo"
-                            >
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            <div class="todo-actions-dropdown" *ngIf="openActionsTodoId === todo.id">
+                                <button type="button" class="todo-actions-item" (click)="onViewTodo(todo); closeActionsMenu()">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                                <button type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                                <button *ngIf="isAdmin" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -251,24 +247,22 @@
                                     <span class="assigned-to-username">{{ todo.assigned_to_username || 'Unassigned' }}</span>
                                 </div>
                             </div>
-                            <button 
-                                *ngIf="!isCompletedSection"
-                                type="button" 
-                                class="todo-edit-btn"
-                                (click)="onEditTodo(todo)"
-                                aria-label="Edit todo"
-                            >
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button 
-                                *ngIf="isAdmin && !isCompletedSection"
-                                type="button" 
-                                class="todo-delete-btn"
-                                (click)="onDeleteTodo(todo)"
-                                aria-label="Delete todo"
-                            >
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            <div *ngIf="!isCompletedSection" class="todo-actions-dropdown-wrapper" (click)="$event.stopPropagation()" (keydown)="onActionsWrapperKeyDown($event)">
+                                <button type="button" class="todo-actions-trigger" (click)="toggleActionsMenu(todo.id)" aria-label="Todo actions">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <div class="todo-actions-dropdown" *ngIf="openActionsTodoId === todo.id">
+                                    <button type="button" class="todo-actions-item" (click)="onViewTodo(todo); closeActionsMenu()">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                    <button type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button *ngIf="isAdmin" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div class="todo-card-footer px-3 px-sm-4 py-2 py-sm-3">
                             <div class="date-timestamps d-flex flex-column gap-2 gap-sm-3">

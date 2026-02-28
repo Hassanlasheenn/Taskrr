@@ -655,8 +655,12 @@
     }
 }
 
-.todo-delete-btn, .todo-edit-btn {
+.todo-actions-dropdown-wrapper {
+    position: relative;
     flex-shrink: 0;
+}
+
+.todo-actions-trigger {
     width: 32px;
     height: 32px;
     border-radius: 8px;
@@ -671,21 +675,58 @@
     padding: 0;
 
     i {
-        font-size: 0.875rem;
+        font-size: 1.125rem;
+    }
+
+    &:hover {
+        background: var(--btn-secondary-hover-bg);
+        color: var(--text-primary);
     }
 }
 
-.todo-edit-btn {
-    &:hover {
-        background: var(--primary-gradient-start);
-        color: var(--text-white);
-    }
+.todo-actions-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    min-width: 120px;
+    padding: 0.35rem 0;
+    background: var(--card-color);
+    border: 1px solid var(--card-border-color);
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
 }
 
-.todo-delete-btn {
+.todo-actions-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    i {
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
     &:hover {
-        background: var(--danger-color);
-        color: var(--text-white);
+        background: var(--btn-secondary-bg);
+    }
+
+    &--delete:hover {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--danger-color);
     }
 }
 
@@ -697,6 +738,7 @@
 }
 
 .todo-list-item {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -708,6 +750,10 @@
     border: 1px solid var(--card-border-color);
     box-shadow: var(--card-shadow);
     transition: all 0.2s ease;
+
+    &.actions-dropdown-open {
+        z-index: 20;
+    }
 
     &.completed {
         opacity: 0.7;
@@ -748,6 +794,8 @@
     }
 
     .todo-list-actions {
+        position: relative;
+        z-index: 1;
         display: flex;
         align-items: center;
         gap: 0.5rem;

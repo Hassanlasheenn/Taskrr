@@ -1,5 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnInit, OnDestroy, ViewChild } from "@angular/core";
+import { Router } from "@angular/router";
 import { Subject, takeUntil, debounceTime } from "rxjs";
 import { AuthService } from "../../../auth/services";
 import { TodoService } from "../../../core/services/todo.service";
@@ -16,6 +17,7 @@ import { SearchBarComponent } from "./components/search-bar/search-bar.component
 import { StatusFilterComponent, TodoStatus as FilterStatus } from "./components/status-filter/status-filter.component";
 import { AdminPanelComponent } from "./components/admin-panel/admin-panel.component";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
+import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-form/todo-form.component";
 
 @Component({
@@ -56,7 +58,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         private readonly _notificationService: NotificationService,
         private readonly _loaderService: LoaderService,
         private readonly _toastService: ToastService,
-        private readonly _confirmationDialog: ConfirmationDialogService
+        private readonly _confirmationDialog: ConfirmationDialogService,
+        private readonly _router: Router
     ) {}
 
     ngOnInit(): void {
@@ -193,6 +196,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 });
             }
         });
+    }
+
+    onViewTodo(todo: ITodo): void {
+        this._router.navigate([LayoutPaths.TODO_VIEW, todo.id]);
     }
 
     onEditTodo(todo: ITodo): void {

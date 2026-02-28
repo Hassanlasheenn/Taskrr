@@ -198,6 +198,22 @@ def _build_todo_response(todo_db: models.Todo, db: Session) -> schemas.TodoRespo
     return schemas.TodoResponse(**todo_dict)
 
 
+@router.get("/{todo_id}", response_model=schemas.TodoResponse)
+def get_todo(
+    todo_id: int,
+    user_id: int,
+    db: Session = Depends(database.get_db)
+):
+    """Get a single todo by ID. User must be the creator or assigned to the todo."""
+    todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    if not todo_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+    can_view = todo_db.user_id == user_id or todo_db.assigned_to_user_id == user_id
+    if not can_view:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to view this todo")
+    return _build_todo_response(todo_db, db)
+
+
 @router.put("/{todo_id}", response_model=schemas.TodoResponse)
 async def update_todo(
     todo_id: int,

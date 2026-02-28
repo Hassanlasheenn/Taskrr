@@ -20,6 +20,14 @@ export class TodoService {
             .pipe(take(1));
     }
 
+    getTodo(userId: number, todoId: number): Observable<ITodoResponse> {
+        return this._http
+            .get<ITodoResponse>(`${this._baseUrl}/${todoId}?user_id=${userId}`, {
+                withCredentials: true
+            })
+            .pipe(take(1));
+    }
+
     createTodo(userId: number, todo: ITodoCreate): Observable<ITodoResponse> {
         return this._http
             .post<ITodoResponse>(`${this._baseUrl}?user_id=${userId}`, todo, {

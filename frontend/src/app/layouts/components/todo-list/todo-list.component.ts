@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from "@angular/core";
+import { ChangeDetectorRef, Component, EventEmitter, HostListener, Input, OnChanges, OnInit, Output, SimpleChanges } from "@angular/core";
 import { AuthService } from "../../../auth/services";
 import { ITodo } from "../../../core/interfaces/todo.interface";
 import { StatusFilterComponent, TodoStatus as FilterStatus } from "../dashboard/components/status-filter/status-filter.component";
@@ -27,10 +27,17 @@ export class TodoListComponent implements OnInit, OnChanges {
     @Output() toggleTodo = new EventEmitter<ITodo>();
     @Output() deleteTodo = new EventEmitter<ITodo>();
     @Output() editTodo = new EventEmitter<ITodo>();
+    @Output() viewTodo = new EventEmitter<ITodo>();
     @Output() statusChange = new EventEmitter<FilterStatus>();
 
     expandedCategories: { [key: string]: boolean } = {};
     viewMode: 'grid' | 'list' = 'grid';
+    openActionsTodoId: number | null = null;
+
+    @HostListener('document:click')
+    onDocumentClick(): void {
+        this.openActionsTodoId = null;
+    }
 
     constructor(
         private readonly _authService: AuthService,
@@ -79,8 +86,28 @@ export class TodoListComponent implements OnInit, OnChanges {
         this.editTodo.emit(todo);
     }
 
+    onViewTodo(todo: ITodo): void {
+        this.viewTodo.emit(todo);
+    }
+
     onDeleteTodo(todo: ITodo): void {
         this.deleteTodo.emit(todo);
+    }
+
+    toggleActionsMenu(todoId: number): void {
+        this.openActionsTodoId = this.openActionsTodoId === todoId ? null : todoId;
+        this._cdr.markForCheck();
+    }
+
+    closeActionsMenu(): void {
+        this.openActionsTodoId = null;
+        this._cdr.markForCheck();
+    }
+
+    onActionsWrapperKeyDown(event: KeyboardEvent): void {
+        if (event.key === 'Escape') {
+            this.closeActionsMenu();
+        }
     }
 
     onClearStatusFilter(): void {
