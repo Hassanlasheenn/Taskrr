@@ -1,5 +1,5 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { Component, Input, OnChanges, OnDestroy, Output, EventEmitter } from "@angular/core";
 import { animate, style, transition, trigger } from "@angular/animations";
 
 @Component({
@@ -29,24 +29,36 @@ import { animate, style, transition, trigger } from "@angular/animations";
         ])
     ]
 })
-export class SidebarComponent implements OnInit, OnDestroy {
+export class SidebarComponent implements OnChanges, OnDestroy {
     @Input() isOpen: boolean = false;
     @Input() title: string = '';
     @Input() width: string = '400px';
     @Output() closed = new EventEmitter<void>();
 
-    ngOnInit(): void {
-        if (this.isOpen) {
-            document.body.style.overflow = 'hidden';
-        }
+    ngOnChanges(): void {
+        this.updateBodyScrollLock();
     }
 
     ngOnDestroy(): void {
-        document.body.style.overflow = '';
+        this.setBodyScrollLock(false);
+    }
+
+    private updateBodyScrollLock(): void {
+        this.setBodyScrollLock(this.isOpen);
+    }
+
+    private setBodyScrollLock(lock: boolean): void {
+        const overflow = lock ? 'hidden' : '';
+        document.documentElement.style.overflow = overflow;
+        document.body.style.overflow = overflow;
+        const pageWrapper = document.querySelector('.page-wrapper');
+        if (pageWrapper instanceof HTMLElement) {
+            pageWrapper.style.overflow = overflow;
+        }
     }
 
     onClose(): void {
-        document.body.style.overflow = '';
+        this.setBodyScrollLock(false);
         this.closed.emit();
     }
 

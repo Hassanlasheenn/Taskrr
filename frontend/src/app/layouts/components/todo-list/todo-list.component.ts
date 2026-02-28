@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, ChangeDetectorRef } from "@angular/core";
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from "@angular/core";
 import { AuthService } from "../../../auth/services";
 import { ITodo } from "../../../core/interfaces/todo.interface";
 import { StatusFilterComponent, TodoStatus as FilterStatus } from "../dashboard/components/status-filter/status-filter.component";
@@ -22,6 +22,7 @@ export class TodoListComponent implements OnInit, OnChanges {
     @Input() username: string | null = null;
     @Input() showStatusFilter: boolean = false;
     @Input() activeStatus: FilterStatus = 'all';
+    @Input() isCompletedSection: boolean = false;
     @Output() addTodo = new EventEmitter<void>();
     @Output() toggleTodo = new EventEmitter<ITodo>();
     @Output() deleteTodo = new EventEmitter<ITodo>();
@@ -192,7 +193,10 @@ export class TodoListComponent implements OnInit, OnChanges {
         }
     }
 
-    ngOnChanges(): void {
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['isCompletedSection']) {
+            this.viewMode = this.isCompletedSection ? 'list' : 'grid';
+        }
         if (this.groupByCategory && this.todos.length > 0) {
             // Only add new categories, don't reset existing expanded state
             const newExpandedCategories = { ...this.expandedCategories };

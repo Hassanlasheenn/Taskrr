@@ -51,6 +51,7 @@
                 <app-todo-list 
                     [todos]="filteredTodos"
                     [totalCount]="filteredTodos.length"
+                    [isCompletedSection]="activeSection === DashboardSections.COMPLETED"
                     [showAddButton]="activeSection !== DashboardSections.COMPLETED"
                     [showIndex]="activeSection !== DashboardSections.COMPLETED"
                     [sectionTitle]="activeSection === DashboardSections.COMPLETED ? 'Completed Todos' : 'Your Todos'"

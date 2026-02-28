@@ -24,7 +24,7 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <div class="view-toggle" *ngIf="todos.length > 0">
+                <div class="view-toggle" *ngIf="todos.length > 0 && !isCompletedSection">
                     <button 
                         type="button" 
                         class="view-toggle-btn"
@@ -112,6 +112,7 @@
                                         </div>
                                     </div>
                                     <button 
+                                        *ngIf="!isCompletedSection"
                                         type="button" 
                                         class="todo-edit-btn"
                                         (click)="onEditTodo(todo)"
@@ -120,7 +121,7 @@
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <button 
-                                        *ngIf="isAdmin"
+                                        *ngIf="isAdmin && !isCompletedSection"
                                         type="button" 
                                         class="todo-delete-btn"
                                         (click)="onDeleteTodo(todo)"
@@ -194,7 +195,7 @@
                                 {{ todo.priority }}
                             </span>
                         </div>
-                        <div class="todo-list-actions d-flex align-items-center gap-1">
+                        <div class="todo-list-actions d-flex align-items-center gap-1" *ngIf="!isCompletedSection">
                             <button 
                                 type="button" 
                                 class="todo-action-btn"
@@ -251,6 +252,7 @@
                                 </div>
                             </div>
                             <button 
+                                *ngIf="!isCompletedSection"
                                 type="button" 
                                 class="todo-edit-btn"
                                 (click)="onEditTodo(todo)"
@@ -259,7 +261,7 @@
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button 
-                                *ngIf="isAdmin"
+                                *ngIf="isAdmin && !isCompletedSection"
                                 type="button" 
                                 class="todo-delete-btn"
                                 (click)="onDeleteTodo(todo)"
