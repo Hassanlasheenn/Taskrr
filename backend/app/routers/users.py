@@ -15,6 +15,25 @@ def image_to_base64(file_content: bytes, content_type: str) -> str:
     return f"data:{content_type};base64,{base64_data}"
 
 
+@router.get("/mentionable", response_model=List[schemas.UserListResponse])
+def get_mentionable_users(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Return all users except the current user, for @mentions (includes admins)."""
+    users = db.query(models.User).filter(models.User.id != current_user.id).all()
+    return [
+        schemas.UserListResponse(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            photo=getattr(user, 'profile_pic', None),
+            role=getattr(user, 'role', 'user')
+        )
+        for user in users
+    ]
+
+
 @router.get("/{user_id}", response_model=schemas.UserResponse)
 def get_user_data(user_id: int, db: Session = Depends(database.get_db)):
     user_db = db.query(models.User).filter(models.User.id == user_id).first()

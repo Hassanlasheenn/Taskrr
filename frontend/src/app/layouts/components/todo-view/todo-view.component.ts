@@ -1,9 +1,9 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnInit } from "@angular/core";
+import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
+import { Observable, Subject } from "rxjs";
+import { map, takeUntil } from "rxjs/operators";
 import { AuthService } from "../../../auth/services/auth.service";
 import { UserService } from "../../../core/services/user.service";
 import { TodoService } from "../../../core/services/todo.service";
@@ -11,9 +11,10 @@ import { IUserListResponse } from "../../../auth/interfaces";
 import { LoaderService } from "../../../core/services/loader.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
-import { ITodo, TodoStatus } from "../../../core/interfaces/todo.interface";
+import { ITodo, ITodoComment, TodoStatus } from "../../../core/interfaces/todo.interface";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { CanComponentDeactivate } from "../../../auth/guards";
+import { ParseMentionsPipe } from "../../../core/pipes/parse-mentions.pipe";
 
 type StatusOption = { value: TodoStatus; label: string };
 type PriorityOption = { value: 'low' | 'medium' | 'high'; label: string };
@@ -36,9 +37,10 @@ const PRIORITY_OPTIONS: PriorityOption[] = [
     templateUrl: './todo-view.component.html',
     styleUrls: ['./todo-view.component.scss'],
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterLink],
+    imports: [CommonModule, FormsModule, RouterLink, ParseMentionsPipe],
 })
-export class TodoViewComponent implements OnInit, CanComponentDeactivate {
+export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactivate {
+    private readonly _destroy$ = new Subject<void>();
     todo: ITodo | null = null;
     saving = false;
     initialStatus: TodoStatus | null = null;
@@ -46,9 +48,30 @@ export class TodoViewComponent implements OnInit, CanComponentDeactivate {
     initialDescription: string | null = null;
     initialAssignedToUserId: number | null = null;
     users: IUserListResponse[] = [];
+    mentionableUsers: IUserListResponse[] = [];
+    comments: ITodoComment[] = [];
+    newCommentText = '';
+    addingComment = false;
+    showMentionDropdown = false;
+    mentionFilter = '';
+    mentionStartIndex = -1;
+    highlightedMentionIndex = 0;
+    mentionedUserIdsInComment: number[] = [];
+    editingCommentId: number | null = null;
+    editContent = '';
+    savingEdit = false;
+    deletingCommentId: number | null = null;
     LayoutPaths = LayoutPaths;
+    @ViewChild('newCommentInput') newCommentInputRef?: ElementRef<HTMLTextAreaElement>;
+
     readonly statusOptions = STATUS_OPTIONS;
     readonly priorityOptions = PRIORITY_OPTIONS;
+
+    get mentionableUsersFiltered(): IUserListResponse[] {
+        const q = (this.mentionFilter || '').toLowerCase();
+        if (!q) return this.mentionableUsers;
+        return this.mentionableUsers.filter((u) => (u.username || '').toLowerCase().includes(q));
+    }
 
     get isAdmin(): boolean {
         return this._authService.isAdmin();
@@ -71,7 +94,8 @@ export class TodoViewComponent implements OnInit, CanComponentDeactivate {
         private readonly _userService: UserService,
         private readonly _loaderService: LoaderService,
         private readonly _toastService: ToastService,
-        private readonly _confirmationDialog: ConfirmationDialogService
+        private readonly _confirmationDialog: ConfirmationDialogService,
+        private readonly _cdr: ChangeDetectorRef
     ) {}
 
     canDeactivate(): boolean | Observable<boolean> {
@@ -111,6 +135,8 @@ export class TodoViewComponent implements OnInit, CanComponentDeactivate {
                 this.initialDescription = this.todo.description ?? null;
                 this.initialAssignedToUserId = this.todo.assigned_to_user_id ?? null;
                 if (this.isAdmin) this._loadUsers();
+                this._loadMentionableUsers();
+                this._loadComments();
                 this._loaderService.hide();
             },
             error: (error) => {
@@ -121,6 +147,11 @@ export class TodoViewComponent implements OnInit, CanComponentDeactivate {
         });
     }
 
+    ngOnDestroy(): void {
+        this._destroy$.next();
+        this._destroy$.complete();
+    }
+
     private _loadUsers(): void {
         this._userService.getUsersWithRoleUser().subscribe({
             next: (list) => { this.users = list; },
@@ -128,8 +159,203 @@ export class TodoViewComponent implements OnInit, CanComponentDeactivate {
         });
     }
 
+    private _loadMentionableUsers(): void {
+        this._userService.getMentionableUsers().subscribe({
+            next: (list) => { this.mentionableUsers = list; },
+            error: () => { this.mentionableUsers = []; },
+        });
+    }
+
     userInList(userId: number): boolean {
         return this.users.some((u) => u.id === userId);
+    }
+
+    private _loadComments(): void {
+        if (!this.todo) return;
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+        this._todoService.getTodoComments(userId, this.todo.id).subscribe({
+            next: (res) => {
+                this.comments = res.comments ?? [];
+            },
+            error: () => {
+                this.comments = [];
+            },
+        });
+    }
+
+    isCurrentUser(userId: number): boolean {
+        return this._authService.getCurrentUserId() === userId;
+    }
+
+    onNewCommentInput(): void {
+        setTimeout(() => this._updateMentionDropdown(), 0);
+    }
+
+    onCommentInputBlur(): void {
+        setTimeout(() => this._closeMentionDropdown(), 200);
+    }
+
+    onNewCommentKeydown(event: KeyboardEvent): void {
+        if (!this.showMentionDropdown) return;
+        const list = this.mentionableUsersFiltered;
+        if (event.key === 'Escape') {
+            this._closeMentionDropdown();
+            event.preventDefault();
+            return;
+        }
+        if (event.key === 'ArrowDown') {
+            this.highlightedMentionIndex = Math.min(this.highlightedMentionIndex + 1, list.length - 1);
+            this._cdr.markForCheck();
+            event.preventDefault();
+            return;
+        }
+        if (event.key === 'ArrowUp') {
+            this.highlightedMentionIndex = Math.max(this.highlightedMentionIndex - 1, 0);
+            this._cdr.markForCheck();
+            event.preventDefault();
+            return;
+        }
+        if (event.key === 'Enter' && list.length > 0) {
+            const user = list[this.highlightedMentionIndex];
+            if (user) {
+                this._selectMention(user);
+                event.preventDefault();
+            }
+        }
+    }
+
+    selectMention(user: IUserListResponse): void {
+        this._selectMention(user);
+    }
+
+    private _updateMentionDropdown(): void {
+        const el = this.newCommentInputRef?.nativeElement;
+        const text = this.newCommentText ?? '';
+        const start = el?.selectionStart ?? text.length;
+        const beforeCursor = text.substring(0, start);
+        const atIdx = beforeCursor.lastIndexOf('@');
+        if (atIdx === -1) {
+            this._closeMentionDropdown();
+            return;
+        }
+        const afterAt = beforeCursor.substring(atIdx + 1);
+        if (/\s/.test(afterAt)) {
+            this._closeMentionDropdown();
+            return;
+        }
+        this.mentionStartIndex = atIdx;
+        this.mentionFilter = afterAt;
+        this.showMentionDropdown = true;
+        this.highlightedMentionIndex = 0;
+        this._cdr.markForCheck();
+    }
+
+    private _closeMentionDropdown(): void {
+        this.showMentionDropdown = false;
+        this.mentionFilter = '';
+        this.mentionStartIndex = -1;
+        this.highlightedMentionIndex = 0;
+        this._cdr.markForCheck();
+    }
+
+    private _selectMention(user: IUserListResponse): void {
+        const el = this.newCommentInputRef?.nativeElement;
+        const text = this.newCommentText ?? '';
+        const end = el?.selectionEnd ?? text.length;
+        const before = text.substring(0, this.mentionStartIndex);
+        const after = text.substring(end);
+        const insert = `@${user.username} `;
+        this.newCommentText = before + insert + after;
+        this.mentionedUserIdsInComment = [...this.mentionedUserIdsInComment, user.id];
+        this._closeMentionDropdown();
+        this._cdr.markForCheck();
+        setTimeout(() => {
+            const newPos = this.mentionStartIndex + insert.length;
+            el?.focus();
+            el?.setSelectionRange(newPos, newPos);
+        }, 0);
+    }
+
+    onAddComment(): void {
+        const content = this.newCommentText?.trim();
+        if (!content || !this.todo) return;
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+        this.addingComment = true;
+        const mentionedIds = this.mentionedUserIdsInComment.length > 0 ? [...this.mentionedUserIdsInComment] : undefined;
+        this._todoService.addTodoComment(userId, this.todo.id, content, mentionedIds).subscribe({
+            next: (comment) => {
+                this.comments = [...this.comments, comment];
+                this.newCommentText = '';
+                this.mentionedUserIdsInComment = [];
+                this.addingComment = false;
+                this._toastService.success('Comment added');
+            },
+            error: (err) => {
+                this.addingComment = false;
+                this._toastService.error(err?.error?.detail || 'Failed to add comment');
+            },
+        });
+    }
+
+    onStartEditComment(comment: ITodoComment): void {
+        this.editingCommentId = comment.id;
+        this.editContent = comment.content;
+    }
+
+    onCancelEditComment(): void {
+        this.editingCommentId = null;
+        this.editContent = '';
+    }
+
+    onSaveEditComment(): void {
+        if (!this.todo || this.editingCommentId == null) return;
+        const content = this.editContent?.trim();
+        if (!content) return;
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+        this.savingEdit = true;
+        this._todoService.updateTodoComment(userId, this.todo.id, this.editingCommentId, content).subscribe({
+            next: (updated) => {
+                this.comments = this.comments.map((c) => (c.id === updated.id ? updated : c));
+                this.editingCommentId = null;
+                this.editContent = '';
+                this.savingEdit = false;
+                this._toastService.success('Comment updated');
+            },
+            error: (err) => {
+                this.savingEdit = false;
+                this._toastService.error(err?.error?.detail || 'Failed to update comment');
+            },
+        });
+    }
+
+    onDeleteComment(comment: ITodoComment): void {
+        if (!this.todo) return;
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+        this._confirmationDialog.show({
+            title: 'Delete comment',
+            message: 'Are you sure you want to delete this comment?',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            confirmButtonClass: 'btn-danger',
+        }).pipe(takeUntil(this._destroy$)).subscribe((result) => {
+            if (!result.confirmed) return;
+            this.deletingCommentId = comment.id;
+            this._todoService.deleteTodoComment(userId, this.todo!.id, comment.id).subscribe({
+                next: () => {
+                    this.comments = this.comments.filter((c) => c.id !== comment.id);
+                    this.deletingCommentId = null;
+                    this._toastService.success('Comment deleted');
+                },
+                error: (err) => {
+                    this.deletingCommentId = null;
+                    this._toastService.error(err?.error?.detail || 'Failed to delete comment');
+                },
+            });
+        });
     }
 
     onSave(): void {

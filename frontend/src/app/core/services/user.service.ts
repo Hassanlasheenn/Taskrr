@@ -33,4 +33,12 @@ export class UserService {
             })
             .pipe(take(1));
     }
+
+    getMentionableUsers(): Observable<IUserListResponse[]> {
+        return this._http
+            .get<IUserListResponse[]>(API_URLS.user.getMentionableUsers, {
+                withCredentials: true
+            })
+            .pipe(take(1));
+    }
 }

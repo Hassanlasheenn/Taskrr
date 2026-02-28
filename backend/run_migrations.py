@@ -23,6 +23,7 @@ from migrations.remove_password_reset_fields import run_migration as migration8
 from migrations.remove_user_email_settings import run_migration as migration9
 from migrations.update_profile_pic_to_text import run_migration as migration10
 from migrations.add_status_column import run_migration as migration11
+from migrations.add_todo_comments_table import run_migration as migration12
 
 from app.database import SessionLocal
 
@@ -43,6 +44,7 @@ def run_all_migrations():
         ("Remove user email settings", migration9),
         ("Update profile_pic to text", migration10),
         ("Add status column", migration11),
+        ("Add todo_comments table", migration12),
     ]
     
     db = SessionLocal()

@@ -12,6 +12,7 @@ export const API_URLS = {
                getUserById: `${API_BASE_URL}/users`,
                updateUser: `${API_BASE_URL}/users`,
                getUsersWithRoleUser: `${API_BASE_URL}/users/role/user`,
+               getMentionableUsers: `${API_BASE_URL}/users/mentionable`,
            },
     admin: {
         listUsers: `${API_BASE_URL}/admin/users`,

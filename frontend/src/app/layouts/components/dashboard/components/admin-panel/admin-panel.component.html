@@ -44,9 +44,14 @@
                         <div class="todo-content">
                             <div class="todo-header">
                                 <h4 class="todo-title">{{ todo.title }}</h4>
-                                <span class="todo-priority-badge" [class]="getPriorityClass(todo.priority)">
-                                    {{ todo.priority }}
-                                </span>
+                                <div class="todo-header-badges">
+                                    <span class="todo-priority-badge" [class]="getPriorityClass(todo.priority)">
+                                        {{ todo.priority }}
+                                    </span>
+                                    <a [routerLink]="['/', layoutPaths.TODO_VIEW, todo.id]" class="todo-view-icon" aria-label="View todo">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </div>
                             </div>
                             <p *ngIf="todo.description" class="todo-description">{{ todo.description }}</p>
                             <div class="todo-meta">

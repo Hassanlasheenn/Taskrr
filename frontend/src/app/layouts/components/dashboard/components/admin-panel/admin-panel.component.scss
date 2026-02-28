@@ -346,13 +346,19 @@
                             flex: 1;
                         }
 
+                        .todo-header-badges {
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            flex-shrink: 0;
+                        }
+
                         .todo-priority-badge {
                             padding: 0.25rem 0.5rem;
                             border-radius: 8px;
                             font-size: 0.75rem;
                             font-weight: 600;
                             text-transform: capitalize;
-                            flex-shrink: 0;
 
                             &.priority-high {
                                 background: rgba(255, 107, 107, 0.2);
@@ -367,6 +373,27 @@
                             &.priority-low {
                                 background: rgba(107, 207, 209, 0.2);
                                 color: #6bcfd1;
+                            }
+                        }
+
+                        .todo-view-icon {
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 28px;
+                            height: 28px;
+                            border-radius: 8px;
+                            color: var(--primary-gradient-start);
+                            background: rgba(107, 207, 209, 0.2);
+                            text-decoration: none;
+                            transition: background 0.2s, color 0.2s;
+
+                            i {
+                                font-size: 1rem;
+                            }
+
+                            &:hover {
+                                background: rgba(107, 207, 209, 0.35);
                             }
                         }
                     }
@@ -433,6 +460,7 @@
                             }
                         }
                     }
+
                 }
             }
         }

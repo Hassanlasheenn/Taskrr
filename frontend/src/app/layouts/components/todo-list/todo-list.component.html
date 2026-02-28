@@ -193,6 +193,10 @@
                                 <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
                                 {{ todo.priority }}
                             </span>
+                            <span *ngIf="todo.category" class="category-tag">
+                                <i class="bi bi-tag"></i>
+                                <span class="category-tag-text">{{ todo.category }}</span>
+                            </span>
                         </div>
                         <div *ngIf="!isCompletedSection" class="todo-actions-dropdown-wrapper todo-list-actions" (click)="$event.stopPropagation()" (keydown)="onActionsWrapperKeyDown($event)">
                             <button type="button" class="todo-actions-trigger" (click)="toggleActionsMenu(todo.id)" aria-label="Todo actions">

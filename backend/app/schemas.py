@@ -100,6 +100,34 @@ class TodoListResponse(BaseModel):
     total: int
 
 
+class CommentCreate(BaseModel):
+    content: str
+    mentioned_user_ids: Optional[List[int]] = None
+
+
+class CommentResponse(BaseModel):
+    id: int
+    todo_id: int
+    user_id: int
+    username: str
+    user_photo: Optional[str] = None
+    content: str
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @field_serializer('created_at')
+    def serialize_created_at(self, value: Optional[datetime]) -> Optional[str]:
+        if value is None:
+            return None
+        return value.strftime('%Y-%m-%dT%H:%M:%S')
+
+
+class CommentListResponse(BaseModel):
+    comments: List[CommentResponse]
+
+
 class NotificationResponse(BaseModel):
     id: int
     user_id: int

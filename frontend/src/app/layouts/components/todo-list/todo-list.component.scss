@@ -580,6 +580,29 @@
     }
 }
 
+.category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-gradient-start);
+    background: rgba(107, 207, 209, 0.2);
+    border: 1px solid rgba(107, 207, 209, 0.4);
+    border-radius: 20px;
+    white-space: nowrap;
+
+    i {
+        font-size: 0.7rem;
+        opacity: 0.9;
+    }
+}
+
+.category-tag-text {
+    line-height: 1.2;
+}
+
 .todo-checkbox {
     flex-shrink: 0;
     width: 24px;

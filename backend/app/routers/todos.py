@@ -198,6 +198,14 @@ def _build_todo_response(todo_db: models.Todo, db: Session) -> schemas.TodoRespo
     return schemas.TodoResponse(**todo_dict)
 
 
+def _can_access_todo(todo_db: models.Todo, user_id: int, db: Session) -> bool:
+    """True if user is creator, assigned to the todo, or admin."""
+    if todo_db.user_id == user_id or todo_db.assigned_to_user_id == user_id:
+        return True
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    return user is not None and user.role == models.UserRole.ADMIN.value
+
+
 @router.get("/{todo_id}", response_model=schemas.TodoResponse)
 def get_todo(
     todo_id: int,
@@ -208,10 +216,194 @@ def get_todo(
     todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
     if not todo_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
-    can_view = todo_db.user_id == user_id or todo_db.assigned_to_user_id == user_id
-    if not can_view:
+    if not _can_access_todo(todo_db, user_id, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to view this todo")
     return _build_todo_response(todo_db, db)
+
+
+@router.get("/{todo_id}/comments", response_model=schemas.CommentListResponse)
+def get_todo_comments(
+    todo_id: int,
+    user_id: int,
+    db: Session = Depends(database.get_db)
+):
+    """Get comments for a todo. User must be creator or assigned to the todo."""
+    todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    if not todo_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+    if not _can_access_todo(todo_db, user_id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to view this todo")
+    comments = db.query(models.TodoComment).filter(models.TodoComment.todo_id == todo_id).order_by(models.TodoComment.created_at.asc()).all()
+    result = []
+    for c in comments:
+        author = db.query(models.User).filter(models.User.id == c.user_id).first()
+        username = author.username if author else f"User#{c.user_id}"
+        user_photo = getattr(author, 'profile_pic', None) if author else None
+        result.append(schemas.CommentResponse(
+            id=c.id,
+            todo_id=c.todo_id,
+            user_id=c.user_id,
+            username=username,
+            user_photo=user_photo,
+            content=c.content,
+            created_at=c.created_at,
+        ))
+    return schemas.CommentListResponse(comments=result)
+
+
+@router.post("/{todo_id}/comments", response_model=schemas.CommentResponse, status_code=status.HTTP_201_CREATED)
+async def create_todo_comment(
+    todo_id: int,
+    user_id: int,
+    body: schemas.CommentCreate,
+    db: Session = Depends(database.get_db)
+):
+    """Add a comment to a todo. User must be creator or assigned to the todo."""
+    todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    if not todo_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+    if not _can_access_todo(todo_db, user_id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to comment on this todo")
+    content = (body.content or "").strip()
+    if not content:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Comment content is required")
+    author = db.query(models.User).filter(models.User.id == user_id).first()
+    if not author:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    comment = models.TodoComment(todo_id=todo_id, user_id=user_id, content=content)
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+
+    # Notify the other party: admin comments -> notify assigned user; user comments -> notify todo creator
+    author_is_admin = author.role == models.UserRole.ADMIN.value
+    todo_title = todo_db.title or "Todo"
+    author_username = author.username or "Someone"
+
+    if author_is_admin:
+        # Admin commented: notify the user assigned to this todo (if any and not self)
+        if todo_db.assigned_to_user_id and todo_db.assigned_to_user_id != user_id:
+            assigned_user = db.query(models.User).filter(models.User.id == todo_db.assigned_to_user_id).first()
+            if assigned_user and assigned_user.role != models.UserRole.ADMIN.value:
+                message = f"{author_username} commented on todo: {todo_title}"
+                await create_notification(
+                    db,
+                    assigned_user.id,
+                    todo_id,
+                    message,
+                    author_username,
+                    assigned_user.email or "",
+                    todo_title,
+                )
+    else:
+        # User (non-admin) commented: notify the todo creator (admin/owner)
+        if todo_db.user_id != user_id:
+            creator = db.query(models.User).filter(models.User.id == todo_db.user_id).first()
+            if creator:
+                message = f"{author_username} commented on todo: {todo_title}"
+                await create_notification(
+                    db,
+                    creator.id,
+                    todo_id,
+                    message,
+                    author_username,
+                    creator.email or "",
+                    todo_title,
+                )
+
+    # Notify mentioned users
+    for mentioned_id in body.mentioned_user_ids or []:
+        if mentioned_id == user_id:
+            continue
+        mentioned_user = db.query(models.User).filter(models.User.id == mentioned_id).first()
+        if not mentioned_user:
+            continue
+        message = f"{author_username} mentioned you in a comment on todo: {todo_title}"
+        await create_notification(
+            db,
+            mentioned_user.id,
+            todo_id,
+            message,
+            author_username,
+            mentioned_user.email or "",
+            todo_title,
+        )
+
+    return schemas.CommentResponse(
+        id=comment.id,
+        todo_id=comment.todo_id,
+        user_id=comment.user_id,
+        username=author.username,
+        user_photo=getattr(author, 'profile_pic', None),
+        content=comment.content,
+        created_at=comment.created_at,
+    )
+
+
+@router.put("/{todo_id}/comments/{comment_id}", response_model=schemas.CommentResponse)
+def update_todo_comment(
+    todo_id: int,
+    comment_id: int,
+    user_id: int,
+    body: schemas.CommentCreate,
+    db: Session = Depends(database.get_db)
+):
+    """Update a comment. Only the comment author can update."""
+    todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    if not todo_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+    if not _can_access_todo(todo_db, user_id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
+    comment_db = db.query(models.TodoComment).filter(
+        models.TodoComment.id == comment_id,
+        models.TodoComment.todo_id == todo_id,
+    ).first()
+    if not comment_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    if comment_db.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only edit your own comment")
+    content = (body.content or "").strip()
+    if not content:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Comment content is required")
+    comment_db.content = content
+    db.commit()
+    db.refresh(comment_db)
+    author = db.query(models.User).filter(models.User.id == comment_db.user_id).first()
+    return schemas.CommentResponse(
+        id=comment_db.id,
+        todo_id=comment_db.todo_id,
+        user_id=comment_db.user_id,
+        username=author.username if author else f"User#{comment_db.user_id}",
+        user_photo=getattr(author, 'profile_pic', None) if author else None,
+        content=comment_db.content,
+        created_at=comment_db.created_at,
+    )
+
+
+@router.delete("/{todo_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_todo_comment(
+    todo_id: int,
+    comment_id: int,
+    user_id: int,
+    db: Session = Depends(database.get_db)
+):
+    """Delete a comment. Only the comment author can delete."""
+    todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    if not todo_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+    if not _can_access_todo(todo_db, user_id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
+    comment_db = db.query(models.TodoComment).filter(
+        models.TodoComment.id == comment_id,
+        models.TodoComment.todo_id == todo_id,
+    ).first()
+    if not comment_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    if comment_db.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own comment")
+    db.delete(comment_db)
+    db.commit()
+    return None
 
 
 @router.put("/{todo_id}", response_model=schemas.TodoResponse)
@@ -227,9 +419,8 @@ async def update_todo(
     if not todo_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
     
-    # Allow update if user is the creator OR if user is assigned to the todo
-    # (assigned users can update, especially completion status)
-    can_update = todo_db.user_id == user_id or todo_db.assigned_to_user_id == user_id
+    # Allow update if user is the creator, assigned to the todo, or admin
+    can_update = _can_access_todo(todo_db, user_id, db)
     if not can_update:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to update this todo")
     

@@ -53,3 +53,17 @@ export interface ITodo {
     assigned_to_username?: string | null;
 }
 
+export interface ITodoComment {
+    id: number;
+    todo_id: number;
+    user_id: number;
+    username: string;
+    user_photo?: string | null;
+    content: string;
+    created_at?: string;
+}
+
+export interface ITodoCommentListResponse {
+    comments: ITodoComment[];
+}
+

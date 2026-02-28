@@ -1,20 +1,23 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { RouterLink } from "@angular/router";
 import { Subject, takeUntil, debounceTime } from "rxjs";
 import { AdminService, IUserWithTodos } from "../../../../../core/services/admin.service";
 import { LoaderService } from "../../../../../core/services/loader.service";
 import { ToastService } from "../../../../../core/services/toast.service";
 import { NotificationService } from "../../../../../core/services/notification.service";
 import { ITodoResponse } from "../../../../../core/interfaces/todo.interface";
+import { LayoutPaths } from "../../../../enums/layout-paths.enum";
 
 @Component({
     selector: 'app-admin-panel',
     templateUrl: './admin-panel.component.html',
     styleUrls: ['./admin-panel.component.scss'],
     standalone: true,
-    imports: [CommonModule]
+    imports: [CommonModule, RouterLink]
 })
 export class AdminPanelComponent implements OnInit, OnDestroy {
+    readonly layoutPaths = LayoutPaths;
     private readonly _destroy$ = new Subject<void>();
     usersWithTodos: IUserWithTodos[] = [];
     private originalTodosMap: Map<number, ITodoResponse[]> = new Map();
