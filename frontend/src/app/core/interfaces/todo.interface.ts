@@ -67,3 +67,38 @@ export interface ITodoCommentListResponse {
     comments: ITodoComment[];
 }
 
+export interface ITodoCommentHistoryItem {
+    type: 'comment';
+    id: number;
+    todo_id: number;
+    comment_id?: number | null;
+    user_id: number;
+    username: string;
+    action: 'created' | 'updated' | 'deleted';
+    content_before?: string | null;
+    content_after?: string | null;
+    created_at?: string | null;
+}
+
+export interface ITodoFieldHistoryItem {
+    type: 'field';
+    id: number;
+    todo_id: number;
+    user_id: number;
+    username: string;
+    field: 'status' | 'priority' | 'assigned_to_user_id';
+    old_value?: string | null;
+    new_value?: string | null;
+    created_at?: string | null;
+}
+
+export type ITodoHistoryEntry = ITodoCommentHistoryItem | ITodoFieldHistoryItem;
+
+export interface ITodoCommentHistoryResponse {
+    history: ITodoCommentHistoryItem[];
+}
+
+export interface ITodoHistoryResponse {
+    history: ITodoHistoryEntry[];
+}
+

@@ -1,0 +1,16 @@
+<div class="tabs-nav" role="tablist" [attr.aria-label]="ariaLabel">
+    <button
+        *ngFor="let tab of tabs"
+        type="button"
+        class="tabs-tab"
+        [class.tabs-tab--active]="activeTabId === tab.id"
+        [attr.aria-selected]="activeTabId === tab.id"
+        [attr.aria-controls]="tab.id + '-panel'"
+        [id]="tab.id + '-tab'"
+        role="tab"
+        (click)="selectTab(tab.id)"
+    >
+        <i *ngIf="tab.icon" [class]="'bi ' + tab.icon" class="tabs-tab-icon"></i>
+        <span class="tabs-tab-label">{{ tab.label }}</span>
+    </button>
+</div>

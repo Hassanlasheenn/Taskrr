@@ -89,10 +89,13 @@
                 </div>
 
                 <div class="todo-view-comments">
-                    <h3 class="todo-view-comments-title">
-                        <i class="bi bi-chat-left-text"></i>
-                        Comments
-                    </h3>
+                    <app-tabs
+                        [tabs]="commentHistoryTabs"
+                        [activeTabId]="commentHistoryTab"
+                        (activeTabIdChange)="setCommentHistoryTab($event)"
+                        ariaLabel="Comments and history"
+                    ></app-tabs>
+                    <ng-container *ngIf="commentHistoryTab === 'comments'">
                     <ul class="todo-view-comments-list">
                         <li *ngFor="let comment of comments" class="todo-view-comment" [class.todo-view-comment--own]="isCurrentUser(comment.user_id)">
                             <div class="todo-view-comment-header">
@@ -182,6 +185,41 @@
                             {{ addingComment ? 'Adding...' : 'Add' }}
                         </button>
                     </div>
+                    </ng-container>
+                    <ng-container *ngIf="commentHistoryTab === 'history'">
+                        <div class="todo-view-history">
+                            <p *ngIf="loadingHistory" class="todo-view-history-loading">Loading history...</p>
+                            <ul *ngIf="!loadingHistory && commentHistory.length > 0" class="todo-view-history-list">
+                                <ng-container *ngFor="let item of commentHistory">
+                                    <li *ngIf="item.type === 'comment'" class="todo-view-history-item">
+                                        <div class="todo-view-history-header">
+                                            <span class="todo-view-history-action" [attr.data-action]="item.action">{{ getHistoryActionLabel(item.action) }}</span>
+                                            <span class="todo-view-history-user">{{ item.username }}</span>
+                                            <span *ngIf="item.created_at && formatDate(item.created_at) as itemDate" class="todo-view-history-date">{{ itemDate.date }} {{ itemDate.time }}</span>
+                                        </div>
+                                        <div *ngIf="item.action === 'created' && item.content_after" class="todo-view-history-content">{{ item.content_after }}</div>
+                                        <div *ngIf="item.action === 'updated'" class="todo-view-history-diff">
+                                            <p *ngIf="item.content_before" class="todo-view-history-before"><span class="todo-view-history-label">Before:</span> {{ item.content_before }}</p>
+                                            <p *ngIf="item.content_after" class="todo-view-history-after"><span class="todo-view-history-label">After:</span> {{ item.content_after }}</p>
+                                        </div>
+                                        <div *ngIf="item.action === 'deleted' && item.content_before" class="todo-view-history-content todo-view-history-deleted">{{ item.content_before }}</div>
+                                    </li>
+                                    <li *ngIf="item.type === 'field'" class="todo-view-history-item">
+                                        <div class="todo-view-history-header">
+                                            <span class="todo-view-history-action">{{ getFieldHistoryLabel(item.field) }} changed</span>
+                                            <span class="todo-view-history-user">{{ item.username }}</span>
+                                            <span *ngIf="item.created_at && formatDate(item.created_at) as itemDate" class="todo-view-history-date">{{ itemDate.date }} {{ itemDate.time }}</span>
+                                        </div>
+                                        <div class="todo-view-history-diff">
+                                            <p *ngIf="item.old_value != null" class="todo-view-history-before"><span class="todo-view-history-label">From:</span> {{ item.old_value }}</p>
+                                            <p *ngIf="item.new_value != null" class="todo-view-history-after"><span class="todo-view-history-label">To:</span> {{ item.new_value }}</p>
+                                        </div>
+                                    </li>
+                                </ng-container>
+                            </ul>
+                            <p *ngIf="!loadingHistory && commentHistory.length === 0" class="todo-view-history-empty">No history yet.</p>
+                        </div>
+                    </ng-container>
                 </div>
             </div>
         </article>

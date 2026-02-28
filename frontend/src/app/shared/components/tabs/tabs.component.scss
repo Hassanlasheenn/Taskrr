@@ -1,0 +1,39 @@
+.tabs-nav {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--card-border-color);
+}
+
+.tabs-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+        color: var(--text-primary);
+    }
+
+    .tabs-tab-icon {
+        font-size: 1.125rem;
+    }
+
+    &.tabs-tab--active {
+        color: var(--primary-gradient-start);
+        border-bottom-color: var(--primary-gradient-start);
+    }
+}
+
+.tabs-tab-label {
+    line-height: 1.2;
+}

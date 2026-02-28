@@ -128,6 +128,80 @@ class CommentListResponse(BaseModel):
     comments: List[CommentResponse]
 
 
+class CommentHistoryResponse(BaseModel):
+    id: int
+    todo_id: int
+    comment_id: Optional[int] = None
+    user_id: int
+    username: str
+    action: str
+    content_before: Optional[str] = None
+    content_after: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @field_serializer('created_at')
+    def serialize_created_at(self, value: Optional[datetime]) -> Optional[str]:
+        if value is None:
+            return None
+        return value.strftime('%Y-%m-%dT%H:%M:%S')
+
+
+class CommentHistoryListResponse(BaseModel):
+    history: List[CommentHistoryResponse]
+
+
+class TodoFieldHistoryResponse(BaseModel):
+    id: int
+    todo_id: int
+    user_id: int
+    username: str
+    field: str
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @field_serializer('created_at')
+    def serialize_created_at(self, value: Optional[datetime]) -> Optional[str]:
+        if value is None:
+            return None
+        return value.strftime('%Y-%m-%dT%H:%M:%S')
+
+
+class TodoHistoryEntryComment(BaseModel):
+    type: Literal["comment"] = "comment"
+    id: int
+    todo_id: int
+    comment_id: Optional[int] = None
+    user_id: int
+    username: str
+    action: str
+    content_before: Optional[str] = None
+    content_after: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class TodoHistoryEntryField(BaseModel):
+    type: Literal["field"] = "field"
+    id: int
+    todo_id: int
+    user_id: int
+    username: str
+    field: str
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class TodoHistoryListResponse(BaseModel):
+    history: List[TodoHistoryEntryComment | TodoHistoryEntryField]
+
+
 class NotificationResponse(BaseModel):
     id: int
     user_id: int

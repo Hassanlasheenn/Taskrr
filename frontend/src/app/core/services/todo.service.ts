@@ -2,7 +2,7 @@ import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable, take } from "rxjs";
 import { API_BASE_URL } from "../../api.global";
-import { ITodoCreate, ITodoUpdate, ITodoResponse, ITodoListResponse, ITodoComment, ITodoCommentListResponse } from "../interfaces/todo.interface";
+import { ITodoCreate, ITodoUpdate, ITodoResponse, ITodoListResponse, ITodoComment, ITodoCommentListResponse, ITodoCommentHistoryResponse, ITodoHistoryResponse } from "../interfaces/todo.interface";
 
 @Injectable({
     providedIn: 'root',
@@ -82,6 +82,22 @@ export class TodoService {
     deleteTodoComment(userId: number, todoId: number, commentId: number): Observable<void> {
         return this._http
             .delete<void>(`${this._baseUrl}/${todoId}/comments/${commentId}?user_id=${userId}`, {
+                withCredentials: true
+            })
+            .pipe(take(1));
+    }
+
+    getCommentHistory(userId: number, todoId: number): Observable<ITodoCommentHistoryResponse> {
+        return this._http
+            .get<ITodoCommentHistoryResponse>(`${this._baseUrl}/${todoId}/comment-history?user_id=${userId}`, {
+                withCredentials: true
+            })
+            .pipe(take(1));
+    }
+
+    getTodoHistory(userId: number, todoId: number): Observable<ITodoHistoryResponse> {
+        return this._http
+            .get<ITodoHistoryResponse>(`${this._baseUrl}/${todoId}/history?user_id=${userId}`, {
                 withCredentials: true
             })
             .pipe(take(1));

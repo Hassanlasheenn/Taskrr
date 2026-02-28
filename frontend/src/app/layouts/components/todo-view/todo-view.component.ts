@@ -11,10 +11,11 @@ import { IUserListResponse } from "../../../auth/interfaces";
 import { LoaderService } from "../../../core/services/loader.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
-import { ITodo, ITodoComment, TodoStatus } from "../../../core/interfaces/todo.interface";
+import { ITodo, ITodoComment, ITodoHistoryEntry, TodoStatus } from "../../../core/interfaces/todo.interface";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { CanComponentDeactivate } from "../../../auth/guards";
 import { ParseMentionsPipe } from "../../../core/pipes/parse-mentions.pipe";
+import { TabsComponent, ITabItem } from "../../../shared/components/tabs";
 
 type StatusOption = { value: TodoStatus; label: string };
 type PriorityOption = { value: 'low' | 'medium' | 'high'; label: string };
@@ -37,7 +38,7 @@ const PRIORITY_OPTIONS: PriorityOption[] = [
     templateUrl: './todo-view.component.html',
     styleUrls: ['./todo-view.component.scss'],
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterLink, ParseMentionsPipe],
+    imports: [CommonModule, FormsModule, RouterLink, ParseMentionsPipe, TabsComponent],
 })
 export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactivate {
     private readonly _destroy$ = new Subject<void>();
@@ -61,6 +62,13 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     editContent = '';
     savingEdit = false;
     deletingCommentId: number | null = null;
+    commentHistoryTab: 'comments' | 'history' = 'comments';
+    commentHistory: ITodoHistoryEntry[] = [];
+    loadingHistory = false;
+    readonly commentHistoryTabs: ITabItem[] = [
+        { id: 'comments', label: 'Comments', icon: 'bi-chat-left-text' },
+        { id: 'history', label: 'History', icon: 'bi-clock-history' },
+    ];
     LayoutPaths = LayoutPaths;
     @ViewChild('newCommentInput') newCommentInputRef?: ElementRef<HTMLTextAreaElement>;
 
@@ -196,6 +204,48 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         setTimeout(() => this._closeMentionDropdown(), 200);
     }
 
+    setCommentHistoryTab(tab: string): void {
+        this.commentHistoryTab = tab as 'comments' | 'history';
+        if (this.commentHistoryTab === 'history') this._loadCommentHistory();
+    }
+
+    getHistoryActionLabel(action: string): string {
+        switch (action) {
+            case 'created': return 'Added comment';
+            case 'updated': return 'Edited comment';
+            case 'deleted': return 'Deleted comment';
+            default: return action;
+        }
+    }
+
+    getFieldHistoryLabel(field: string): string {
+        switch (field) {
+            case 'status': return 'Status';
+            case 'priority': return 'Priority';
+            case 'assigned_to_user_id': return 'Assigned to';
+            default: return field;
+        }
+    }
+
+    private _loadCommentHistory(): void {
+        if (!this.todo) return;
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+        this.loadingHistory = true;
+        this._todoService.getTodoHistory(userId, this.todo.id).subscribe({
+            next: (res) => {
+                this.commentHistory = res.history ?? [];
+                this.loadingHistory = false;
+                this._cdr.markForCheck();
+            },
+            error: () => {
+                this.commentHistory = [];
+                this.loadingHistory = false;
+                this._cdr.markForCheck();
+            },
+        });
+    }
+
     onNewCommentKeydown(event: KeyboardEvent): void {
         if (!this.showMentionDropdown) return;
         const list = this.mentionableUsersFiltered;
@@ -290,6 +340,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 this.newCommentText = '';
                 this.mentionedUserIdsInComment = [];
                 this.addingComment = false;
+                if (this.commentHistoryTab === 'history') this._loadCommentHistory();
                 this._toastService.success('Comment added');
             },
             error: (err) => {
@@ -322,6 +373,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 this.editingCommentId = null;
                 this.editContent = '';
                 this.savingEdit = false;
+                if (this.commentHistoryTab === 'history') this._loadCommentHistory();
                 this._toastService.success('Comment updated');
             },
             error: (err) => {
@@ -348,6 +400,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 next: () => {
                     this.comments = this.comments.filter((c) => c.id !== comment.id);
                     this.deletingCommentId = null;
+                    if (this.commentHistoryTab === 'history') this._loadCommentHistory();
                     this._toastService.success('Comment deleted');
                 },
                 error: (err) => {
@@ -384,6 +437,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 this.initialDescription = this.todo.description ?? null;
                 this.initialAssignedToUserId = this.todo.assigned_to_user_id ?? null;
                 this.saving = false;
+                if (this.commentHistoryTab === 'history') this._loadCommentHistory();
                 this._toastService.success('Todo updated');
             },
             error: (err) => {

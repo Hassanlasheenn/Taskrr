@@ -206,6 +206,46 @@ def _can_access_todo(todo_db: models.Todo, user_id: int, db: Session) -> bool:
     return user is not None and user.role == models.UserRole.ADMIN.value
 
 
+def _add_comment_history(
+    db: Session,
+    todo_id: int,
+    comment_id: int | None,
+    user_id: int,
+    action: str,
+    content_before: str | None = None,
+    content_after: str | None = None,
+) -> None:
+    row = models.TodoCommentHistory(
+        todo_id=todo_id,
+        comment_id=comment_id,
+        user_id=user_id,
+        action=action,
+        content_before=content_before,
+        content_after=content_after,
+    )
+    db.add(row)
+    db.commit()
+
+
+def _add_field_history(
+    db: Session,
+    todo_id: int,
+    user_id: int,
+    field: str,
+    old_value: str | None,
+    new_value: str | None,
+) -> None:
+    row = models.TodoFieldHistory(
+        todo_id=todo_id,
+        user_id=user_id,
+        field=field,
+        old_value=old_value,
+        new_value=new_value,
+    )
+    db.add(row)
+    db.commit()
+
+
 @router.get("/{todo_id}", response_model=schemas.TodoResponse)
 def get_todo(
     todo_id: int,
@@ -274,6 +314,7 @@ async def create_todo_comment(
     db.add(comment)
     db.commit()
     db.refresh(comment)
+    _add_comment_history(db, todo_id, comment.id, user_id, models.TodoCommentHistoryAction.CREATED.value, content_before=None, content_after=content)
 
     # Notify the other party: admin comments -> notify assigned user; user comments -> notify todo creator
     author_is_admin = author.role == models.UserRole.ADMIN.value
@@ -365,9 +406,11 @@ def update_todo_comment(
     content = (body.content or "").strip()
     if not content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Comment content is required")
+    old_content = comment_db.content
     comment_db.content = content
     db.commit()
     db.refresh(comment_db)
+    _add_comment_history(db, todo_id, comment_db.id, user_id, models.TodoCommentHistoryAction.UPDATED.value, content_before=old_content, content_after=content)
     author = db.query(models.User).filter(models.User.id == comment_db.user_id).first()
     return schemas.CommentResponse(
         id=comment_db.id,
@@ -401,9 +444,134 @@ def delete_todo_comment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     if comment_db.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own comment")
+    comment_id_val = comment_db.id
+    content_before = comment_db.content
     db.delete(comment_db)
     db.commit()
+    _add_comment_history(db, todo_id, comment_id_val, user_id, models.TodoCommentHistoryAction.DELETED.value, content_before=content_before, content_after=None)
     return None
+
+
+@router.get("/{todo_id}/comment-history", response_model=schemas.CommentHistoryListResponse)
+def get_comment_history(
+    todo_id: int,
+    user_id: int,
+    db: Session = Depends(database.get_db),
+):
+    """Get comment activity history for a todo (add, edit, delete)."""
+    todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    if not todo_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+    if not _can_access_todo(todo_db, user_id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
+    rows = (
+        db.query(models.TodoCommentHistory, models.User.username)
+        .join(models.User, models.TodoCommentHistory.user_id == models.User.id)
+        .filter(models.TodoCommentHistory.todo_id == todo_id)
+        .order_by(models.TodoCommentHistory.created_at.desc())
+        .all()
+    )
+    history = [
+        schemas.CommentHistoryResponse(
+            id=h.id,
+            todo_id=h.todo_id,
+            comment_id=h.comment_id,
+            user_id=h.user_id,
+            username=username or f"User#{h.user_id}",
+            action=h.action,
+            content_before=h.content_before,
+            content_after=h.content_after,
+            created_at=h.created_at,
+        )
+        for h, username in rows
+    ]
+    return schemas.CommentHistoryListResponse(history=history)
+
+
+@router.get("/{todo_id}/history", response_model=schemas.TodoHistoryListResponse)
+def get_todo_history(
+    todo_id: int,
+    user_id: int,
+    db: Session = Depends(database.get_db),
+):
+    """Get unified history for a todo (comments + status/priority/assigned changes)."""
+    todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    if not todo_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
+    if not _can_access_todo(todo_db, user_id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
+
+    entries = []
+    # Comment history
+    comment_rows = (
+        db.query(models.TodoCommentHistory, models.User.username)
+        .join(models.User, models.TodoCommentHistory.user_id == models.User.id)
+        .filter(models.TodoCommentHistory.todo_id == todo_id)
+        .all()
+    )
+    for h, username in comment_rows:
+        entries.append({
+            "kind": "comment",
+            "id": h.id,
+            "todo_id": h.todo_id,
+            "comment_id": h.comment_id,
+            "user_id": h.user_id,
+            "username": username or f"User#{h.user_id}",
+            "action": h.action,
+            "content_before": h.content_before,
+            "content_after": h.content_after,
+            "created_at": h.created_at.strftime('%Y-%m-%dT%H:%M:%S') if h.created_at else None,
+        })
+    # Field history
+    field_rows = (
+        db.query(models.TodoFieldHistory, models.User.username)
+        .join(models.User, models.TodoFieldHistory.user_id == models.User.id)
+        .filter(models.TodoFieldHistory.todo_id == todo_id)
+        .all()
+    )
+    for h, username in field_rows:
+        entries.append({
+            "kind": "field",
+            "id": h.id,
+            "todo_id": h.todo_id,
+            "user_id": h.user_id,
+            "username": username or f"User#{h.user_id}",
+            "field": h.field,
+            "old_value": h.old_value,
+            "new_value": h.new_value,
+            "created_at": h.created_at.strftime('%Y-%m-%dT%H:%M:%S') if h.created_at else None,
+        })
+    # Sort by created_at desc (newest first)
+    entries.sort(key=lambda e: e["created_at"] or "", reverse=True)
+    # Build response with discriminated type
+    history = []
+    for e in entries:
+        if e["kind"] == "comment":
+            history.append(schemas.TodoHistoryEntryComment(
+                type="comment",
+                id=e["id"],
+                todo_id=e["todo_id"],
+                comment_id=e.get("comment_id"),
+                user_id=e["user_id"],
+                username=e["username"],
+                action=e["action"],
+                content_before=e.get("content_before"),
+                content_after=e.get("content_after"),
+                created_at=e.get("created_at"),
+            ))
+        else:
+            history.append(schemas.TodoHistoryEntryField(
+                type="field",
+                id=e["id"],
+                todo_id=e["todo_id"],
+                user_id=e["user_id"],
+                username=e["username"],
+                field=e["field"],
+                old_value=e.get("old_value"),
+                new_value=e.get("new_value"),
+                created_at=e.get("created_at"),
+            ))
+    return schemas.TodoHistoryListResponse(history=history)
 
 
 @router.put("/{todo_id}", response_model=schemas.TodoResponse)
@@ -423,6 +591,11 @@ async def update_todo(
     can_update = _can_access_todo(todo_db, user_id, db)
     if not can_update:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to update this todo")
+    
+    # Snapshot old values for field history (before any updates)
+    old_priority = todo_db.priority
+    old_status = todo_db.status
+    old_assigned_user_id = todo_db.assigned_to_user_id
     
     # Track which fields actually changed (for notification)
     changed_fields = []
@@ -460,8 +633,7 @@ async def update_todo(
     
     # Track if assignment changed
     assignment_changed = False
-    old_assigned_user_id = todo_db.assigned_to_user_id
-    original_assigned_user_id = todo_db.assigned_to_user_id
+    original_assigned_user_id = old_assigned_user_id
     
     # Handle assigned user update
     provided_fields = todo.model_dump(exclude_unset=True)
@@ -634,6 +806,29 @@ async def update_todo(
     
     db.commit()
     db.refresh(todo_db)
+
+    # Log field history for status, priority, assigned_to_user_id
+    status_labels = {
+        models.TodoStatus.NEW.value: "New",
+        models.TodoStatus.IN_PROGRESS.value: "In Progress",
+        models.TodoStatus.PAUSED.value: "Paused",
+        models.TodoStatus.DONE.value: "Done",
+    }
+    if old_status != todo_db.status:
+        _add_field_history(
+            db, todo_id, user_id, "status",
+            status_labels.get(old_status, old_status),
+            status_labels.get(todo_db.status, todo_db.status),
+        )
+    if old_priority != todo_db.priority:
+        _add_field_history(db, todo_id, user_id, "priority", old_priority, todo_db.priority)
+    if old_assigned_user_id != todo_db.assigned_to_user_id:
+        old_assignee = db.query(models.User).filter(models.User.id == old_assigned_user_id).first() if old_assigned_user_id else None
+        new_assignee = db.query(models.User).filter(models.User.id == todo_db.assigned_to_user_id).first() if todo_db.assigned_to_user_id else None
+        old_val = (old_assignee.username if old_assignee else "Unassigned") if old_assigned_user_id else "Unassigned"
+        new_val = (new_assignee.username if new_assignee else "Unassigned") if todo_db.assigned_to_user_id else "Unassigned"
+        _add_field_history(db, todo_id, user_id, "assigned_to_user_id", old_val, new_val)
+
     return _build_todo_response(todo_db, db)
 
 @router.delete("/{todo_id}")

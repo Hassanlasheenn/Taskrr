@@ -55,6 +55,7 @@ class Todo(Base):
     user = relationship("User", back_populates="todos", foreign_keys=[user_id])
     assigned_to_user = relationship("User", foreign_keys=[assigned_to_user_id])
     comments = relationship("TodoComment", back_populates="todo", cascade="all, delete-orphan")
+    comment_history = relationship("TodoCommentHistory", back_populates="todo", foreign_keys="[TodoCommentHistory.todo_id]")
 
 
 class TodoComment(Base):
@@ -67,6 +68,43 @@ class TodoComment(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     todo = relationship("Todo", back_populates="comments", foreign_keys=[todo_id])
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class TodoCommentHistoryAction(str, enum.Enum):
+    CREATED = "created"
+    UPDATED = "updated"
+    DELETED = "deleted"
+
+
+class TodoCommentHistory(Base):
+    __tablename__ = "todo_comment_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    todo_id = Column(Integer, ForeignKey("todos.id"), nullable=False)
+    comment_id = Column(Integer, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String(20), nullable=False)
+    content_before = Column(Text, nullable=True)
+    content_after = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    todo = relationship("Todo", back_populates="comment_history", foreign_keys=[todo_id])
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class TodoFieldHistory(Base):
+    __tablename__ = "todo_field_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    todo_id = Column(Integer, ForeignKey("todos.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    field = Column(String(50), nullable=False)
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    todo = relationship("Todo", foreign_keys=[todo_id])
     user = relationship("User", foreign_keys=[user_id])
 
 
