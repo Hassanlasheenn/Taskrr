@@ -53,7 +53,7 @@
 
             &:disabled {
                 background: var(--btn-secondary-bg);
-                cursor: not-allowed;
+                cursor: default;
                 opacity: 0.6;
                 border-color: var(--card-border-color);
             }

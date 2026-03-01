@@ -146,7 +146,7 @@
         &:disabled,
         &.disabled {
             opacity: 0.6;
-            cursor: not-allowed;
+            cursor: default;
             pointer-events: none;
         }
     }
@@ -326,7 +326,7 @@
 
         &:disabled {
             opacity: 0.6;
-            cursor: not-allowed;
+            cursor: default;
         }
     }
 }

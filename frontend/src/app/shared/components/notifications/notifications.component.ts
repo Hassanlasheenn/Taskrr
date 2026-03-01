@@ -1,7 +1,9 @@
 import { Component, OnInit, OnDestroy, Input, ElementRef, HostListener } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { Router } from "@angular/router";
 import { NotificationService } from "../../../core/services/notification.service";
 import { INotificationResponse } from "../../../core/interfaces/notification.interface";
+import { LayoutPaths } from "../../../layouts/enums/layout-paths.enum";
 import { Subject, takeUntil } from "rxjs";
 import { trackById } from "../../helpers/trackByFn.helper";
 
@@ -23,6 +25,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
 
     constructor(
         private readonly _notificationService: NotificationService,
+        private readonly _router: Router,
         private readonly _elementRef: ElementRef
     ) {}
 
@@ -72,10 +75,18 @@ export class NotificationsComponent implements OnInit, OnDestroy {
         }
     }
 
+    onNotificationClick(notification: INotificationResponse): void {
+        this.markAsRead(notification);
+        if (notification.todo_id != null) {
+            this.isOpen = false;
+            this._router.navigate([LayoutPaths.TODO_VIEW, notification.todo_id]);
+        }
+    }
+
     onNotificationKeyDown(event: KeyboardEvent, notification: INotificationResponse): void {
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            this.markAsRead(notification);
+            this.onNotificationClick(notification);
         }
     }
 
