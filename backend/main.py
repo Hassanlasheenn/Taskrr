@@ -30,6 +30,7 @@ if environment == "production":
 else:
     # Development: Only allow localhost
     allowed_origins = [
+        "http://localhost",
         "http://localhost:4200",
         "http://localhost:4201",
     ]
