@@ -62,6 +62,13 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "docker": {
+              "budgets": [
+                { "type": "initial", "maximumWarning": "1MB", "maximumError": "2MB" },
+                { "type": "anyComponentStyle", "maximumWarning": "10kB", "maximumError": "20kB" }
+              ],
+              "outputHashing": "all"
             }
           },
           "defaultConfiguration": "production"

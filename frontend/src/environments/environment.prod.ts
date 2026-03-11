@@ -1,7 +1,6 @@
 export const environment = {
     production: true,
-    // This value is automatically replaced during build by GitHub Actions
-    // Set PRODUCTION_API_URL secret in GitHub to configure
-    apiBaseUrl: 'https://api.yourdomain.com', // Will be replaced during build
+    // For Vercel, this needs to be your Railway URL
+    // For VPS, GitHub Actions will replace this with ''
+    apiBaseUrl: 'https://full-stack-todo-production.up.railway.app', 
 };
-
