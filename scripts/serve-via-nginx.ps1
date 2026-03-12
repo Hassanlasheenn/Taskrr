@@ -7,6 +7,8 @@ else { $Root = Split-Path -Parent $Root }
 Set-Location "$Root\frontend"
 
 Write-Host "Building frontend (docker config, same-origin API)..."
+$env:API_BASE_URL=''
+node scripts/replace-api-url.js
 npm run build -- --configuration=docker
 
 $Out = $null

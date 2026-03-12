@@ -8,19 +8,23 @@
 const fs = require('fs');
 const path = require('path');
 
-const apiUrl = process.env.API_BASE_URL || process.argv[2] || 'https://api.yourdomain.com';
+// Use environment variable, then command line argument, then fallback default
+let apiUrl = process.env.API_BASE_URL;
+if (apiUrl === undefined) {
+  apiUrl = process.argv[2] || 'https://api.yourdomain.com';
+}
 const envFile = path.join(__dirname, '../src/environments/environment.prod.ts');
 
-// Validate API URL
-if (!apiUrl || apiUrl.trim() === '') {
-  console.error('❌ Error: API URL is empty');
+// Validate API URL (allow empty string for Nginx proxy)
+if (apiUrl === undefined) {
+  console.error('❌ Error: API URL is undefined');
   process.exit(1);
 }
 
 // Escape single quotes in URL for JavaScript string
 const escapedApiUrl = apiUrl.replace(/'/g, "\\'");
 
-console.log(`🔧 Replacing API URL with: ${apiUrl}`);
+console.log(`🔧 Replacing API URL with: ${apiUrl || '(empty string for same-origin proxy)'}`);
 console.log(`📁 Environment file: ${envFile}`);
 
 try {

@@ -7,6 +7,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT/frontend"
 
 echo "Building frontend (docker config, same-origin API)..."
+# Set API URL to empty string for same-origin proxying via Nginx
+API_BASE_URL='' node scripts/replace-api-url.js
 npm install
 npm run build -- --configuration=docker
 

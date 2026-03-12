@@ -1,0 +1,22 @@
+# Ignore Git
+.git/
+.github/
+
+# Ignore Python
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Ignore Frontend
+**/node_modules/
+**/dist/
+**/.angular/
+
+# Ignore Misc
+.DS_Store
+.vscode/
+.idea/
+.env
+frontend-dist/
