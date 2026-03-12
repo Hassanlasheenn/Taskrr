@@ -37,6 +37,28 @@ services:
     deploy:
       replicas: 3
 
+  # ── Postgres (Default for Mac/Linux users) ──────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: todo_app_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todoDB
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - todo_app_network
+
+  # ── Redis Cache ───────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: todo_app_redis
@@ -54,6 +76,8 @@ services:
       - todo_app_network
 
 volumes:
+  postgres_data:
+    driver: local
   redis_data:
     driver: local
 
