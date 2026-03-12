@@ -9,7 +9,11 @@ Base.metadata.create_all(bind=engine)
 
 INSTANCE_ID = os.getenv("INSTANCE_ID", "single")
 
-app = FastAPI(root_path=os.getenv("ROOT_PATH", ""))
+app = FastAPI(
+    title="TaskHub",
+    version="1.0.0",
+    root_path=os.getenv("ROOT_PATH", "")
+)
 
 # CORS configuration based on environment
 environment = os.getenv("ENVIRONMENT", "development").lower()
