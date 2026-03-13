@@ -177,6 +177,27 @@ async def create_todo(
     if db_todo.assigned_to_user_id:
         invalidate_todo_list_for_user(db_todo.assigned_to_user_id)
     invalidate_admin_users_with_todos()
+
+    # Urgency notification logic (immediate)
+    if db_todo.due_date and db_todo.status != models.TodoStatus.DONE.value:
+        from datetime import datetime, timedelta
+        threshold = datetime.now() + timedelta(days=3)
+        if db_todo.due_date <= threshold:
+            user_to_notify_id = db_todo.assigned_to_user_id or db_todo.user_id
+            target_user = db.query(models.User).filter(models.User.id == user_to_notify_id).first()
+            
+            if target_user:
+                message = f"Urgent: New todo '{db_todo.title}' is due soon!"
+                if db_todo.due_date < datetime.now():
+                    message = f"Alert: New todo '{db_todo.title}' is already OVERDUE!"
+                
+                await create_notification(
+                    db, user_to_notify_id, db_todo.id, message,
+                    creator_username, target_user.email, db_todo.title
+                )
+                db_todo.reminder_sent_at = datetime.now()
+                db.commit()
+
     todo_dict = {
         "id": db_todo.id,
         "title": db_todo.title,
@@ -930,6 +951,27 @@ async def update_todo(
     if original_assigned_user_id and original_assigned_user_id != todo_db.assigned_to_user_id:
         invalidate_todo_list_for_user(original_assigned_user_id)
     invalidate_admin_users_with_todos()
+
+    # Urgency notification logic (immediate)
+    if todo_db.due_date and todo_db.status != models.TodoStatus.DONE.value:
+        from datetime import datetime, timedelta
+        threshold = datetime.now() + timedelta(days=3)
+        if todo_db.due_date <= threshold:
+            user_to_notify_id = todo_db.assigned_to_user_id or todo_db.user_id
+            target_user = db.query(models.User).filter(models.User.id == user_to_notify_id).first()
+            
+            if target_user:
+                message = f"Urgent Reminder: '{todo_db.title}' is due soon!"
+                if todo_db.due_date < datetime.now():
+                    message = f"Alert: '{todo_db.title}' is already OVERDUE!"
+                
+                await create_notification(
+                    db, user_to_notify_id, todo_db.id, message,
+                    updater_username, target_user.email, todo_db.title
+                )
+                todo_db.reminder_sent_at = datetime.now()
+                db.commit()
+
     return _build_todo_response(todo_db, db)
 
 @router.delete("/{todo_id}")

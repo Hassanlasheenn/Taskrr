@@ -1,0 +1,12 @@
+<div class="priority-filter-container">
+    <select
+        id="priority-select"
+        class="priority-select"
+        [value]="activePriority"
+        (change)="onPriorityChange($event)"
+    >
+        <option *ngFor="let priority of priorities" [value]="priority.value">
+            {{ priority.label }}
+        </option>
+    </select>
+</div>

@@ -16,6 +16,7 @@ import { DashboardSideNavComponent } from "./components/dashboard-side-nav/dashb
 import { CalendarComponent } from "./components/calendar/calendar.component";
 import { SearchBarComponent } from "./components/search-bar/search-bar.component";
 import { StatusFilterComponent, TodoStatus as FilterStatus } from "./components/status-filter/status-filter.component";
+import { PriorityFilterComponent } from "./components/priority-filter/priority-filter.component";
 import { AdminPanelComponent } from "./components/admin-panel/admin-panel.component";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
@@ -34,6 +35,7 @@ import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-
         CalendarComponent, 
         SearchBarComponent, 
         StatusFilterComponent, 
+        PriorityFilterComponent,
         AdminPanelComponent,
         TodoFormComponent
     ],
@@ -52,6 +54,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     DashboardSections = DashboardSections;
     searchQuery: string = '';
     activeStatus: FilterStatus = 'all';
+    activePriority: string = 'all';
     selectedCategory: string | null = null;
 
     constructor(
@@ -258,6 +261,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.activeSection = section;
         this.searchQuery = '';
         this.activeStatus = 'all';
+        this.activePriority = 'all';
         this.selectedCategory = null;
     }
 
@@ -280,6 +284,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
         return this.todos.filter(todo => todo.status === 'done').length;
     }
 
+    get inProgressCount(): number {
+        const userId = this._authService.getCurrentUserId();
+        return this.todos.filter(todo => 
+            todo.status === 'inProgress' && 
+            todo.assigned_to_user_id === userId
+        ).length;
+    }
+
+    get newCount(): number {
+        const userId = this._authService.getCurrentUserId();
+        return this.todos.filter(todo => 
+            todo.status === 'new' && 
+            todo.assigned_to_user_id === userId
+        ).length;
+    }
+
     get sectionTitle(): string {
         switch (this.activeSection) {
             case DashboardSections.COMPLETED:
@@ -287,7 +307,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             case DashboardSections.MY_ASSIGNED:
                 return 'My Todos';
             case DashboardSections.DASHBOARD:
-                return this._authService.isAdmin() ? 'Unassigned Todos' : 'Your Todos';
+                return this._authService.isAdmin() ? 'Pending Todos' : 'Your Todos';
             default:
                 return 'Your Todos';
         }
@@ -299,6 +319,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     onStatusChange(status: FilterStatus): void {
         this.activeStatus = status;
+    }
+
+    onPriorityChange(priority: string): void {
+        this.activePriority = priority;
+    }
+
+    private applyPriorityFilter(todos: ITodo[]): ITodo[] {
+        if (this.activePriority === 'all') return todos;
+        return todos.filter(todo => todo.priority === this.activePriority);
     }
 
     get filteredTodos(): ITodo[] {
@@ -328,8 +357,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 break;
         }
 
-        if (this.activeSection === DashboardSections.DASHBOARD) {
+        if (this.activeSection === DashboardSections.DASHBOARD || this.activeSection === DashboardSections.MY_ASSIGNED) {
             filtered = this.applyStatusFilter(filtered);
+            filtered = this.applyPriorityFilter(filtered);
         }
 
         if (this.searchQuery) {
@@ -408,8 +438,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }
 
         // Apply status filter
-        if (this.activeSection === DashboardSections.DASHBOARD) {
+        if (this.activeSection === DashboardSections.DASHBOARD || this.activeSection === DashboardSections.MY_ASSIGNED) {
             filtered = this.applyStatusFilter(filtered);
+            filtered = this.applyPriorityFilter(filtered);
         }
 
         // Apply search filter

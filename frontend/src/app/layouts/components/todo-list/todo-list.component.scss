@@ -43,11 +43,6 @@
         border-color: rgba(40, 167, 69, 0.3);
         i { color: #28a745; }
     }
-
-    &:hover {
-        transform: translateY(-1px);
-        filter: brightness(0.95);
-    }
 }
 
 .todo-list-container {

@@ -11,13 +11,17 @@
                         [activeStatus]="activeStatus"
                         (statusChange)="statusChange.emit($event)"
                     />
+                    <app-priority-filter
+                        [activePriority]="activePriority"
+                        (priorityChange)="priorityChange.emit($event)"
+                    />
                     <button 
-                        *ngIf="activeStatus !== 'all'"
+                        *ngIf="activeStatus !== 'all' || activePriority !== 'all'"
                         type="button" 
                         class="clear-filter-icon-btn"
-                        (click)="onClearStatusFilter()"
-                        aria-label="Clear status filter"
-                        title="Clear status filter"
+                        (click)="onClearFilters()"
+                        aria-label="Clear filters"
+                        title="Clear filters"
                     >
                         <i class="bi bi-x-circle"></i>
                     </button>

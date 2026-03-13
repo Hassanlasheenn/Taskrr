@@ -103,18 +103,24 @@ export class CalendarComponent implements OnInit, OnChanges {
 
     getTodosForDate(date: Date | null): ITodo[] {
         if (!date) return [];
+        const compareDate = new Date(date);
         
         return this.todos.filter(todo => {
-            const dueDateStr = (todo as any).due_date;
-            if (!dueDateStr) return false;
-            
-            const todoDate = this.parseTodoDate(dueDateStr);
-            const compareDate = new Date(date);
+            if (!todo.created_at) return false;
+            const todoDate = this.parseTodoDate(todo.created_at);
             
             return todoDate.getFullYear() === compareDate.getFullYear() &&
                    todoDate.getMonth() === compareDate.getMonth() &&
                    todoDate.getDate() === compareDate.getDate();
         });
+    }
+
+    isDueDate(todo: ITodo, date: Date | null): boolean {
+        if (!date || !(todo as any).due_date) return false;
+        const dueDate = this.parseTodoDate((todo as any).due_date);
+        return dueDate.getFullYear() === date.getFullYear() &&
+               dueDate.getMonth() === date.getMonth() &&
+               dueDate.getDate() === date.getDate();
     }
 
     getDueDateUrgencyClass(dateString?: string): string {
@@ -162,16 +168,20 @@ export class CalendarComponent implements OnInit, OnChanges {
         if (!this.selectedDate) return [];
         
         const todosInHour = this.selectedDayTodos.filter(todo => {
-            const dueDateStr = (todo as any).due_date;
-            if (!dueDateStr) return false;
+            const dateStr = (todo as any).due_date || todo.created_at;
+            if (!dateStr) return false;
             
-            const todoDate = this.parseTodoDate(dueDateStr);
+            const todoDate = this.parseTodoDate(dateStr);
             return todoDate.getHours() === hour;
         });
 
         return todosInHour.sort((a, b) => {
-            const dateA = this.parseTodoDate((a as any).due_date);
-            const dateB = this.parseTodoDate((b as any).due_date);
+            const dateAStr = (a as any).due_date || a.created_at;
+            const dateBStr = (b as any).due_date || b.created_at;
+            if (!dateAStr || !dateBStr) return 0;
+            
+            const dateA = this.parseTodoDate(dateAStr);
+            const dateB = this.parseTodoDate(dateBStr);
             return dateA.getTime() - dateB.getTime();
         });
     }

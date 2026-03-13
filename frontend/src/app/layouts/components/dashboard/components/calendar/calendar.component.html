@@ -72,20 +72,17 @@
                                 [ngClass]="getPriorityClass(todo.priority)"
                             >
                                 <div class="todo-card-content">
-                                    <div class="todo-time-badge" [ngClass]="getDueDateUrgencyClass($any(todo).due_date)">
-                                        <i class="bi bi-alarm-fill"></i>
-                                        {{ formatTime($any(todo).due_date) }}
-                                    </div>
                                     <div class="todo-content">
                                         <div class="todo-header-row">
                                             <h4 class="todo-title">{{ todo.title }}</h4>
                                             <span *ngIf="todo.status === 'done'" class="done-badge-small">Done</span>
                                         </div>
                                         
-                                        <!-- Urgency-colored Full Due Date Badge for Calendar -->
+                                        <!-- Urgency-colored Full Due Date Badge for Calendar (Below Title) -->
                                         <div *ngIf="$any(todo).due_date" 
                                              class="calendar-due-badge mt-1" 
                                              [ngClass]="getDueDateUrgencyClass($any(todo).due_date)">
+                                            <i class="bi bi-alarm-fill"></i>
                                             <span class="due-label">Due:</span>
                                             <span class="due-value">{{ formatFullDate($any(todo).due_date) }}</span>
                                         </div>

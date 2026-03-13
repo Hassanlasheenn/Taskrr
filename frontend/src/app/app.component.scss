@@ -6,24 +6,12 @@
   flex-direction: column;
   min-height: 0;
   box-sizing: border-box;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-
-  @include custom-scrollbar;
-
-  @media (max-width: 767.98px) {
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    overscroll-behavior-y: auto;
-  }
+  position: relative;
 
   ::ng-deep app-auth-container {
-    height: calc(100vh - var(--header-total-height, 80px));
-    max-height: calc(100vh - var(--header-total-height, 80px));
-    overflow: hidden;
+    min-height: calc(100vh - var(--header-total-height, 80px));
+    display: flex;
+    flex-direction: column;
 
     @media (max-width: 767.98px) {
       overflow-y: auto;

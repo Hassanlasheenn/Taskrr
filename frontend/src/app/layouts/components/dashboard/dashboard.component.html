@@ -22,16 +22,16 @@
             />
 
             <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.ADMIN_PANEL" class="todo-list-wrapper">
-                <div *ngIf="activeSection === DashboardSections.DASHBOARD" class="filters-section">
-                    <!-- Admin Summary Cards -->
-                    <div *ngIf="_authService.isAdmin()" class="admin-summary-cards mb-4">
+                <!-- Dashboard Summary Cards -->
+                <div *ngIf="activeSection === DashboardSections.DASHBOARD && _authService.isAdmin()" class="filters-section">
+                    <div class="admin-summary-cards mb-4">
                         <div class="summary-card unassigned" (click)="onSectionChange(DashboardSections.DASHBOARD)">
                             <div class="summary-card-icon">
                                 <i class="bi bi-clipboard"></i>
                             </div>
                             <div class="summary-card-content">
                                 <span class="summary-card-count">{{ unassignedCount }}</span>
-                                <span class="summary-card-label">Unassigned Todos</span>
+                                <span class="summary-card-label">Pending Todos</span>
                             </div>
                         </div>
                         <div class="summary-card assigned" (click)="onSectionChange(DashboardSections.MY_ASSIGNED)">
@@ -53,7 +53,33 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
+                <!-- My Todos Summary Cards -->
+                <div *ngIf="activeSection === DashboardSections.MY_ASSIGNED && _authService.isAdmin()" class="filters-section">
+                    <div class="admin-summary-cards mb-4">
+                        <div class="summary-card new" (click)="onStatusChange('new')">
+                            <div class="summary-card-icon">
+                                <i class="bi bi-lightning-charge"></i>
+                            </div>
+                            <div class="summary-card-content">
+                                <span class="summary-card-count">{{ newCount }}</span>
+                                <span class="summary-card-label">New</span>
+                            </div>
+                        </div>
+                        <div class="summary-card in-progress" (click)="onStatusChange('inProgress')">
+                            <div class="summary-card-icon">
+                                <i class="bi bi-gear-wide-connected"></i>
+                            </div>
+                            <div class="summary-card-content">
+                                <span class="summary-card-count">{{ inProgressCount }}</span>
+                                <span class="summary-card-label">In Progress</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="activeSection === DashboardSections.DASHBOARD" class="filters-section">
                     <app-search-bar
                         placeholder="Search todos by title or description..."
                         (searchChange)="onSearchChange($event)"
@@ -89,14 +115,16 @@
                     [groupByCategory]="activeSection === DashboardSections.DASHBOARD && selectedCategory === null && !searchQuery"
                     [showUsername]="true"
                     [username]="(userData?.username | titlecase) || null"
-                    [showStatusFilter]="activeSection === DashboardSections.DASHBOARD"
+                    [showStatusFilter]="activeSection === DashboardSections.DASHBOARD || activeSection === DashboardSections.MY_ASSIGNED"
                     [activeStatus]="activeStatus"
+                    [activePriority]="activePriority"
                     (addTodo)="onAddTodo()"
                     (toggleTodo)="onToggleTodo($event)"
                     (deleteTodo)="onDeleteTodo($event)"
                     (editTodo)="onEditTodo($event)"
                     (viewTodo)="onViewTodo($event)"
                     (statusChange)="onStatusChange($event)"
+                    (priorityChange)="onPriorityChange($event)"
                 />
             </div>
         </div>

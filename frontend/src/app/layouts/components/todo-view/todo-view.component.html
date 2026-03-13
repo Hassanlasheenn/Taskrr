@@ -30,9 +30,6 @@
                     <ng-container *ngIf="formatDate(todo.created_at) as created">
                         <span class="todo-view-meta-item"><i class="bi bi-calendar3"></i> {{ created.date }} {{ created.time }}</span>
                     </ng-container>
-                    <ng-container *ngIf="todo.updated_at && formatDate(todo.updated_at) as updated">
-                        <span class="todo-view-meta-item"><i class="bi bi-pencil-square"></i> {{ updated.date }} {{ updated.time }}</span>
-                    </ng-container>
                 </div>
                 <div class="todo-view-header-actions">
                     <div class="todo-view-badges">

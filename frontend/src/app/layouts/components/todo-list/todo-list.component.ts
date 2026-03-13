@@ -3,13 +3,14 @@ import { ChangeDetectorRef, Component, EventEmitter, HostListener, Input, OnChan
 import { AuthService } from "../../../auth/services";
 import { ITodo } from "../../../core/interfaces/todo.interface";
 import { StatusFilterComponent, TodoStatus as FilterStatus } from "../dashboard/components/status-filter/status-filter.component";
+import { PriorityFilterComponent } from "../dashboard/components/priority-filter/priority-filter.component";
 
 @Component({
     selector: 'app-todo-list',
     templateUrl: './todo-list.component.html',
     styleUrls: ['./todo-list.component.scss'],
     standalone: true,
-    imports: [CommonModule, StatusFilterComponent],
+    imports: [CommonModule, StatusFilterComponent, PriorityFilterComponent],
 })
 export class TodoListComponent implements OnInit, OnChanges {
     @Input() todos: ITodo[] = [];
@@ -22,6 +23,7 @@ export class TodoListComponent implements OnInit, OnChanges {
     @Input() username: string | null = null;
     @Input() showStatusFilter: boolean = false;
     @Input() activeStatus: FilterStatus = 'all';
+    @Input() activePriority: string = 'all';
     @Input() isCompletedSection: boolean = false;
     @Output() addTodo = new EventEmitter<void>();
     @Output() toggleTodo = new EventEmitter<ITodo>();
@@ -29,6 +31,7 @@ export class TodoListComponent implements OnInit, OnChanges {
     @Output() editTodo = new EventEmitter<ITodo>();
     @Output() viewTodo = new EventEmitter<ITodo>();
     @Output() statusChange = new EventEmitter<FilterStatus>();
+    @Output() priorityChange = new EventEmitter<string>();
 
     expandedCategories: { [key: string]: boolean } = {};
     viewMode: 'grid' | 'list' = 'grid';
@@ -110,8 +113,9 @@ export class TodoListComponent implements OnInit, OnChanges {
         }
     }
 
-    onClearStatusFilter(): void {
+    onClearFilters(): void {
         this.statusChange.emit('all');
+        this.priorityChange.emit('all');
     }
 
     trackById(index: number, item: ITodo): number {
