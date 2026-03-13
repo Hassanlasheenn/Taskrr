@@ -10,7 +10,6 @@
         flex-shrink: 0;
         width: 100%;
 
-        // Fixed width on large screens
         @media (min-width: 992px) {
             width: 220px;
         }

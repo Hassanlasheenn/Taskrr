@@ -923,7 +923,7 @@ async def delete_todo(
                 message=message
             )
             db.add(notification)
-            db.flush()  # Flush to get the notification ID
+            db.flush()
             db.refresh(notification)
             
             # Set todo_id to NULL before deleting the todo to avoid foreign key constraint
