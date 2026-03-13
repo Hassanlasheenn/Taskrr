@@ -1,0 +1,33 @@
+# Stage 1: Build the Angular Frontend
+FROM node:20-alpine AS build-frontend
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Copy the rest of the frontend code
+COPY frontend/ ./
+
+# Pass build arguments to the frontend if needed (e.g., PostHog Key)
+ARG POSTHOG_KEY
+ENV POSTHOG_KEY=$POSTHOG_KEY
+
+# Build the application
+RUN npm run build -- --configuration=production
+
+# Stage 2: Serve with Nginx and Proxy Backend
+FROM nginx:1.27-alpine
+
+# Remove default config
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy custom Nginx configuration
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Copy built Angular app from the first stage
+COPY --from=build-frontend /app/dist/frontend/browser /var/www/frontend
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # Nginx acting as a reverse proxy and serving the built frontend
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+      args:
+        - POSTHOG_KEY=${POSTHOG_KEY}
+    env_file: .env.prod
+    container_name: todo_app_nginx_prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - todo_app_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # FastAPI Backend
+  backend:
+    build: ./backend
+    env_file: .env.prod
+    container_name: todo_app_backend_prod
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - INSTANCE_ID=prod_node_1
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    networks:
+      - todo_app_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    env_file: .env.prod
+    container_name: todo_app_postgres_prod
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - todo_app_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: todo_app_redis_prod
+    volumes:
+      - redis_data_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - todo_app_network
+
+volumes:
+  postgres_data_prod:
+  redis_data_prod:
+
+networks:
+  todo_app_network:
+    driver: bridge

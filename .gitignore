@@ -1,5 +1,6 @@
 # Environment variables
 .env
+.env.prod
 backend/.env
 *.env
 !*.env.example
