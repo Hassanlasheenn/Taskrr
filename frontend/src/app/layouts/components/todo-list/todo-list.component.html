@@ -1,12 +1,44 @@
 <section class="todo-list-container">
     <div class="todo-grid">
-        <div class="todo-header d-flex justify-content-between align-items-center">
-            <div class="todo-header-left d-flex align-items-center gap-2 gap-sm-3 flex-wrap">
-                <div class="d-flex align-items-center gap-1 gap-sm-2">
+        <div class="todo-header">
+            <div class="todo-header-top d-flex justify-content-between align-items-center w-100 mb-2 mb-sm-3">
+                <div class="d-flex align-items-center gap-2">
                     <h2 class="todo-section-title text-truncate">{{ sectionTitle }}</h2>
                     <span class="todo-count-badge">{{ totalCount }}</span>
                 </div>
-                <div *ngIf="showStatusFilter" class="d-flex align-items-center gap-1 gap-sm-2">
+                
+                <div class="todo-header-actions d-flex align-items-center gap-2">
+                    <div class="view-toggle d-none d-sm-flex">
+                        <button 
+                            type="button" 
+                            class="view-toggle-btn"
+                            [class.active]="viewMode === 'grid'"
+                            (click)="viewMode = 'grid'"
+                            aria-label="Grid view"
+                        >
+                            <i class="bi bi-grid-3x3-gap"></i>
+                        </button>
+                        <button 
+                            type="button" 
+                            class="view-toggle-btn"
+                            [class.active]="viewMode === 'list'"
+                            (click)="viewMode = 'list'"
+                            aria-label="List view"
+                        >
+                            <i class="bi bi-list-ul"></i>
+                        </button>
+                    </div>
+                    
+                    <button *ngIf="showAddButton" type="button" class="add-todo-btn-small" (click)="onAddTodo()">
+                        <i class="bi bi-plus-lg me-sm-1"></i>
+                        <span class="d-none d-sm-inline">Add Task</span>
+                        <span class="d-inline d-sm-none">Add</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="todo-header-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div *ngIf="showStatusFilter" class="filters-group d-flex align-items-center gap-2 flex-wrap">
                     <app-status-filter
                         [activeStatus]="activeStatus"
                         (statusChange)="statusChange.emit($event)"
@@ -26,9 +58,8 @@
                         <i class="bi bi-x-circle"></i>
                     </button>
                 </div>
-            </div>
-            <div class="todo-header-right d-flex align-items-center gap-2 ms-auto">
-                <div class="view-toggle" *ngIf="todos.length > 0 && !isCompletedSection">
+
+                <div class="view-toggle d-flex d-sm-none ms-auto">
                     <button 
                         type="button" 
                         class="view-toggle-btn"
@@ -48,10 +79,6 @@
                         <i class="bi bi-list-ul"></i>
                     </button>
                 </div>
-                <button *ngIf="showAddButton" type="button" class="add-todo-btn-small" (click)="onAddTodo()">
-                    <i class="bi bi-plus-lg me-1"></i>
-                    <span>Add</span>
-                </button>
             </div>
         </div>
 

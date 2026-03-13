@@ -1,4 +1,4 @@
-# TaskHub Application
+# Taskrr Application
 
 A full-stack Todo application with Angular 19, FastAPI, Redis, and SQL Server/Postgres.
 

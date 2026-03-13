@@ -310,62 +310,58 @@
 
 .todo-header {
     margin-bottom: 1.5rem;
-    flex-wrap: wrap; // Allow wrapping to avoid overflow
-    gap: 1rem 0.5rem; // Add vertical gap for when it wraps
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 
-    .todo-header-left {
+    .todo-header-top {
+        min-width: 0;
+    }
+
+    .todo-header-bottom {
+        width: 100%;
+    }
+
+    .filters-group {
         flex: 1;
         min-width: 0;
     }
 
-    .todo-header-right {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        flex-shrink: 0;
-    }
-
     @media (max-width: 576px) {
         margin-bottom: 1rem;
-        gap: 0.25rem;
         
         .todo-section-title {
-            font-size: 1rem !important;
-            white-space: nowrap;
+            font-size: 1.125rem !important;
+            max-width: 150px;
         }
 
         .todo-count-badge {
-            min-width: 22px !important;
-            height: 22px !important;
+            min-width: 24px !important;
+            height: 24px !important;
             font-size: 0.75rem !important;
-            padding: 0 0.35rem !important;
         }
 
         .view-toggle {
-            padding: 0.15rem !important;
+            padding: 0.2rem !important;
         }
 
         .view-toggle-btn {
-            width: 28px !important;
-            height: 28px !important;
-            font-size: 0.875rem !important;
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.9rem !important;
         }
 
         .add-todo-btn-small {
-            padding: 0.4rem 0.75rem !important;
-            font-size: 0.75rem !important;
-            
-            i {
-                font-size: 0.7rem;
-            }
+            padding: 0.5rem 0.875rem !important;
+            font-size: 0.8125rem !important;
         }
 
         .clear-filter-icon-btn {
-            width: 28px !important;
-            height: 28px !important;
+            width: 32px !important;
+            height: 32px !important;
             
             i {
-                font-size: 0.9rem !important;
+                font-size: 1rem !important;
             }
         }
     }

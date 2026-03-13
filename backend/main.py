@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 INSTANCE_ID = os.getenv("INSTANCE_ID", "single")
 
 app = FastAPI(
-    title="TaskHub",
+    title="Taskrr",
     version="1.0.0",
     root_path=os.getenv("ROOT_PATH", "")
 )

@@ -9,9 +9,12 @@ RUN npm ci
 # Copy the rest of the frontend code
 COPY frontend/ ./
 
-# Pass build arguments to the frontend if needed (e.g., PostHog Key)
+# Pass build arguments to the frontend
 ARG POSTHOG_KEY
 ENV POSTHOG_KEY=$POSTHOG_KEY
+
+# Run environment replacement script before building
+RUN node scripts/replace-api-url.js
 
 # Build the application
 RUN npm run build -- --configuration=production
