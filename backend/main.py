@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from app import models, database
 from app.routers.notifications import create_notification
+from run_migrations import run_all_migrations
 import logging
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,12 @@ async def check_due_dates_loop():
 
 @app.on_event("startup")
 async def startup_event():
+    # Run database migrations
+    try:
+        run_all_migrations()
+    except Exception as e:
+        logger.error(f"Error during startup migrations: {e}")
+        
     # Start the background task
     asyncio.create_task(check_due_dates_loop())
 
