@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-# Removed BackgroundTasks to fix the closed session issue
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from typing import List

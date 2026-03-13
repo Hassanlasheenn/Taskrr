@@ -184,7 +184,6 @@ export class TodoListComponent implements OnInit, OnChanges {
             ...this.expandedCategories,
             [categoryKey]: !currentState
         };
-        // Mark for check to ensure Chrome updates the view
         this._cdr.markForCheck();
     }
 
