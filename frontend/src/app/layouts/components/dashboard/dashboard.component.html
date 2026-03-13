@@ -22,7 +22,7 @@
             />
 
             <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.ADMIN_PANEL" class="todo-list-wrapper">
-                <!-- Dashboard Summary Cards -->
+                <!-- Dashboard Summary Cards (Admin Overview) -->
                 <div *ngIf="activeSection === DashboardSections.DASHBOARD && _authService.isAdmin()" class="filters-section">
                     <div class="admin-summary-cards mb-4">
                         <div class="summary-card unassigned" (click)="onSectionChange(DashboardSections.DASHBOARD)">
@@ -55,8 +55,8 @@
                     </div>
                 </div>
 
-                <!-- My Todos Summary Cards -->
-                <div *ngIf="activeSection === DashboardSections.MY_ASSIGNED && _authService.isAdmin()" class="filters-section">
+                <!-- My Todos Summary Cards (Admin & User context) -->
+                <div *ngIf="(activeSection === DashboardSections.MY_ASSIGNED) || (activeSection === DashboardSections.DASHBOARD && !_authService.isAdmin())" class="filters-section">
                     <div class="admin-summary-cards mb-4">
                         <div class="summary-card new" (click)="onStatusChange('new')">
                             <div class="summary-card-icon">
@@ -74,6 +74,15 @@
                             <div class="summary-card-content">
                                 <span class="summary-card-count">{{ inProgressCount }}</span>
                                 <span class="summary-card-label">In Progress</span>
+                            </div>
+                        </div>
+                        <div *ngIf="!_authService.isAdmin()" class="summary-card completed" (click)="onSectionChange(DashboardSections.COMPLETED)">
+                            <div class="summary-card-icon">
+                                <i class="bi bi-check-all"></i>
+                            </div>
+                            <div class="summary-card-content">
+                                <span class="summary-card-count">{{ completedCount }}</span>
+                                <span class="summary-card-label">Completed</span>
                             </div>
                         </div>
                     </div>

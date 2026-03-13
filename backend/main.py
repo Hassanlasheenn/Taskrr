@@ -37,8 +37,8 @@ async def check_due_dates_loop():
                 # Find todos that:
                 # 1. Are not done
                 # 2. Have a due_date within 3 days (or overdue)
-                # 3. Haven't had a reminder sent in the last 24 hours
-                reminder_threshold = datetime.now() - timedelta(hours=24)
+                # 3. Haven't had a reminder sent in the last 12 hours
+                reminder_threshold = datetime.now() - timedelta(hours=12)
                 
                 near_due_todos = db.query(models.Todo).filter(
                     models.Todo.status != models.TodoStatus.DONE.value,

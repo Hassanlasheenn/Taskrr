@@ -57,7 +57,8 @@
                                 <option *ngFor="let opt of statusOptions" [value]="opt.value">{{ opt.label }}</option>
                             </select>
                         </div>
-                        <div class="todo-view-dropdown-wrap">
+                        <!-- Priority: Dropdown for Admin, Badge for User -->
+                        <div class="todo-view-dropdown-wrap" *ngIf="isAdmin; else priorityBadge">
                             <select
                                 class="todo-view-select priority-select"
                                 [ngClass]="'priority-' + todo.priority"
@@ -67,6 +68,12 @@
                                 <option *ngFor="let opt of priorityOptions" [value]="opt.value">{{ opt.label }}</option>
                             </select>
                         </div>
+                        <ng-template #priorityBadge>
+                            <span class="priority-badge" [ngClass]="'priority-' + todo.priority">
+                                <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
+                                <span>{{ todo.priority | titlecase }}</span>
+                            </span>
+                        </ng-template>
                     </div>
                     <button
                         type="button"

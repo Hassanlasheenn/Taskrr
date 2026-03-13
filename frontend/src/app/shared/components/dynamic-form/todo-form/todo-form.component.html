@@ -33,8 +33,8 @@
         </div>
     </fieldset>
 
-    <!-- Priority Selection -->
-    <fieldset class="priority-section" [class.readonly]="isEditMode && !isAdmin">
+    <!-- Priority Selection (Admin can always edit, User can only set on creation) -->
+    <fieldset *ngIf="isAdmin || !isEditMode" class="priority-section" [class.readonly]="isEditMode && !isAdmin">
         <legend class="priority-label">Priority</legend>
         <div class="d-flex flex-column flex-sm-row gap-2">
             <button

@@ -709,8 +709,15 @@ async def update_todo(
         todo_db.description = todo.description
     if todo.priority:
         if todo_db.priority != todo.priority.value:
+            # Check if user is admin
+            is_admin = updater and updater.role == models.UserRole.ADMIN.value
+            if not is_admin:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only administrators can change task priority"
+                )
             changed_fields.append('priority')
-        todo_db.priority = todo.priority.value
+            todo_db.priority = todo.priority.value
     if todo.category is not None:
         if todo_db.category != todo.category:
             changed_fields.append('category')

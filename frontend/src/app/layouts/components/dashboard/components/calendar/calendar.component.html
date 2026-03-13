@@ -82,9 +82,9 @@
                                         <div *ngIf="$any(todo).due_date" 
                                              class="calendar-due-badge mt-1" 
                                              [ngClass]="getDueDateUrgencyClass($any(todo).due_date)">
-                                            <i class="bi bi-alarm-fill"></i>
-                                            <span class="due-label">Due:</span>
-                                            <span class="due-value">{{ formatFullDate($any(todo).due_date) }}</span>
+                                            <i class="bi" [ngClass]="isDueDate(todo, selectedDate) ? (isOverdue($any(todo).due_date) ? 'bi-exclamation-circle-fill' : 'bi-alarm-fill') : 'bi-plus-circle-fill'"></i>
+                                            <span *ngIf="isDueDate(todo, selectedDate)" class="due-label">{{ isOverdue($any(todo).due_date) ? 'Overdue:' : 'Due:' }}</span>
+                                            <span class="due-value">{{ formatFullDate(isDueDate(todo, selectedDate) ? $any(todo).due_date : todo.created_at) }}</span>
                                         </div>
 
                                         <p *ngIf="todo.description" class="todo-description mt-2">{{ todo.description }}</p>

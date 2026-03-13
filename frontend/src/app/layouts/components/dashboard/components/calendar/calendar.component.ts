@@ -123,6 +123,15 @@ export class CalendarComponent implements OnInit, OnChanges {
                dueDate.getDate() === date.getDate();
     }
 
+    isOverdue(dateString?: string): boolean {
+        if (!dateString) return false;
+        const dueDate = new Date(dateString);
+        dueDate.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return dueDate <= today;
+    }
+
     getDueDateUrgencyClass(dateString?: string): string {
         if (!dateString) return '';
         
