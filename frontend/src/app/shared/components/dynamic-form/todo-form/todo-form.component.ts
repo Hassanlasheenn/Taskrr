@@ -227,6 +227,9 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 const numValue = Number(assignedUserIdValue);
                 assignedUserId = isNaN(numValue) ? null : numValue;
             }
+        } else if (this.isEditMode && this.editingTodo) {
+            // Preserve current assignee for non-admins
+            assignedUserId = this.editingTodo.assigned_to_user_id ?? null;
         }
         
         const todoData: ITodoCreate = {

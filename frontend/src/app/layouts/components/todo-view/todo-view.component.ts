@@ -167,14 +167,14 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         this._userService.getMentionableUsers().subscribe({
             next: (list) => { 
                 this.mentionableUsers = list; 
-                // If current user is admin, add them to the list if not already present
+                // Always add the current user to the list if not already present
                 const currentUser = this._authService.getCurrentUserData();
-                if (this.isAdmin && currentUser && !this.mentionableUsers.some(u => u.id === currentUser.id)) {
+                if (currentUser && !this.mentionableUsers.some(u => u.id === currentUser.id)) {
                     this.mentionableUsers.unshift({
                         id: currentUser.id,
                         username: `${currentUser.username} (Me)`,
                         email: currentUser.email,
-                        role: currentUser.role || 'admin',
+                        role: currentUser.role || 'user',
                         photo: currentUser.photo || null
                     });
                 }
