@@ -15,6 +15,7 @@ import { ToastService } from "../../../core/services/toast.service";
 import { AuthService } from "../../services";
 import { ILoginPayload, ILoginResponse, IRegisterPayload, IRegisterResponse } from "../../interfaces";
 import { LayoutPaths } from "../../../layouts/enums";
+import { PosthogService } from "../../../core/services";
 
 type AuthMode = 'login' | 'register';
 
@@ -121,7 +122,8 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
         private readonly _formService: ReactiveFormService,
         private readonly _authService: AuthService,
         private readonly _router: Router,
-        private readonly _toastService: ToastService
+        private readonly _toastService: ToastService,
+        private readonly _posthogService: PosthogService
     ) {}
 
     ngOnInit(): void {
@@ -185,6 +187,7 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
                         this._authService.setCurrentUserId(res.data.id);
                         this._authService.setCurrentUserData(res.data);
                     }
+                    this._posthogService.capture('user_login_success', { email: payload.email });
                     this._router.navigate([LayoutPaths.DASHBOARD]);
                 },
                 error: (err: HttpErrorResponse) => {
@@ -235,6 +238,10 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
                         this._authService.setCurrentUserId(res.data.id);
                         this._authService.setCurrentUserData(res.data);
                     }
+                    this._posthogService.capture('user_register_success', { 
+                        email: payload.email,
+                        username: payload.username 
+                    });
                     this._toastService.success('Account created successfully');
                     this._router.navigate([LayoutPaths.DASHBOARD]);
                 },

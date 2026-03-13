@@ -8,6 +8,7 @@ import { IUserResponse } from "../../../auth/interfaces";
 import { ProfileSections } from "../../enums/profile-sections.enum";
 import { ProfileSideNavComponent } from "./components/profile-side-nav/profile-side-nav.component";
 import { PersonalDataComponent } from "./components/personal-data/personal-data.component";
+import { PosthogService } from "../../../core/services";
 import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
 import { Observable, map } from "rxjs";
 
@@ -32,7 +33,8 @@ export class ProfileComponent implements OnInit, CanComponentDeactivate {
         private readonly _authService: AuthService,
         private readonly _userService: UserService,
         private readonly _toastService: ToastService,
-        private readonly _confirmationDialog: ConfirmationDialogService
+        private readonly _confirmationDialog: ConfirmationDialogService,
+        private readonly _posthogService: PosthogService
     ) {}
 
     ngOnInit(): void {
@@ -64,6 +66,10 @@ export class ProfileComponent implements OnInit, CanComponentDeactivate {
                 this.userData = updatedUser;
                 event.updateCallback(updatedUser);
                 this._toastService.success('Profile updated successfully');
+                this._posthogService.capture('profile_updated', {
+                    user_id: userId,
+                    username: updatedUser.username
+                });
             },
             error: (error) => {
                 this._toastService.error(error?.error?.detail || 'Failed to update profile');

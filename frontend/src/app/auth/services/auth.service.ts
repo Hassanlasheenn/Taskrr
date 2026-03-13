@@ -4,6 +4,7 @@ import { HttpClient } from "@angular/common/http";
 import { Observable, take } from "rxjs";
 import { IUserResponse, ILoginPayload, ILoginResponse, IRegisterPayload, IRegisterResponse } from "../interfaces";
 import { AuthHttpService } from "./auth-http.service";
+import { PosthogService } from "../../core/services/posthog.service";
 
 @Injectable({
     providedIn: 'root',
@@ -18,10 +19,16 @@ export class AuthService {
     constructor(
         private readonly _http: HttpClient,
         private readonly _authHttpService: AuthHttpService,
+        private readonly _posthogService: PosthogService,
     ) {
         this.loadUserIdFromStorage();
         this.loadUserDataFromStorage();
         this.ensureUserDataLoaded();
+
+        // Identify if already logged in
+        if (this.currentUserId) {
+            this._posthogService.identify(this.currentUserId, this.currentUserData);
+        }
     }
 
     registerUser(payload: IRegisterPayload): Observable<IRegisterResponse> {
@@ -34,6 +41,7 @@ export class AuthService {
 
     logout(): Observable<void> {
         this.clearCurrentUser();
+        this._posthogService.reset();
         return this._authHttpService.logout();
     }
 
@@ -69,6 +77,7 @@ export class AuthService {
     setCurrentUserId(userId: number): void {
         this.currentUserId = userId;
         sessionStorage.setItem(this.USER_ID_KEY, userId.toString());
+        this._posthogService.identify(userId);
     }
 
     getCurrentUserId(): number | null {
@@ -82,6 +91,9 @@ export class AuthService {
     setCurrentUserData(userData: IUserResponse): void {
         this.currentUserData = userData;
         sessionStorage.setItem(this.USER_DATA_KEY, JSON.stringify(userData));
+        if (this.currentUserId) {
+            this._posthogService.identify(this.currentUserId, userData);
+        }
     }
 
     getCurrentUserData(): IUserResponse | null {

@@ -22,6 +22,7 @@ import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-form/todo-form.component";
 import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
+import { PosthogService } from "../../../core/services";
 
 @Component({
     selector: 'app-dashboard',
@@ -66,7 +67,8 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         private readonly _toastService: ToastService,
         private readonly _confirmationDialog: ConfirmationDialogService,
         private readonly _router: Router,
-        private readonly _navService: NavigationService
+        private readonly _navService: NavigationService,
+        private readonly _posthogService: PosthogService
     ) {}
 
     ngOnInit(): void {
@@ -174,6 +176,10 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 }
                 this._loaderService.hide();
                 this._toastService.success('Todo created successfully');
+                this._posthogService.capture('todo_created', { 
+                    category: newTodo.category,
+                    priority: newTodo.priority
+                });
             },
             error: (error) => {
                 this._toastService.error(error?.error?.detail || 'Failed to create todo');
@@ -188,6 +194,10 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             const newStatus = todo.status === 'done' ? 'new' : 'done';
             this.todos[index] = { ...todo, status: newStatus as ITodo['status'] };
             this.todos = [...this.todos];
+            this._posthogService.capture('todo_status_toggled', { 
+                todo_id: todo.id,
+                new_status: newStatus 
+            });
         }
     }
 
@@ -213,6 +223,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                         this.totalTodos = Math.max(0, this.totalTodos - 1);
                         this._loaderService.hide();
                         this._toastService.success(response?.message || 'Todo deleted successfully');
+                        this._posthogService.capture('todo_deleted', { todo_id: todo.id });
                     },
                     error: (error) => {
                         this._toastService.error(error?.error?.detail || 'Failed to delete todo');
@@ -224,6 +235,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     }
 
     onViewTodo(todo: ITodo): void {
+        this._posthogService.capture('todo_view_clicked', { todo_id: todo.id });
         this._router.navigate([LayoutPaths.TODO_VIEW, todo.id]);
     }
 
@@ -258,6 +270,11 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 }
                 this._loaderService.hide();
                 this._toastService.success('Todo updated successfully');
+                this._posthogService.capture('todo_updated', { 
+                    todo_id: event.id,
+                    status: event.data.status,
+                    priority: event.data.priority
+                });
             },
             error: (error: any) => {
                 this._toastService.error(error?.error?.detail || 'Failed to update todo');

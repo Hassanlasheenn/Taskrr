@@ -9,6 +9,7 @@ import { ConfirmationDialogService } from "../../../core/services/confirmation-d
 import { IUserListResponse } from "../../../auth/interfaces";
 import { CardComponent } from "../../../shared/components/card/card.component";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
+import { PosthogService } from "../../../core/services";
 
 @Component({
     selector: 'app-admin',
@@ -29,7 +30,8 @@ export class AdminComponent implements OnInit, OnDestroy {
         private readonly _authService: AuthService,
         private readonly _toastService: ToastService,
         private readonly _loaderService: LoaderService,
-        private readonly _confirmationDialog: ConfirmationDialogService
+        private readonly _confirmationDialog: ConfirmationDialogService,
+        private readonly _posthogService: PosthogService
     ) {}
 
     ngOnInit(): void {
@@ -93,6 +95,7 @@ export class AdminComponent implements OnInit, OnDestroy {
                                 this._loaderService.hide();
                                 this.isDeleting = false;
                                 this._toastService.success('User deleted successfully');
+                                this._posthogService.capture('user_deleted_by_admin', { deleted_user_id: userId });
                             },
                             error: (error) => {
                                 this._loaderService.hide();
@@ -116,6 +119,10 @@ export class AdminComponent implements OnInit, OnDestroy {
                 next: () => {
                     this._loaderService.hide();
                     this._toastService.success(`User role updated to ${newRole}`);
+                    this._posthogService.capture('user_role_changed_by_admin', { 
+                        target_user_id: userId,
+                        new_role: newRole 
+                    });
                     this.loadUsers();
                 },
                 error: (error) => {
