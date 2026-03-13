@@ -448,8 +448,33 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                         this.form.get('assigned_to_user_id')?.setValue(formValue.assigned_to_user_id, { emitEvent: false });
                     }
                 }
+                // Reset dirty state after population
+                this.form.markAsPristine();
             }
         }, 100);
+    }
+
+    hasChanges(): boolean {
+        // If form is dirty, or priority/status/category was changed manually
+        if (this.form.dirty) return true;
+        
+        if (this.isEditMode && this.editingTodo) {
+            const priorityChanged = this.selectedPriority !== (this.editingTodo.priority || null);
+            const statusChanged = this.selectedStatus !== (this.editingTodo.status || 'new');
+            
+            let currentCategory = '';
+            if (this.isOtherCategory) {
+                currentCategory = this.customCategory;
+            } else if (this.selectedCategory && this.selectedCategory !== 'Other') {
+                currentCategory = this.selectedCategory;
+            }
+            const categoryChanged = currentCategory !== (this.editingTodo.category || '');
+            
+            return priorityChanged || statusChanged || categoryChanged;
+        } else {
+            // In create mode, check if any selections were made
+            return !!(this.selectedPriority || this.selectedCategory || this.form.get('title')?.value || this.form.get('description')?.value);
+        }
     }
 
 }

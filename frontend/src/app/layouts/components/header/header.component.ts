@@ -56,9 +56,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
 
     private updateMobileMenuVisibility(): void {
-        const url = this._router.url;
+        const url = this._router.url.split('?')[0];
+        const dashboardPaths = [
+            '/',
+            '/home',
+            '/' + LayoutPaths.CALENDAR,
+            '/' + LayoutPaths.MY_TODOS,
+            '/' + LayoutPaths.COMPLETED,
+            '/' + LayoutPaths.ADMIN_PANEL
+        ];
         // Check if on dashboard or root path
-        this.showMobileMenu = this.isAuthenticated && (url === '/' || url.includes(LayoutPaths.DASHBOARD));
+        this.showMobileMenu = this.isAuthenticated && dashboardPaths.includes(url);
     }
 
     toggleMobileMenu(): void {

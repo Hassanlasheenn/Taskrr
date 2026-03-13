@@ -1,12 +1,15 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { AuthService } from "../../../auth/services/auth.service";
 import { UserService } from "../../../core/services/user.service";
 import { ToastService } from "../../../core/services/toast.service";
+import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
 import { IUserResponse } from "../../../auth/interfaces";
 import { ProfileSections } from "../../enums/profile-sections.enum";
 import { ProfileSideNavComponent } from "./components/profile-side-nav/profile-side-nav.component";
 import { PersonalDataComponent } from "./components/personal-data/personal-data.component";
+import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
+import { Observable, map } from "rxjs";
 
 @Component({
     selector: 'app-profile',
@@ -19,7 +22,8 @@ import { PersonalDataComponent } from "./components/personal-data/personal-data.
         PersonalDataComponent
     ],
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, CanComponentDeactivate {
+    @ViewChild(PersonalDataComponent) personalDataComponent!: PersonalDataComponent;
     userData: IUserResponse | null = null;
     activeSection: ProfileSections = ProfileSections.PERSONAL_DATA;
     ProfileSections = ProfileSections;
@@ -27,7 +31,8 @@ export class ProfileComponent implements OnInit {
     constructor(
         private readonly _authService: AuthService,
         private readonly _userService: UserService,
-        private readonly _toastService: ToastService
+        private readonly _toastService: ToastService,
+        private readonly _confirmationDialog: ConfirmationDialogService
     ) {}
 
     ngOnInit(): void {
@@ -63,6 +68,18 @@ export class ProfileComponent implements OnInit {
             error: (error) => {
                 this._toastService.error(error?.error?.detail || 'Failed to update profile');
             }
-        });
-    }
-}
+            });
+            }
+
+            canDeactivate(): boolean | Observable<boolean> {
+            if (this.personalDataComponent?.hasChanges()) {
+            return this._confirmationDialog.show({
+                title: 'Unsaved Changes',
+                message: 'You have unsaved changes in your profile. Are you sure you want to leave?',
+                confirmText: 'Leave',
+                cancelText: 'Stay'
+            }).pipe(map(result => result.confirmed));
+            }
+            return true;
+            }
+            }

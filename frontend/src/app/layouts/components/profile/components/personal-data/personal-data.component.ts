@@ -80,8 +80,13 @@ export class PersonalDataComponent implements OnInit {
                 this.fields = this._fieldsService.updateFieldPhotoUrl(this.fields, updatedUser.photo || null);
                 this.form.patchValue({ photo: null });
                 this.photoRemoved = false;
+                this.form.markAsPristine();
             }
         });
+    }
+
+    hasChanges(): boolean {
+        return this.form.dirty || this.photoRemoved;
     }
 }
 

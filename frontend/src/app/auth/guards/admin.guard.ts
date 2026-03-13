@@ -1,6 +1,7 @@
 import { inject } from "@angular/core";
 import { CanActivateFn, Router } from "@angular/router";
 import { AuthService } from "../services";
+import { LayoutPaths } from "../../layouts/enums/layout-paths.enum";
 
 export const adminGuard: CanActivateFn = () => {
     const authService = inject(AuthService);
@@ -19,7 +20,7 @@ export const adminGuard: CanActivateFn = () => {
     if (!userData || !userData.role) {
         // User data will be fetched automatically by AuthService
         // For now, redirect to dashboard and let the component handle the error
-        router.navigate(['/dashboard']);
+        router.navigate([LayoutPaths.DASHBOARD]);
         return false;
     }
 
@@ -27,7 +28,7 @@ export const adminGuard: CanActivateFn = () => {
     if (userData.role === 'admin') {
         return true;
     } else {
-        router.navigate(['/dashboard']);
+        router.navigate([LayoutPaths.DASHBOARD]);
         return false;
     }
 };

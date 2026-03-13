@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnInit, OnDestroy, ViewChild } from "@angular/core";
 import { Router } from "@angular/router";
-import { Subject, takeUntil, debounceTime } from "rxjs";
+import { Subject, takeUntil, debounceTime, Observable, map } from "rxjs";
 import { AuthService } from "../../../auth/services";
 import { TodoService } from "../../../core/services/todo.service";
 import { NotificationService } from "../../../core/services/notification.service";
@@ -21,6 +21,7 @@ import { AdminPanelComponent } from "./components/admin-panel/admin-panel.compon
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-form/todo-form.component";
+import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
 
 @Component({
     selector: 'app-dashboard',
@@ -40,7 +41,7 @@ import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-
         TodoFormComponent
     ],
 })
-export class DashboardComponent implements OnInit, OnDestroy {
+export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeactivate {
     @ViewChild('todoForm') todoFormComponent!: TodoFormComponent;
     private readonly _destroy$ = new Subject<void>();
     
@@ -71,6 +72,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.userData = this._authService.getCurrentUserData();
         this.loadTodos();
+        this._syncSectionWithUrl();
+
+        // Listen to route changes for back/forward support
+        this._router.events
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(() => {
+                this._syncSectionWithUrl();
+            });
 
         this._notificationService.notificationEvents$
             .pipe(
@@ -259,6 +268,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     onSectionChange(section: DashboardSections): void {
         this.activeSection = section;
+        this.searchQuery = '';
+        this.activeStatus = 'all';
+        this.activePriority = 'all';
+        this.selectedCategory = null;
+
+        // Navigate to the correct URL
+        let path = '';
+        switch(section) {
+            case DashboardSections.CALENDAR: path = LayoutPaths.CALENDAR; break;
+            case DashboardSections.MY_ASSIGNED: path = LayoutPaths.MY_TODOS; break;
+            case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
+            case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;
+            default: path = LayoutPaths.DASHBOARD; break;
+        }
+        this._router.navigate([path]);
+    }
+
+    private _syncSectionWithUrl(): void {
+        const url = this._router.url.split('?')[0].replace('/', '');
+        
+        switch(url) {
+            case LayoutPaths.CALENDAR: this.activeSection = DashboardSections.CALENDAR; break;
+            case LayoutPaths.MY_TODOS: this.activeSection = DashboardSections.MY_ASSIGNED; break;
+            case LayoutPaths.COMPLETED: this.activeSection = DashboardSections.COMPLETED; break;
+            case LayoutPaths.ADMIN_PANEL: this.activeSection = DashboardSections.ADMIN_PANEL; break;
+            case LayoutPaths.DASHBOARD: 
+            case 'home':
+            default: this.activeSection = DashboardSections.DASHBOARD; break;
+        }
+        
+        // Reset filters when switching sections via URL
         this.searchQuery = '';
         this.activeStatus = 'all';
         this.activePriority = 'all';
@@ -464,6 +504,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     onCategorySelect(category: string | null): void {
         this.selectedCategory = category;
+    }
+
+    canDeactivate(): boolean | Observable<boolean> {
+        if (this.isSidebarOpen && this.todoFormComponent?.hasChanges()) {
+            return this._confirmationDialog.show({
+                title: 'Unsaved Changes',
+                message: 'You have unsaved changes in your todo. Are you sure you want to leave?',
+                confirmText: 'Leave',
+                cancelText: 'Stay'
+            }).pipe(map(result => result.confirmed));
+        }
+        return true;
     }
 
     ngOnDestroy(): void {
