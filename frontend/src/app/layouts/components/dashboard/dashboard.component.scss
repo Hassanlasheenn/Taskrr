@@ -257,10 +257,5 @@
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--card-shadow-hover);
-    }
 }
 

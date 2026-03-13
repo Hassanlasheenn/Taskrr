@@ -406,19 +406,6 @@
     margin-bottom: 1.25rem;
 }
 
-    &.assigned-select {
-        background-color: rgba(139, 92, 246, 0.08);
-        border-color: rgba(139, 92, 246, 0.25);
-        color: var(--primary-color);
-        min-width: 8rem;
-
-        &:hover {
-            background-color: rgba(139, 92, 246, 0.12);
-            border-color: rgba(139, 92, 246, 0.4);
-        }
-    }
-}
-
 .todo-view-label {
     display: block;
     margin: 0 0 0.5rem;
