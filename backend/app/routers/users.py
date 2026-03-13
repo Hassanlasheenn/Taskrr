@@ -1,4 +1,6 @@
 import base64
+import io
+from PIL import Image
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import Optional, List
@@ -20,9 +22,39 @@ router = APIRouter(tags=["users"])
 
 
 def image_to_base64(file_content: bytes, content_type: str) -> str:
-    """Convert image bytes to base64 data URL"""
-    base64_data = base64.b64encode(file_content).decode('utf-8')
-    return f"data:{content_type};base64,{base64_data}"
+    """
+    Optimizes the image for storage and transmission:
+    1. Resizes to max 150x150 while keeping aspect ratio.
+    2. Converts to JPEG with 80% quality.
+    3. Returns as a small base64 string (~5-10KB).
+    """
+    try:
+        # Load image into Pillow
+        img = Image.open(io.BytesIO(file_content))
+        
+        # Convert to RGB (required for JPEG and removes alpha channel transparency overhead)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        
+        # Resize to thumbnail (Max 150px)
+        img.thumbnail((150, 150), Image.Resampling.LANCZOS)
+        
+        # Save to memory buffer with compression
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=80, optimize=True)
+        optimized_bytes = buffer.getvalue()
+        
+        # Encode tiny bytes to base64
+        base64_str = base64.b64encode(optimized_bytes).decode('utf-8')
+        return f"data:image/jpeg;base64,{base64_str}"
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Image optimization failed: {e}")
+        # Fallback to original encoding if processing fails
+        base64_data = base64.b64encode(file_content).decode('utf-8')
+        return f"data:{content_type};base64,{base64_data}"
 
 
 @router.get("/mentionable", response_model=List[schemas.UserListResponse])
