@@ -96,9 +96,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     onDocumentClick(event: MouseEvent): void {
         const target = event.target as HTMLElement;
         
-        // If the click is on the dropdown or its children, don't close it
-        // We also check if the target is still in the document because 
-        // theme toggle icons might be replaced when clicked
         if (target.closest('.dropdown') || !document.body.contains(target)) {
             return;
         }

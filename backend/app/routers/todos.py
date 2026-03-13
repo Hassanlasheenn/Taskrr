@@ -949,7 +949,6 @@ async def delete_todo(
                     assigned_by=deleter_username
                 )
 
-    # Delete the todo (notification no longer references it)
     db.delete(todo)
     
     db.query(models.Todo).filter(
