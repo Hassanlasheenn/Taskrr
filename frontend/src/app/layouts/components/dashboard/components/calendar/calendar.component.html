@@ -17,7 +17,8 @@
 
         <div class="calendar-grid">
             <div class="calendar-weekday" *ngFor="let day of weekDays">
-                {{ day }}
+                <span class="full-day">{{ day }}</span>
+                <span class="short-day">{{ day.charAt(0) }}</span>
             </div>
 
             <div
@@ -31,6 +32,8 @@
             >
                 <div *ngIf="date" class="day-content">
                     <span class="day-number">{{ date.getDate() }}</span>
+                    
+                    <!-- Desktop: Full Badges -->
                     <div class="day-todos" *ngIf="getTodosForDate(date).length > 0">
                         <div
                             *ngFor="let todo of getTodosForDate(date)"
@@ -40,6 +43,15 @@
                         >
                             {{ todo.title }}
                         </div>
+                    </div>
+
+                    <!-- Mobile: Dot Indicators -->
+                    <div class="mobile-todo-dots" *ngIf="getTodosForDate(date).length > 0">
+                        <div 
+                            *ngFor="let todo of getTodosForDate(date)"
+                            class="todo-dot"
+                            [ngClass]="getPriorityClass(todo.priority)"
+                        ></div>
                     </div>
                 </div>
             </div>

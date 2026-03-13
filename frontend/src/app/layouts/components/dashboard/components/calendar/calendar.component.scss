@@ -111,6 +111,10 @@
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 0.5rem;
+
+    @media (max-width: 576px) {
+        gap: 0.25rem;
+    }
 }
 
 .calendar-weekday {
@@ -120,6 +124,20 @@
     font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
+
+    @media (max-width: 576px) {
+        font-size: 0.625rem;
+        padding: 0.5rem 0.25rem;
+        
+        // Only show first letter on very small screens
+        span.full-day { display: none; }
+        span.short-day { display: inline; }
+    }
+    
+    @media (min-width: 577px) {
+        span.full-day { display: inline; }
+        span.short-day { display: none; }
+    }
 }
 
 .calendar-day {
@@ -132,6 +150,7 @@
     transition: 0.2s;
     padding: 0.5rem;
     min-height: 100px;
+    position: relative;
     
     @media (min-width: 768px) { min-height: 120px; }
 
@@ -146,6 +165,7 @@
         flex-direction: column;
         gap: 0.25rem;
         margin-top: 0.25rem;
+        overflow: hidden;
     }
 
     .todo-badge {
@@ -156,17 +176,50 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        
-        .badge-type {
-            font-size: 0.55rem;
-            opacity: 0.8;
-            margin-right: 2px;
-            text-transform: uppercase;
-        }
+        display: block;
 
         &.priority-high { background: #dc3545; color: white; }
         &.priority-medium { background: #ffc107; color: #1a1a1a; }
         &.priority-low { background: #28a745; color: white; }
+    }
+
+    // Mobile specific dot indicators
+    .mobile-todo-dots {
+        display: none;
+        justify-content: center;
+        gap: 2px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+    }
+
+    .todo-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        
+        &.priority-high { background: #dc3545; }
+        &.priority-medium { background: #ffc107; }
+        &.priority-low { background: #28a745; }
+    }
+
+    @media (max-width: 576px) {
+        min-height: 60px;
+        padding: 0.35rem;
+        border-radius: 8px;
+
+        .day-number {
+            font-size: 0.75rem;
+            display: block;
+            text-align: center;
+        }
+
+        .day-todos {
+            display: none; // Hide badges on mobile grid
+        }
+
+        .mobile-todo-dots {
+            display: flex; // Show dots instead
+        }
     }
 
     &:hover:not(.empty) {
@@ -189,7 +242,14 @@
     @include glass-card;
     padding: 1.5rem;
     min-height: 600px;
+    width: 100%;
+    box-sizing: border-box;
     animation: slideIn 0.3s ease;
+
+    @media (max-width: 576px) {
+        padding: 1rem 0.75rem;
+        border-radius: 12px;
+    }
 }
 
 .day-view-header {
@@ -199,6 +259,12 @@
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 2px solid var(--card-border-color);
+
+    @media (max-width: 576px) {
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 1rem;
+    }
 
     .back-btn {
         display: flex;
@@ -212,6 +278,12 @@
         font-weight: 600;
         cursor: pointer;
         transition: 0.3s;
+
+        @media (max-width: 576px) {
+            padding: 0.5rem 0.875rem;
+            font-size: 0.8125rem;
+            border-radius: 10px;
+        }
 
         &:hover {
             background: rgba(107, 207, 209, 0.1);
@@ -229,6 +301,10 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+
+        @media (max-width: 576px) {
+            font-size: 1.125rem;
+        }
     }
 }
 
@@ -238,6 +314,11 @@
     max-height: calc(100vh - 350px);
     overflow-y: auto;
     @include custom-scrollbar-thin;
+    width: 100%;
+
+    @media (max-width: 576px) {
+        max-height: calc(100vh - 280px);
+    }
 }
 
 .time-slot {
@@ -246,6 +327,12 @@
     padding: 0.75rem 0;
     border-bottom: 1px solid var(--card-border-color);
     position: relative;
+    width: 100%;
+
+    @media (max-width: 576px) {
+        gap: 0.75rem;
+        padding: 0.625rem 0;
+    }
 
     &:hover {
         background: rgba(107, 207, 209, 0.03);
@@ -259,11 +346,19 @@
         color: var(--text-secondary);
         font-weight: 700;
         font-size: 0.875rem;
+        flex-shrink: 0;
+
+        @media (max-width: 576px) {
+            width: 65px;
+            padding-right: 0.5rem;
+            font-size: 0.75rem;
+        }
     }
 
     .time-content {
         flex: 1;
         position: relative;
+        min-width: 0; // Allow content to shrink correctly
     }
 }
 
@@ -271,6 +366,7 @@
     display: flex;
     gap: 0.75rem;
     margin-bottom: 0.5rem;
+    width: 100%;
 
     .todo-card-content {
         flex: 1;
@@ -280,6 +376,11 @@
         padding: 0.875rem 1rem;
         border-left: 3px solid transparent;
         transition: 0.3s;
+        min-width: 0; // Prevent overflow
+
+        @media (max-width: 576px) {
+            padding: 0.75rem;
+        }
     }
 
     &.priority-high .todo-card-content { border-left-color: #dc3545; }
@@ -365,6 +466,6 @@
     .calendar-header, .today-btn { margin-bottom: 1rem; }
     .calendar-title { font-size: 1.125rem; }
     .calendar-day { min-height: 80px; .day-number { font-size: 0.75rem; } }
-    .time-slot { width: 60px; .time-label { width: 60px; font-size: 0.625rem; } }
+    .time-slot { .time-label { width: 60px; font-size: 0.625rem; } }
     .hour-todo-item .todo-card-content { padding: 0.75rem; }
 }
