@@ -930,7 +930,6 @@ async def delete_todo(
             notification.todo_id = None
             db.flush()
             
-            # Now send via WebSocket and email
             notification_data = {
                 "id": notification.id,
                 "user_id": notification.user_id,

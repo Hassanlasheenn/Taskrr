@@ -123,7 +123,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
 
     getPhotoUrl(): string {
-        // Photo is stored as base64 data URL in database, return directly
         return this.userPhoto || '';
     }
 

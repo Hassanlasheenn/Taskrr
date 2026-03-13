@@ -134,7 +134,7 @@ jobs:
 
       - name: Build Angular application (Production)
         working-directory: ./frontend
-        run: npm run build
+        run: npm run build -- --base-href /TaskHub/
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
@@ -336,49 +336,27 @@ jobs:
             echo "✅ Backend build artifacts available" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Install Vercel CLI
-        if: needs.detect-changes.outputs.frontend == 'true'
-        run: npm install -g vercel@latest
-
-      - name: Prepare Vercel deployment
+      - name: Prepare GitHub Pages deployment
         if: needs.detect-changes.outputs.frontend == 'true'
         run: |
           [ -f "frontend-dist/index.html" ] || exit 1
-          # Create a deployment-specific vercel.json that points to the current directory
-          # and preserves the SPA rewrites from the original if it exists
-          if [ -f "frontend/vercel.json" ]; then
-            # Use jq if available or a simple sed/echo to override directory and command
-            echo '{"version":2,"buildCommand":null,"outputDirectory":".","installCommand":null,"framework":null,"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}' > frontend-dist/vercel.json
-          else
-            echo '{"version":2,"buildCommand":null,"outputDirectory":".","installCommand":null,"framework":null,"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}' > frontend-dist/vercel.json
-          fi
-          rm -f frontend-dist/package.json frontend-dist/angular.json frontend-dist/tsconfig.json 2>/dev/null || true
-          rm -rf frontend-dist/src frontend-dist/node_modules 2>/dev/null || true
+          # Fix for Angular SPA routing on GitHub Pages:
+          # Copy index.html to 404.html so that direct links/refreshes work
+          cp frontend-dist/index.html frontend-dist/404.html
+          # Create .nojekyll to prevent GitHub from ignoring files starting with underscores
+          touch frontend-dist/.nojekyll
 
-      - name: Deploy to Vercel
+      - name: Deploy to GitHub Pages
         if: needs.detect-changes.outputs.frontend == 'true'
-        working-directory: ./frontend-dist
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_PROJECT_ID" ] && [ -n "$VERCEL_ORG_ID" ] || (echo "Missing Vercel secrets"; exit 1)
-          
-          # Create the project config so Vercel CLI knows which project we are working on
-          mkdir -p .vercel
-          echo "{\"projectId\":\"$VERCEL_PROJECT_ID\",\"orgId\":\"$VERCEL_ORG_ID\"}" > .vercel/project.json
-          
-          # Step 1: Pull project settings from Vercel (Required for vercel build)
-          vercel pull --yes --environment=production --token $VERCEL_TOKEN
-          
-          # Step 2: Build the project metadata. 
-          # Since our vercel.json has buildCommand: null, this just packages our files.
-          vercel build --prod --token $VERCEL_TOKEN
-          
-          # Step 3: Deploy the prebuilt artifacts.
-          # This bypasses the Git Author security check.
-          vercel deploy --prebuilt --prod --yes --token $VERCEL_TOKEN
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: frontend-dist
+          branch: gh-pages
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deployment Complete
-        run: echo "Deployment finished. Set REDIS_URL on backend host for cache; use /health to verify."
+        run: |
+          echo "Deployment finished."
+          if [ "${{ needs.detect-changes.outputs.frontend }}" == "true" ]; then
+            echo "Frontend will be available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          fi
