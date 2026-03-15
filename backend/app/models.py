@@ -47,11 +47,11 @@ class Todo(Base):
     status = Column(String(20), default=TodoStatus.NEW.value)
     priority = Column(String(20), default=PriorityLevel.MEDIUM.value)
     category = Column(String(100), nullable=True)
-    due_date = Column(DateTime, nullable=True)
-    reminder_sent_at = Column(DateTime, nullable=True)
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
     order_index = Column(Integer, default=0)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())  
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())  
     
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -70,7 +70,7 @@ class TodoComment(Base):
     todo_id = Column(Integer, ForeignKey("todos.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     todo = relationship("Todo", back_populates="comments", foreign_keys=[todo_id])
     user = relationship("User", foreign_keys=[user_id])
@@ -92,7 +92,7 @@ class TodoCommentHistory(Base):
     action = Column(String(20), nullable=False)
     content_before = Column(Text, nullable=True)
     content_after = Column(Text, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     todo = relationship("Todo", back_populates="comment_history", foreign_keys=[todo_id])
     user = relationship("User", foreign_keys=[user_id])
@@ -107,7 +107,7 @@ class TodoFieldHistory(Base):
     field = Column(String(50), nullable=False)
     old_value = Column(Text, nullable=True)
     new_value = Column(Text, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     todo = relationship("Todo", back_populates="field_history", foreign_keys=[todo_id])
     user = relationship("User", foreign_keys=[user_id])
@@ -121,7 +121,7 @@ class Notification(Base):
     todo_id = Column(Integer, ForeignKey("todos.id"), nullable=True)
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     user = relationship("User", foreign_keys=[user_id])
     todo = relationship("Todo", foreign_keys=[todo_id])

@@ -177,3 +177,27 @@ async def verify_email(
     background_tasks.add_task(create_welcome_notification, db, user.id, user.username)
     
     return {"message": "Email verified successfully. You can now login."}
+
+@router.post("/resend-verification")
+async def resend_verification(
+    email: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(database.get_db)
+):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        # We return 200 even if user not found for security (don't reveal registered emails)
+        return {"message": "If an account exists with this email, a new link has been sent."}
+    
+    if user.is_verified:
+        return {"message": "This account is already verified."}
+    
+    # Generate new token
+    verification_token = secrets.token_urlsafe(32)
+    user.verification_token = verification_token
+    db.commit()
+    
+    # Send email
+    background_tasks.add_task(email_service.send_verification_email, user.email, verification_token)
+    
+    return {"message": "Verification link resent successfully."}

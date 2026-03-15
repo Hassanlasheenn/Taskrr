@@ -18,7 +18,15 @@
             <i class="bi bi-exclamation-triangle-fill text-danger fs-1"></i>
             <h2 class="mt-3">Verification Failed</h2>
             <p>{{ error }}</p>
-            <button class="card-button mt-3" [routerLink]="['/login']">Return to Login</button>
+            
+            <div class="d-flex flex-column gap-2 mt-4">
+                <button class="card-button" [routerLink]="['/login']">Return to Login</button>
+                
+                <!-- Only show if we have an email to resend to -->
+                <button *ngIf="userEmail" class="link-button" (click)="resendLink()" [disabled]="isResending">
+                    {{ isResending ? 'Sending...' : 'Resend Verification Link' }}
+                </button>
+            </div>
         </div>
     </app-card>
 </div>

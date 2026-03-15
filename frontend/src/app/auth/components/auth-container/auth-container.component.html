@@ -30,6 +30,12 @@
                             We've sent a verification link to <strong>{{ registeredEmail }}</strong>. 
                             Please check your inbox and click the link to activate your account.
                         </p>
+                        <div class="d-flex flex-column gap-2 mt-4">
+                            <button type="button" class="card-button" (click)="switchToLogin()">Back to Login</button>
+                            <button type="button" class="link-button" (click)="resendVerification()" [disabled]="isResending">
+                                {{ isResending ? 'Sending...' : 'Resend Link' }}
+                            </button>
+                        </div>
                     </div>
                 </app-card>
             </div>
@@ -54,26 +60,24 @@
             </div>
         </div>
 
-        <!-- Branding side (slides between right and left) -->
-        <div class="branding-panel">
-            <!-- Register Branding -->
-            <div class="branding-content register-branding" [class.active]="currentMode === 'register'">
-                <div class="logo-content">
+        <!-- Overlay side (slides between right and left) -->
+        <div class="overlay-panel">
+            <div class="overlay-content" [class.active]="currentMode === 'register'">
+                <div class="logo-wrapper mb-4">
                     <h1 class="logo-text">Taskrr</h1>
-                    <p class="logo-subtitle">Your central platform for task management and productivity</p>
-                    <button type="button" class="overlay-btn" (click)="switchToLogin()">Sign In</button>
                 </div>
+                <h2 class="welcome-title">Welcome Back!</h2>
+                <p class="welcome-text">To keep connected with us please login with your personal info</p>
+                <button type="button" class="overlay-btn" (click)="switchToLogin()">Sign In</button>
             </div>
-            
-            <!-- Login Branding -->
-            <div class="branding-content login-branding" [class.active]="currentMode === 'login'">
-                <div class="logo-content">
+            <div class="overlay-content" [class.active]="currentMode === 'login'">
+                <div class="logo-wrapper mb-4">
                     <h1 class="logo-text">Taskrr</h1>
-                    <p class="logo-subtitle">Your central platform for task management and productivity</p>
-                    <button type="button" class="overlay-btn" (click)="switchToRegister()">Sign Up</button>
                 </div>
+                <h2 class="welcome-title">Hello, Friend!</h2>
+                <p class="welcome-text">Taskrr is a powerful platform for task management and productivity</p>
+                <button type="button" class="overlay-btn" (click)="switchToRegister()">Sign Up</button>
             </div>
         </div>
     </div>
 </div>
-

@@ -32,6 +32,7 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
     currentMode: AuthMode = 'register';
     registrationSuccess: boolean = false;
     registeredEmail: string = '';
+    isResending: boolean = false;
     
     // Login form
     loginForm: FormGroup = new FormGroup({});
@@ -157,6 +158,25 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
         this.loginSubmitted = false;
         this.registerSubmitted = false;
         this.registrationSuccess = false;
+        this.isResending = false;
+    }
+
+    resendVerification(): void {
+        if (!this.registeredEmail || this.isResending) return;
+        
+        this.isResending = true;
+        this._authService.resendVerificationEmail(this.registeredEmail)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe({
+                next: (res) => {
+                    this.isResending = false;
+                    this._toastService.success(res.message || 'Verification link resent!');
+                },
+                error: (err) => {
+                    this.isResending = false;
+                    this._toastService.error(err?.error?.detail || 'Failed to resend link');
+                }
+            });
     }
 
     // Login methods
@@ -270,4 +290,3 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
         this._destroy$.complete();
     }
 }
-

@@ -36,8 +36,8 @@
     }
 }
 
-// Branding panel - slides between right and left
-.branding-panel {
+// Overlay (Branding) panel - slides between right and left
+.overlay-panel {
     position: absolute;
     top: 0;
     left: 50%;
@@ -82,22 +82,24 @@
     }
 }
 
-// Branding content wrapper
-.branding-content {
+// Overlay content wrapper
+.overlay-content {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 2rem;
+    color: white;
+    text-align: center;
+    box-sizing: border-box;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease;
-    overflow: hidden;
-    box-sizing: border-box;
+    transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.65, 0, 0.35, 1);
 
     &.active {
         opacity: 1;
@@ -111,9 +113,8 @@
     width: 100%;
 }
 
-.logo-content {
+.logo-wrapper {
     text-align: center;
-    padding: 2rem;
 }
 
 .logo-text {
@@ -127,15 +128,18 @@
     font-family: 'Caveat', 'Montserrat', cursive;
 }
 
-.logo-subtitle {
+.welcome-title {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.welcome-text {
     font-size: clamp(0.875rem, 2vw, 1.125rem);
     color: rgba(255, 255, 255, 0.9);
-    margin-top: 1rem;
     margin-bottom: 2rem;
     font-weight: 400;
-    max-width: 280px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 320px;
 }
 
 .overlay-btn {
@@ -180,7 +184,7 @@
         }
     }
 
-    .branding-panel {
+    .overlay-panel {
         display: none;
     }
 
@@ -199,4 +203,3 @@
         }
     }
 }
-

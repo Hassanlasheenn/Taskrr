@@ -4,12 +4,30 @@
     align-items: center;
     min-height: 100vh;
     padding: 2rem;
-    background: var(--bg-color);
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+    position: relative;
+    
+    // Add the radial glow effect from styles.scss
+    &::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+          radial-gradient(circle at 20% 50%, var(--bg-overlay-gradient-1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, var(--bg-overlay-gradient-2) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+    }
 }
 
 .verify-card {
     max-width: 450px;
     width: 100%;
+    position: relative;
+    z-index: 1;
 }
 
 .verification-status {
@@ -30,12 +48,12 @@
 
 .success {
     i {
-        color: var(--success-color, #198754);
+        color: var(--success-color);
     }
 }
 
 .error {
     i {
-        color: var(--danger-color, #dc3545);
+        color: var(--danger-color);
     }
 }

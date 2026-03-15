@@ -39,6 +39,10 @@ export class AuthService {
         return this._authHttpService.loginUser(payload);
     }
 
+    resendVerificationEmail(email: string): Observable<any> {
+        return this._http.post(`${API_URLS.auth.resendVerification}?email=${email}`, {});
+    }
+
     logout(): Observable<void> {
         this.clearCurrentUser();
         this._posthogService.reset();

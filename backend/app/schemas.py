@@ -96,10 +96,10 @@ class TodoResponse(BaseModel):
 
     @field_serializer('created_at', 'updated_at', 'due_date', 'reminder_sent_at')
     def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
-        """Serialize datetime without timezone (Z) suffix"""
+        """Serialize datetime with UTC Z suffix"""
         if value is None:
             return None
-        return value.strftime('%Y-%m-%dT%H:%M:%S')
+        return value.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 class TodoListResponse(BaseModel):
     todos: List[TodoResponse]
@@ -127,7 +127,7 @@ class CommentResponse(BaseModel):
     def serialize_created_at(self, value: Optional[datetime]) -> Optional[str]:
         if value is None:
             return None
-        return value.strftime('%Y-%m-%dT%H:%M:%S')
+        return value.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 class CommentListResponse(BaseModel):
@@ -152,7 +152,7 @@ class CommentHistoryResponse(BaseModel):
     def serialize_created_at(self, value: Optional[datetime]) -> Optional[str]:
         if value is None:
             return None
-        return value.strftime('%Y-%m-%dT%H:%M:%S')
+        return value.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 class CommentHistoryListResponse(BaseModel):
@@ -176,7 +176,7 @@ class TodoFieldHistoryResponse(BaseModel):
     def serialize_created_at(self, value: Optional[datetime]) -> Optional[str]:
         if value is None:
             return None
-        return value.strftime('%Y-%m-%dT%H:%M:%S')
+        return value.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 class TodoHistoryEntryComment(BaseModel):
@@ -223,7 +223,7 @@ class NotificationResponse(BaseModel):
     def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
         if value is None:
             return None
-        return value.strftime('%Y-%m-%dT%H:%M:%S')
+        return value.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 class NotificationListResponse(BaseModel):
