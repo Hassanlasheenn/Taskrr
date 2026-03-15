@@ -427,6 +427,41 @@
 
     @include urgency-colors(0.1, 0.2);
 }
+.todo-header-row {
+    margin-bottom: 0.5rem;
+}
+
+.view-todo-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--card-border-color);
+    background: var(--btn-secondary-bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+
+    i {
+        font-size: 1rem;
+    }
+
+    &:hover {
+        background: var(--btn-secondary-hover-bg);
+        border-color: var(--primary-gradient-start);
+        color: var(--primary-gradient-start);
+        transform: scale(1.05);
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
 .todo-title { font-size: 0.9375rem; font-weight: 700; margin: 0; }
 .todo-description { font-size: 0.8125rem; color: var(--text-secondary); margin: 0.5rem 0; }
 .done-badge-small { 

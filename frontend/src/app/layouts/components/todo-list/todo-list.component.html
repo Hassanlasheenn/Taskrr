@@ -8,7 +8,7 @@
                 </div>
                 
                 <div class="todo-header-actions d-flex align-items-center gap-2">
-                    <div class="view-toggle d-none d-sm-flex">
+                    <div class="view-toggle d-none d-sm-flex" *ngIf="todos.length > 0">
                         <button 
                             type="button" 
                             class="view-toggle-btn"
@@ -38,7 +38,7 @@
             </div>
 
             <div class="todo-header-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div *ngIf="showStatusFilter" class="filters-group d-flex align-items-center gap-2 flex-wrap">
+                <div *ngIf="showStatusFilter && totalCount > 0" class="filters-group d-flex align-items-center gap-2 flex-wrap">
                     <app-status-filter
                         [activeStatus]="activeStatus"
                         (statusChange)="statusChange.emit($event)"
@@ -59,7 +59,7 @@
                     </button>
                 </div>
 
-                <div class="view-toggle d-flex d-sm-none ms-auto">
+                <div class="view-toggle d-flex d-sm-none ms-auto" *ngIf="todos.length > 0">
                     <button 
                         type="button" 
                         class="view-toggle-btn"

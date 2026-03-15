@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, OnChanges, SimpleChanges } from "@angular/core";
+import { Component, OnInit, Input, OnChanges, SimpleChanges, Output, EventEmitter } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ITodo } from "../../../../../core/interfaces/todo.interface";
 
@@ -11,6 +11,7 @@ import { ITodo } from "../../../../../core/interfaces/todo.interface";
 })
 export class CalendarComponent implements OnInit, OnChanges {
     @Input() todos: ITodo[] = [];
+    @Output() viewTodo = new EventEmitter<ITodo>();
 
     currentDate: Date = new Date();
     currentMonth: number = this.currentDate.getMonth();
@@ -264,6 +265,11 @@ export class CalendarComponent implements OnInit, OnChanges {
             hour: '2-digit',
             minute: '2-digit'
         });
+    }
+
+    onViewTodo(todo: ITodo, event: MouseEvent): void {
+        event.stopPropagation();
+        this.viewTodo.emit(todo);
     }
 
     trackByTodo(index: number, todo: ITodo): number {

@@ -12,11 +12,11 @@
                 <h1>{{ timeBasedGreeting }}, {{ (userData?.username | titlecase) }}</h1>
             </div>
             
-            <app-calendar 
+            <app-calendar
                 *ngIf="activeSection === DashboardSections.CALENDAR"
                 [todos]="todos"
+                (viewTodo)="onViewTodo($event)"
             />
-
             <app-admin-panel
                 *ngIf="activeSection === DashboardSections.ADMIN_PANEL"
             />

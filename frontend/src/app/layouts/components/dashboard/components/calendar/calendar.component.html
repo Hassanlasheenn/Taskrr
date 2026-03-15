@@ -85,9 +85,19 @@
                             >
                                 <div class="todo-card-content">
                                     <div class="todo-content">
-                                        <div class="todo-header-row">
-                                            <h4 class="todo-title">{{ todo.title }}</h4>
-                                            <span *ngIf="todo.status === 'done'" class="done-badge-small">Done</span>
+                                        <div class="todo-header-row d-flex justify-content-between align-items-start">
+                                            <div class="todo-title-group">
+                                                <h4 class="todo-title">{{ todo.title }}</h4>
+                                                <span *ngIf="todo.status === 'done'" class="done-badge-small mt-1">Done</span>
+                                            </div>
+                                            <button 
+                                                type="button" 
+                                                class="view-todo-btn" 
+                                                (click)="onViewTodo(todo, $event)"
+                                                title="View Details"
+                                            >
+                                                <i class="bi bi-eye"></i>
+                                            </button>
                                         </div>
                                         
                                         <!-- Urgency-colored Full Due Date Badge for Calendar (Below Title) -->
