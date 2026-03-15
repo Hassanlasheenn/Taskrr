@@ -175,7 +175,8 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                         username: `${currentUser.username} (Me)`,
                         email: currentUser.email,
                         role: currentUser.role || 'user',
-                        photo: currentUser.photo || null
+                        photo: currentUser.photo || null,
+                        is_verified: currentUser.is_verified
                     });
                 }
             },

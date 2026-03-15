@@ -68,7 +68,8 @@ export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
 
     get isInvalid(): boolean {
         const control = this.control;
-        return !!(this.showErrors && control && control.invalid && control.touched);
+        // Check if either it was submitted or if the user touched it and modified it (dirty)
+        return !!(control && control.invalid && (this.showErrors || (control.touched && control.dirty)));
     }
 
     getInputClasses(): { [key: string]: boolean } {

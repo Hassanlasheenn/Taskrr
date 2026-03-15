@@ -31,6 +31,7 @@ from migrations.add_status_column import run_migration as migration11
 from migrations.add_todo_comments_table import run_migration as migration12
 from migrations.add_due_date_column import run_migration as migration13
 from migrations.add_reminder_sent_at_column import migrate as migration14
+from migrations.add_verification_fields import run_migration as migration15
 
 from app.database import engine
 
@@ -58,6 +59,7 @@ def run_all_migrations():
         ("Add todo_comments table", migration12),
         ("Add due_date column", migration13),
         ("Add reminder_sent_at column", migration14),
+        ("Add email verification fields", migration15),
     ]
     
     # We don't open a session here because each migration opens its own
@@ -75,8 +77,6 @@ def run_all_migrations():
         logger.info("✅ All migrations checked/completed!")
     except Exception as e:
         logger.error(f"❌ Critical error during migrations: {e}")
-        # Don't exit(1) here to allow the app to try and start anyway
-        # unless it's a completely fresh DB which will fail later anyway
 
 if __name__ == "__main__":
     run_all_migrations()

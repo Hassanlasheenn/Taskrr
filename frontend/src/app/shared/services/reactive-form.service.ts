@@ -66,7 +66,10 @@ export class ReactiveFormService {
             case ValidatorTypes.PATTERN:
                 return Validators.pattern(validation.value || '');
             case ValidatorTypes.EMAIL:
-                return Validators.email;
+                // Use standard email validator plus pattern if provided
+                return validation.value 
+                    ? Validators.compose([Validators.email, Validators.pattern(validation.value)]) 
+                    : Validators.email;
             case 'passwordmatch':
                 return this.passwordMatchValidator(validation.value || 'password');
             default:
@@ -109,7 +112,8 @@ export class ReactiveFormService {
     }
 
     private shouldShowError(control: AbstractControl | null, showErrors: boolean): boolean {
-        return showErrors && !!control && control.invalid && !!control.errors && control.touched;
+        // Show error if either it's been submitted OR if the user has started interacting (dirty + touched)
+        return !!control && control.invalid && !!control.errors && (showErrors || (control.dirty && control.touched));
     }
 
     private getCustomValidationError(errors: any, field: IFieldControl): string | null {

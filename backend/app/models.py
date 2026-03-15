@@ -32,6 +32,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     profile_pic = Column(Text, nullable=True)
     role = Column(String(20), default=UserRole.USER.value, nullable=False, index=True)
+    is_verified = Column(Boolean, default=False, nullable=False)
+    verification_token = Column(String(255), nullable=True, index=True)
     
     todos = relationship("Todo", back_populates="user", foreign_keys="[Todo.user_id]", cascade="all, delete-orphan")
 

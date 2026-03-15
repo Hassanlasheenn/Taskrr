@@ -169,7 +169,8 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     get isInvalid(): boolean {
-        return !!(this.showErrors && this.control?.invalid && this.control?.touched);
+        const control = this.control;
+        return !!(control && control.invalid && (this.showErrors || (control.touched && control.dirty)));
     }
 
     get formattedValue(): string {

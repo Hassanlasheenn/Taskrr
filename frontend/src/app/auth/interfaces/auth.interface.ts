@@ -27,6 +27,7 @@ export interface IUserResponse {
     email: string;
     photo?: string | null;
     role?: string;
+    is_verified: boolean;
 }
 
 export interface IUserListResponse {
@@ -35,6 +36,7 @@ export interface IUserListResponse {
     email: string;
     photo?: string | null;
     role: string;
+    is_verified: boolean;
 }
 
 export interface IUserRoleUpdate {

@@ -1,17 +1,21 @@
 import os
-from fastapi.security import OAuth2PasswordRequestForm
+import secrets
 import jwt 
 from datetime import datetime, timedelta, timezone
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, BackgroundTasks
 from fastapi import APIRouter, Depends, Response
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from . import models, schemas, database
 from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from .cache import invalidate_user_list_caches
+from .services.email_service import EmailService
+from .routers.notifications import create_welcome_notification
 
 ph = PasswordHasher()
+email_service = EmailService()
 
 def hash_password(password: str) -> str:
     return ph.hash(password)
@@ -32,22 +36,34 @@ def create_access_token(data: dict) -> str:
 router = APIRouter(tags=["auth"])
 
 @router.post("/register", response_model=schemas.LoginResponse)
-def register(user: schemas.UserCreate, response: Response, db: Session = Depends(database.get_db)):
+def register(
+    user: schemas.UserCreate, 
+    response: Response, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(database.get_db)
+):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
     
     hashed_password = hash_password(user.password)
+    verification_token = secrets.token_urlsafe(32)
 
     new_user = models.User(
         email=user.email,
         username=user.username,
         hashed_password=hashed_password,
-        role=models.UserRole.USER.value
+        role=models.UserRole.USER.value,
+        is_verified=False,
+        verification_token=verification_token
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    # Send verification email in background
+    background_tasks.add_task(email_service.send_verification_email, new_user.email, verification_token)
+    
     invalidate_user_list_caches()
     user_role = getattr(new_user, 'role', 'user')
     access_token = create_access_token(data={"sub": new_user.email, "role": user_role})
@@ -70,7 +86,8 @@ def register(user: schemas.UserCreate, response: Response, db: Session = Depends
         "username": new_user.username,
         "email": new_user.email,
         "photo": getattr(new_user, 'profile_pic', None),
-        "role": getattr(new_user, 'role', 'user')
+        "role": getattr(new_user, 'role', 'user'),
+        "is_verified": new_user.is_verified
     }
     
     return { 
@@ -91,6 +108,12 @@ def login(
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password", headers={"WWW-Authenticate": "Bearer"})
     
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Email not verified. Please check your inbox for verification link."
+        )
+
     # Include role in token
     user_role = getattr(user, 'role', 'user')
     access_token = create_access_token(data={"sub": user.email, "role": user_role})
@@ -113,7 +136,8 @@ def login(
         "username": user.username,
         "email": user.email,
         "photo": getattr(user, 'profile_pic', None),
-        "role": getattr(user, 'role', 'user')
+        "role": getattr(user, 'role', 'user'),
+        "is_verified": user.is_verified
     }
     
     return { 
@@ -131,3 +155,22 @@ def logout(response: Response = Response()):
         samesite="lax"
     )
     return {"message": "Logged out successfully"}
+
+@router.get("/verify-email")
+async def verify_email(
+    token: str, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(database.get_db)
+):
+    user = db.query(models.User).filter(models.User.verification_token == token).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification token")
+    
+    user.is_verified = True
+    user.verification_token = None
+    db.commit()
+    
+    # Create a welcome notification in the background
+    background_tasks.add_task(create_welcome_notification, db, user.id, user.username)
+    
+    return {"message": "Email verified successfully. You can now login."}

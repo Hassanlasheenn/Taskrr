@@ -32,6 +32,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     photo: Optional[str] = None
     role: Optional[str] = "user"
+    is_verified: bool = False
 
     class Config:
         from_attributes = True
@@ -42,6 +43,7 @@ class UserListResponse(BaseModel):
     email: EmailStr
     photo: Optional[str] = None
     role: str
+    is_verified: bool = False
 
     class Config:
         from_attributes = True

@@ -5,7 +5,7 @@
         <div class="forms-panel">
             <!-- Register Form -->
             <div class="form-content register-form" [class.active]="currentMode === 'register'">
-                <app-card [card]="{ title: 'Create Account' }" class="auth-form">
+                <app-card [card]="{ title: 'Create Account' }" class="auth-form" *ngIf="!registrationSuccess">
                     <app-dynamic-form 
                         [fields]="registerFields" 
                         [form]="registerForm" 
@@ -18,6 +18,18 @@
                     <div class="mt-2 d-flex justify-content-center align-items-center gap-1 d-md-none">
                         <span>Already a User?</span>
                         <button type="button" class="link-button" (click)="switchToLogin()">Sign In</button>
+                    </div>
+                </app-card>
+
+                <!-- Success Message -->
+                <app-card [card]="{ title: 'Check Your Email' }" class="auth-form" *ngIf="registrationSuccess">
+                    <div class="text-center py-4">
+                        <i class="bi bi-envelope-check text-primary fs-1 mb-3 d-block"></i>
+                        <h3 class="mb-3">Verification Sent!</h3>
+                        <p class="text-secondary mb-4">
+                            We've sent a verification link to <strong>{{ registeredEmail }}</strong>. 
+                            Please check your inbox and click the link to activate your account.
+                        </p>
                     </div>
                 </app-card>
             </div>

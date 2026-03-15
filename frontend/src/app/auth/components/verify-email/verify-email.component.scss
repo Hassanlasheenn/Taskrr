@@ -1,0 +1,41 @@
+.verify-email-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+    background: var(--bg-color);
+}
+
+.verify-card {
+    max-width: 450px;
+    width: 100%;
+}
+
+.verification-status {
+    text-align: center;
+    padding: 2rem 1rem;
+
+    h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    p {
+        color: var(--text-secondary);
+        margin-top: 1rem;
+    }
+}
+
+.success {
+    i {
+        color: var(--success-color, #198754);
+    }
+}
+
+.error {
+    i {
+        color: var(--danger-color, #dc3545);
+    }
+}

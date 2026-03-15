@@ -129,6 +129,37 @@ def delete_notification(
     db.commit()
     return {"message": "Notification deleted successfully"}
 
+async def create_welcome_notification(
+    db: Session,
+    user_id: int,
+    username: str
+):
+    """Create a welcome notification for a newly verified user."""
+    try:
+        message = f"Welcome to Taskrr, {username}! 🚀 We're excited to have you here. Start organizing your life today!"
+        notification = models.Notification(
+            user_id=user_id,
+            message=message
+        )
+        db.add(notification)
+        db.commit()
+        db.refresh(notification)
+        
+        notification_data = {
+            "id": notification.id,
+            "user_id": notification.user_id,
+            "todo_id": None,
+            "message": notification.message,
+            "is_read": notification.is_read,
+            "created_at": notification.created_at.isoformat() if notification.created_at else None
+        }
+        # Try to send via websocket if they happen to be connected (unlikely during verification but good practice)
+        await notification_manager.send_notification(user_id, notification_data)
+        logger.info(f"✅ Welcome notification created for user {username} (ID: {user_id})")
+    except Exception as e:
+        logger.error(f"Error creating welcome notification for user {user_id}: {e}")
+        db.rollback()
+
 async def create_notification(
     db: Session,
     user_id: int,

@@ -30,6 +30,8 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
     
     currentMode: AuthMode = 'register';
+    registrationSuccess: boolean = false;
+    registeredEmail: string = '';
     
     // Login form
     loginForm: FormGroup = new FormGroup({});
@@ -154,6 +156,7 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
         this.registerError = null;
         this.loginSubmitted = false;
         this.registerSubmitted = false;
+        this.registrationSuccess = false;
     }
 
     // Login methods
@@ -231,19 +234,27 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
             .subscribe({
                 next: (res: IRegisterResponse) => {
                     this.registerError = null;
-                    if (res.access_token) {
-                        this._authService.setToken(res.access_token);
+                    
+                    if (res.data?.is_verified) {
+                        // If somehow already verified, proceed as before
+                        if (res.access_token) {
+                            this._authService.setToken(res.access_token);
+                        }
+                        if (res.data?.id) {
+                            this._authService.setCurrentUserId(res.data.id);
+                            this._authService.setCurrentUserData(res.data);
+                        }
+                        this._toastService.success('Account created successfully');
+                        this._router.navigate([LayoutPaths.DASHBOARD]);
+                    } else {
+                        // Not verified - show verification message
+                        this.registrationSuccess = true;
+                        this.registeredEmail = payload.email;
+                        this._toastService.success('Account created! Please verify your email.');
+                        this._posthogService.capture('user_registration_pending_verification', { 
+                            email: payload.email 
+                        });
                     }
-                    if (res.data?.id) {
-                        this._authService.setCurrentUserId(res.data.id);
-                        this._authService.setCurrentUserData(res.data);
-                    }
-                    this._posthogService.capture('user_register_success', { 
-                        email: payload.email,
-                        username: payload.username 
-                    });
-                    this._toastService.success('Account created successfully');
-                    this._router.navigate([LayoutPaths.DASHBOARD]);
                 },
                 error: (err: HttpErrorResponse) => {
                     this.registerSubmitted = true;

@@ -9,6 +9,10 @@ import { LayoutPaths } from './layouts/enums';
 
 export const routes: Routes = [
     { path: AuthPaths.LOGIN, component: AuthContainerComponent },
+    { 
+        path: AuthPaths.VERIFY_EMAIL, 
+        loadComponent: () => import('./auth/components/verify-email/verify-email.component').then(m => m.VerifyEmailComponent) 
+    },
     { path: 'home', redirectTo: '', pathMatch: 'full' },
     
     // Dashboard Sections

@@ -67,7 +67,7 @@ export class DropdownFormComponent implements OnInit, OnDestroy, OnChanges {
 
     get isInvalid(): boolean {
         const control = this.control;
-        return !!(this.showErrors && control && control.invalid && control.touched);
+        return !!(control && control.invalid && (this.showErrors || (control.touched && control.dirty)));
     }
 
     getInputClasses(): { [key: string]: boolean } {
