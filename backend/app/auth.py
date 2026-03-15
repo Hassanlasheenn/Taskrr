@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from fastapi import HTTPException, status, BackgroundTasks
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from . import models, schemas, database
@@ -13,6 +13,7 @@ from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from .cache import invalidate_user_list_caches
 from .services.email_service import EmailService
 from .routers.notifications import create_welcome_notification
+from .routers.users import get_photo_url
 
 ph = PasswordHasher()
 email_service = EmailService()
@@ -37,6 +38,7 @@ router = APIRouter(tags=["auth"])
 
 @router.post("/register", response_model=schemas.LoginResponse)
 def register(
+    request: Request,
     user: schemas.UserCreate, 
     response: Response, 
     background_tasks: BackgroundTasks,
@@ -85,7 +87,7 @@ def register(
         "id": new_user.id,
         "username": new_user.username,
         "email": new_user.email,
-        "photo": getattr(new_user, 'profile_pic', None),
+        "photo": get_photo_url(request, getattr(new_user, 'profile_pic', None)),
         "role": getattr(new_user, 'role', 'user'),
         "is_verified": new_user.is_verified
     }
@@ -99,6 +101,7 @@ def register(
 
 @router.post("/login", response_model=schemas.LoginResponse)
 def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(), 
     db: Session = Depends(database.get_db),
     response: Response = Response()
@@ -135,7 +138,7 @@ def login(
         "id": user.id,
         "username": user.username,
         "email": user.email,
-        "photo": getattr(user, 'profile_pic', None),
+        "photo": get_photo_url(request, getattr(user, 'profile_pic', None)),
         "role": getattr(user, 'role', 'user'),
         "is_verified": user.is_verified
     }

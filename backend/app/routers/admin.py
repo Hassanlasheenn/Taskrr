@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List, Dict
 from .. import database, models, schemas
@@ -6,30 +6,48 @@ from ..dependencies import get_current_admin_user
 from ..cache import cache_get, cache_set, invalidate_user_list_caches
 from ..cache import PREFIX_ADMIN_USERS, PREFIX_ADMIN_USERS_WITH_TODOS
 from ..config import CACHE_TTL_USER_LISTS
+from .users import get_photo_url
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.get("/users", response_model=List[schemas.UserListResponse])
 def list_users(
+    request: Request,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_admin_user)
 ):
     cached = cache_get(PREFIX_ADMIN_USERS)
     if cached is not None:
+        for item in cached:
+            item['photo'] = get_photo_url(request, item.get('photo'))
         return [schemas.UserListResponse(**item) for item in cached]
+        
     users = db.query(models.User).all()
     result = [
         schemas.UserListResponse(
             id=user.id,
             username=user.username,
             email=user.email,
-            photo=getattr(user, 'profile_pic', None),
-            role=getattr(user, 'role', 'user')
+            photo=get_photo_url(request, user.profile_pic),
+            role=getattr(user, 'role', 'user'),
+            is_verified=user.is_verified
         )
         for user in users
     ]
-    cache_set(PREFIX_ADMIN_USERS, [r.model_dump(mode="json") for r in result], CACHE_TTL_USER_LISTS)
+    
+    # Cache raw paths
+    cache_data = []
+    for user in users:
+        cache_data.append({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "photo": user.profile_pic,
+            "role": getattr(user, 'role', 'user'),
+            "is_verified": user.is_verified
+        })
+    cache_set(PREFIX_ADMIN_USERS, cache_data, CACHE_TTL_USER_LISTS)
     return result
 
 
@@ -66,6 +84,7 @@ def delete_user(
 
 @router.patch("/users/{user_id}/role", response_model=schemas.UserListResponse)
 def update_user_role(
+    request: Request,
     user_id: int,
     role_update: schemas.UserRoleUpdate,
     db: Session = Depends(database.get_db),
@@ -92,19 +111,23 @@ def update_user_role(
         id=user.id,
         username=user.username,
         email=user.email,
-        photo=getattr(user, 'profile_pic', None),
-        role=user.role
+        photo=get_photo_url(request, user.profile_pic),
+        role=user.role,
+        is_verified=user.is_verified
     )
 
 
 @router.get("/users-with-todos")
 def get_users_with_todos(
+    request: Request,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_admin_user)
 ):
     """Get all users with their todos (admin only) - shows todos owned by or assigned to each user"""
     cached = cache_get(PREFIX_ADMIN_USERS_WITH_TODOS)
     if cached is not None:
+        for item in cached:
+            item['user']['photo'] = get_photo_url(request, item['user'].get('photo'))
         return [
             {
                 "user": schemas.UserListResponse(**item["user"]),
@@ -164,8 +187,9 @@ def get_users_with_todos(
                 id=user.id,
                 username=user.username,
                 email=user.email,
-                photo=getattr(user, 'profile_pic', None),
-                role=getattr(user, 'role', 'user')
+                photo=get_photo_url(request, user.profile_pic),
+                role=getattr(user, 'role', 'user'),
+                is_verified=user.is_verified
             ),
             "todos": todo_responses,
             "todo_count": len(todos)
@@ -173,8 +197,15 @@ def get_users_with_todos(
     # Serialize for cache (Pydantic models -> dicts)
     cacheable = []
     for item in result:
+        # Keep raw photo path in cache
+        user_db = db.query(models.User).filter(models.User.id == item["user"].id).first()
+        raw_photo = user_db.profile_pic if user_db else None
+        
+        user_dict = item["user"].model_dump(mode="json")
+        user_dict['photo'] = raw_photo
+        
         cacheable.append({
-            "user": item["user"].model_dump(mode="json"),
+            "user": user_dict,
             "todos": [t.model_dump(mode="json") for t in item["todos"]],
             "todo_count": item["todo_count"],
         })

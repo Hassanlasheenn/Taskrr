@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
 from app.routers import register_routers
 from app.cache import get_redis_status
@@ -28,6 +29,16 @@ app = FastAPI(
     version="1.0.0",
     root_path=os.getenv("ROOT_PATH", "")
 )
+
+# Mount static files directory for uploads
+# Make sure this happens BEFORE other routes if you want priority, or just anywhere
+static_dir = os.path.join(os.getcwd(), "static")
+if not os.path.exists(static_dir):
+    os.makedirs(static_dir)
+    # Create profile_pics subfolder
+    os.makedirs(os.path.join(static_dir, "profile_pics"), exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 def _process_due_date_reminders():
     """Sync function to be run in a thread to check due dates"""

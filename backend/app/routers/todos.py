@@ -114,7 +114,7 @@ async def create_todo(
                 detail="Assigned user not found"
             )
         # If the creator is not an admin, they can only assign to regular users
-        if user_role != models.UserRole.ADMIN.value and assigned_to_user.role != models.UserRole.USER.value:
+        if user.role != models.UserRole.ADMIN.value and assigned_to_user.role != models.UserRole.USER.value:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Non-admin users can only assign todos to regular users"
