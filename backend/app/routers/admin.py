@@ -80,12 +80,29 @@ def delete_user(
             detail="User not found"
         )
     
+    # 1. Delete notifications related to this user (as owner)
     db.query(models.Notification).filter(models.Notification.user_id == user_id).delete()
     
+    # 2. Delete history and comments created by this user
+    db.query(models.TodoComment).filter(models.TodoComment.user_id == user_id).delete()
+    db.query(models.TodoCommentHistory).filter(models.TodoCommentHistory.user_id == user_id).delete()
+    db.query(models.TodoFieldHistory).filter(models.TodoFieldHistory.user_id == user_id).delete()
+    
+    # 3. Handle todos assigned to this user (Unassign them)
     db.query(models.Todo).filter(models.Todo.assigned_to_user_id == user_id).update(
         {models.Todo.assigned_to_user_id: None}
     )
     
+    # 4. Handle notifications/history for todos owned by this user
+    # Since todos have cascade="all, delete-orphan", we need to clean up their children manually if they don't have DB-level cascade
+    user_todos = db.query(models.Todo).filter(models.Todo.user_id == user_id).all()
+    for todo in user_todos:
+        db.query(models.Notification).filter(models.Notification.todo_id == todo.id).delete()
+        db.query(models.TodoComment).filter(models.TodoComment.todo_id == todo.id).delete()
+        db.query(models.TodoCommentHistory).filter(models.TodoCommentHistory.todo_id == todo.id).delete()
+        db.query(models.TodoFieldHistory).filter(models.TodoFieldHistory.todo_id == todo.id).delete()
+
+    # 5. Finally delete the user (this will also delete their owned todos via SQLAlchemy cascade)
     db.delete(user)
     db.commit()
     invalidate_user_list_caches()
