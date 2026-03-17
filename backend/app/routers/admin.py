@@ -127,7 +127,7 @@ def update_user_role(
     )
 
 
-@router.get("/users-with-todos")
+@router.get("/users-with-todos", response_model=List[schemas.UserWithTodosResponse])
 def get_users_with_todos(
     request: Request,
     db: Session = Depends(database.get_db),
@@ -142,21 +142,40 @@ def get_users_with_todos(
         result = []
         for item in cached:
             try:
-                item['user']['photo'] = get_photo_url(request, item['user'].get('photo'))
-                if not item['user'].get('role'):
-                    item['user']['role'] = 'user'
+                # Ensure 'user' and 'todos' keys exist
+                user_data = item.get('user')
+                if not user_data:
+                    continue
+                
+                # Dynamic full URL for photo
+                user_data['photo'] = get_photo_url(request, user_data.get('photo'))
+                if not user_data.get('role'):
+                    user_data['role'] = 'user'
+                
+                # Provide defaults for mandatory bool fields if missing
+                if user_data.get('is_verified') is None:
+                    user_data['is_verified'] = False
                 
                 # Ensure todos is a list and provide defaults for each todo
                 todos_data = item.get('todos', [])
+                valid_todos = []
                 for t in todos_data:
-                    if not t.get('status'): t['status'] = 'new'
-                    if not t.get('priority'): t['priority'] = 'medium'
+                    try:
+                        if not t.get('status'): t['status'] = 'new'
+                        if not t.get('priority'): t['priority'] = 'medium'
+                        # Ensure mandatory int fields are present
+                        if t.get('id') is None or t.get('user_id') is None:
+                            continue
+                        valid_todos.append(schemas.TodoResponse(**t))
+                    except Exception as te:
+                        logger.warning(f"Skipping malformed cached todo: {te}")
+                        continue
                 
-                result.append({
-                    "user": schemas.UserListResponse(**item["user"]),
-                    "todos": [schemas.TodoResponse(**t) for t in todos_data],
-                    "todo_count": item.get("todo_count", 0),
-                })
+                result.append(schemas.UserWithTodosResponse(
+                    user=schemas.UserListResponse(**user_data),
+                    todos=valid_todos,
+                    todo_count=item.get("todo_count", len(valid_todos)),
+                ))
             except Exception as e:
                 logger.error(f"Cache data error for user {item.get('user', {}).get('id')}: {e}")
                 continue
@@ -167,64 +186,62 @@ def get_users_with_todos(
     
     result = []
     for user in users:
-        if getattr(user, 'role', 'user') == models.UserRole.ADMIN.value:
-            todos = db.query(models.Todo).filter(
+        # Include todos where user is owner OR assignee
+        # This ensures all users (including admins) show their relevant todos
+        todos = db.query(models.Todo).filter(
+            or_(
                 models.Todo.user_id == user.id,
-                models.Todo.assigned_to_user_id.is_(None)
-            ).order_by(models.Todo.order_index.asc()).all()
-        else:
-            todos = db.query(models.Todo).filter(
-                or_(
-                    models.Todo.user_id == user.id,
-                    models.Todo.assigned_to_user_id == user.id
-                )
-            ).order_by(models.Todo.order_index.asc()).all()
+                models.Todo.assigned_to_user_id == user.id
+            )
+        ).order_by(models.Todo.order_index.asc()).all()
         
         todo_responses = []
         for todo in todos:
-            assigned_to_username = None
-            if todo.assigned_to_user_id:
-                assigned_user = db.query(models.User).filter(
-                    models.User.id == todo.assigned_to_user_id
-                ).first()
-                if assigned_user:
-                    assigned_to_username = assigned_user.username
-            
-            todo_dict = {
-                "id": todo.id,
-                "title": todo.title,
-                "description": todo.description,
-                "status": todo.status or "new",
-                "priority": todo.priority or "medium",
-                "category": todo.category,
-                "due_date": todo.due_date,
-                "reminder_sent_at": todo.reminder_sent_at,
-                "order_index": todo.order_index,
-                "created_at": todo.created_at,
-                "updated_at": todo.updated_at,
-                "user_id": todo.user_id,
-                "assigned_to_user_id": todo.assigned_to_user_id,
-                "assigned_to_username": assigned_to_username
-            }
             try:
+                assigned_to_username = None
+                if todo.assigned_to_user_id:
+                    assigned_user = db.query(models.User).filter(
+                        models.User.id == todo.assigned_to_user_id
+                    ).first()
+                    if assigned_user:
+                        assigned_to_username = assigned_user.username
+                
+                todo_dict = {
+                    "id": todo.id,
+                    "title": todo.title,
+                    "description": todo.description,
+                    "status": todo.status or "new",
+                    "priority": todo.priority or "medium",
+                    "category": todo.category,
+                    "due_date": todo.due_date,
+                    "reminder_sent_at": todo.reminder_sent_at,
+                    "order_index": todo.order_index or 0,
+                    "created_at": todo.created_at,
+                    "updated_at": todo.updated_at,
+                    "user_id": todo.user_id,
+                    "assigned_to_user_id": todo.assigned_to_user_id,
+                    "assigned_to_username": assigned_to_username
+                }
                 todo_responses.append(schemas.TodoResponse(**todo_dict))
             except Exception as e:
-                logger.error(f"Pydantic validation error for todo {todo.id}: {e}")
+                logger.error(f"Pydantic validation error for todo {getattr(todo, 'id', 'unknown')}: {e}")
                 continue
         
         try:
-            result.append({
-                "user": schemas.UserListResponse(
-                    id=user.id,
-                    username=user.username,
-                    email=user.email,
-                    photo=get_photo_url(request, user.profile_pic),
-                    role=getattr(user, 'role', 'user') or 'user',
-                    is_verified=user.is_verified
-                ),
-                "todos": todo_responses,
-                "todo_count": len(todos)
-            })
+            user_list_data = {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "photo": get_photo_url(request, user.profile_pic),
+                "role": getattr(user, 'role', 'user') or 'user',
+                "is_verified": bool(user.is_verified)
+            }
+            
+            result.append(schemas.UserWithTodosResponse(
+                user=schemas.UserListResponse(**user_list_data),
+                todos=todo_responses,
+                todo_count=len(todo_responses)
+            ))
         except Exception as e:
             logger.error(f"Pydantic validation error for user {user.id}: {e}")
             continue
@@ -232,17 +249,17 @@ def get_users_with_todos(
     # Serialize for cache (Pydantic models -> dicts)
     cacheable = []
     for item in result:
-        # Keep raw photo path in cache
-        user_db = db.query(models.User).filter(models.User.id == item["user"].id).first()
+        # Keep raw photo path in cache for dynamic URL generation later
+        user_db = db.query(models.User).filter(models.User.id == item.user.id).first()
         raw_photo = user_db.profile_pic if user_db else None
         
-        user_dict = item["user"].model_dump(mode="json")
-        user_dict['photo'] = raw_photo
+        user_dict = item.user.model_dump(mode="json")
+        user_dict['photo'] = raw_photo # Raw path/URL for cache
         
         cacheable.append({
             "user": user_dict,
-            "todos": [t.model_dump(mode="json") for t in item["todos"]],
-            "todo_count": item["todo_count"],
+            "todos": [t.model_dump(mode="json") for t in item.todos],
+            "todo_count": item.todo_count,
         })
     cache_set(PREFIX_ADMIN_USERS_WITH_TODOS, cacheable, CACHE_TTL_USER_LISTS)
     return result

@@ -106,6 +106,12 @@ class TodoListResponse(BaseModel):
     total: int
 
 
+class UserWithTodosResponse(BaseModel):
+    user: UserListResponse
+    todos: List[TodoResponse]
+    todo_count: int
+
+
 class CommentCreate(BaseModel):
     content: str
     mentioned_user_ids: Optional[List[int]] = None
