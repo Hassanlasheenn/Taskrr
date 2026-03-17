@@ -121,19 +121,6 @@
     }
 }
 
-.profile-side-nav-wrapper {
-    flex-shrink: 0;
-    width: 100%;
-
-    @media (min-width: 992px) {
-        width: 220px;
-    }
-
-    ::ng-deep .profile-side-nav {
-        height: 100%;
-    }
-}
-
 .profile-main-content {
     width: 100%;
     min-width: 0;

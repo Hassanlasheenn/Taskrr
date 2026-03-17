@@ -42,6 +42,11 @@ export class DashboardSideNavComponent implements OnInit {
                 icon: 'bi-shield-check',
                 label: 'Admin Panel'
             });
+            this.navItems.push({
+                section: DashboardSections.USER_MANAGEMENT,
+                icon: 'bi-people',
+                label: 'User Management'
+            });
         }
     }
 

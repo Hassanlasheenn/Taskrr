@@ -6,7 +6,6 @@ import { ToastService } from "../../../core/services/toast.service";
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
 import { IUserResponse } from "../../../auth/interfaces";
 import { ProfileSections } from "../../enums/profile-sections.enum";
-import { ProfileSideNavComponent } from "./components/profile-side-nav/profile-side-nav.component";
 import { PersonalDataComponent } from "./components/personal-data/personal-data.component";
 import { PosthogService } from "../../../core/services";
 import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
@@ -25,7 +24,6 @@ import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.com
     standalone: true,
     imports: [
         CommonModule,
-        ProfileSideNavComponent,
         PersonalDataComponent,
         DashboardSideNavComponent,
         SidebarComponent
@@ -59,10 +57,6 @@ export class ProfileComponent implements OnInit, OnDestroy, CanComponentDeactiva
             });
     }
 
-    onSectionChange(section: ProfileSections): void {
-        this.activeSection = section;
-    }
-
     onDashboardSectionChange(section: DashboardSections): void {
         let path = '';
         switch(section) {
@@ -70,6 +64,7 @@ export class ProfileComponent implements OnInit, OnDestroy, CanComponentDeactiva
             case DashboardSections.MY_ASSIGNED: path = LayoutPaths.MY_TODOS; break;
             case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
             case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;
+            case DashboardSections.USER_MANAGEMENT: path = LayoutPaths.ADMIN; break;
             default: path = LayoutPaths.DASHBOARD; break;
         }
         this._router.navigate([path]);

@@ -19,6 +19,7 @@ import { SearchBarComponent } from "./components/search-bar/search-bar.component
 import { StatusFilterComponent, TodoStatus as FilterStatus } from "./components/status-filter/status-filter.component";
 import { PriorityFilterComponent } from "./components/priority-filter/priority-filter.component";
 import { AdminPanelComponent } from "./components/admin-panel/admin-panel.component";
+import { AdminComponent } from "../admin/admin.component";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-form/todo-form.component";
@@ -40,6 +41,7 @@ import { PosthogService } from "../../../core/services";
         StatusFilterComponent, 
         PriorityFilterComponent,
         AdminPanelComponent,
+        AdminComponent,
         TodoFormComponent
     ],
 })
@@ -299,6 +301,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             case DashboardSections.MY_ASSIGNED: path = LayoutPaths.MY_TODOS; break;
             case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
             case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;
+            case DashboardSections.USER_MANAGEMENT: path = LayoutPaths.ADMIN; break;
             default: path = LayoutPaths.DASHBOARD; break;
         }
         this._router.navigate([path]);
@@ -312,6 +315,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             case LayoutPaths.MY_TODOS: this.activeSection = DashboardSections.MY_ASSIGNED; break;
             case LayoutPaths.COMPLETED: this.activeSection = DashboardSections.COMPLETED; break;
             case LayoutPaths.ADMIN_PANEL: this.activeSection = DashboardSections.ADMIN_PANEL; break;
+            case LayoutPaths.ADMIN: this.activeSection = DashboardSections.USER_MANAGEMENT; break;
             case LayoutPaths.DASHBOARD: 
             case 'home':
             default: this.activeSection = DashboardSections.DASHBOARD; break;

@@ -8,5 +8,6 @@ export enum DashboardSections {
     ANALYTICS = 'analytics',
     SETTINGS = 'settings',
     ADMIN_PANEL = 'admin-panel',
+    USER_MANAGEMENT = 'user-management',
 }
 

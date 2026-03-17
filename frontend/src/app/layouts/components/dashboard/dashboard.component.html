@@ -20,8 +20,11 @@
             <app-admin-panel
                 *ngIf="activeSection === DashboardSections.ADMIN_PANEL"
             />
+            <app-admin
+                *ngIf="activeSection === DashboardSections.USER_MANAGEMENT"
+            />
 
-            <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.ADMIN_PANEL" class="todo-list-wrapper">
+            <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.ADMIN_PANEL && activeSection !== DashboardSections.USER_MANAGEMENT" class="todo-list-wrapper">
                 <!-- Dashboard Summary Cards (Admin Overview) -->
                 <div *ngIf="activeSection === DashboardSections.DASHBOARD && _authService.isAdmin()" class="filters-section">
                     <div class="admin-summary-cards mb-4">

@@ -13,22 +13,14 @@
 
             <div class="container-fluid px-0">
                 <div class="row justify-content-center">
-                    <div class="col-12">
-                        <div class="d-flex flex-column flex-lg-row align-items-stretch gap-3 gap-lg-4">
-                            <app-profile-side-nav
-                                class="profile-side-nav-wrapper d-flex"
-                                [activeSection]="activeSection"
-                                (sectionChange)="onSectionChange($event)"
+                    <div class="col-12 col-xl-10">
+                        <div class="profile-main-content">
+                            <app-personal-data
+                                *ngIf="activeSection === ProfileSections.PERSONAL_DATA"
+                                class="flex-grow-1 d-flex flex-column"
+                                [userData]="userData"
+                                (formSubmit)="onPersonalDataSubmit($event)"
                             />
-
-                            <div class="profile-main-content flex-grow-1 d-flex flex-column">
-                                <app-personal-data
-                                    *ngIf="activeSection === ProfileSections.PERSONAL_DATA"
-                                    class="flex-grow-1 d-flex flex-column"
-                                    [userData]="userData"
-                                    (formSubmit)="onPersonalDataSubmit($event)"
-                                />
-                            </div>
                         </div>
                     </div>
                 </div>
