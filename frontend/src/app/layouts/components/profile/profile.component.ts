@@ -63,6 +63,7 @@ export class ProfileComponent implements OnInit, OnDestroy, CanComponentDeactiva
             case DashboardSections.CALENDAR: path = LayoutPaths.CALENDAR; break;
             case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
             case DashboardSections.USER_MANAGEMENT: path = LayoutPaths.ADMIN; break;
+            case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;
             default: path = LayoutPaths.DASHBOARD; break;
         }
         this._router.navigate([path]);
