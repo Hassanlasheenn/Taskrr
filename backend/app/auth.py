@@ -107,11 +107,11 @@ def login(
     db: Session = Depends(database.get_db),
     response: Response = Response()
 ):
-    from sqlalchemy import or_
+    from sqlalchemy import or_, func
     user = db.query(models.User).filter(
         or_(
-            models.User.email == form_data.username,
-            models.User.username == form_data.username
+            func.lower(models.User.email) == func.lower(form_data.username),
+            func.lower(models.User.username) == func.lower(form_data.username)
         )
     ).first()
 
