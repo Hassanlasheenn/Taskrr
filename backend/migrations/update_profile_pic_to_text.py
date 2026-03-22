@@ -26,18 +26,13 @@ def run_migration():
         
         if 'sqlite' in db_url:
             # SQLite doesn't support ALTER COLUMN, TEXT and VARCHAR are treated the same
-            # Clear any existing file paths since they won't work with the new system
-            print("SQLite detected - clearing existing file path references...")
-            db.execute(text("UPDATE users SET profile_pic = NULL WHERE profile_pic IS NOT NULL AND profile_pic NOT LIKE 'data:%'"))
-            db.commit()
+            print("SQLite detected - no schema changes needed.")
             print("Migration completed successfully!")
             
         elif 'mysql' in db_url or 'mariadb' in db_url:
             # MySQL/MariaDB
             print("MySQL/MariaDB detected - altering column type...")
             db.execute(text("ALTER TABLE users MODIFY COLUMN profile_pic LONGTEXT"))
-            # Clear file paths
-            db.execute(text("UPDATE users SET profile_pic = NULL WHERE profile_pic IS NOT NULL AND profile_pic NOT LIKE 'data:%'"))
             db.commit()
             print("Migration completed successfully!")
             
@@ -45,8 +40,6 @@ def run_migration():
             # PostgreSQL
             print("PostgreSQL detected - altering column type...")
             db.execute(text("ALTER TABLE users ALTER COLUMN profile_pic TYPE TEXT"))
-            # Clear file paths
-            db.execute(text("UPDATE users SET profile_pic = NULL WHERE profile_pic IS NOT NULL AND profile_pic NOT LIKE 'data:%'"))
             db.commit()
             print("Migration completed successfully!")
         
@@ -54,18 +47,12 @@ def run_migration():
             # Microsoft SQL Server
             print("SQL Server detected - altering column type...")
             db.execute(text("ALTER TABLE users ALTER COLUMN profile_pic NVARCHAR(MAX)"))
-            # Clear file paths
-            db.execute(text("UPDATE users SET profile_pic = NULL WHERE profile_pic IS NOT NULL AND profile_pic NOT LIKE 'data:%'"))
             db.commit()
             print("Migration completed successfully!")
             
         else:
             print(f"Database type not auto-detected from URL: {db_url}")
-            print("Attempting generic update...")
-            # Try to clear file paths anyway
-            db.execute(text("UPDATE users SET profile_pic = NULL WHERE profile_pic IS NOT NULL AND profile_pic NOT LIKE 'data:%'"))
-            db.commit()
-            print("Cleared existing file path references.")
+            print("No changes applied.")
             print("Note: You may need to manually alter the column type to TEXT/LONGTEXT for large images.")
             
     except Exception as e:
