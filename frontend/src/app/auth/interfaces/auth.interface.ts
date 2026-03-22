@@ -11,7 +11,7 @@ export interface IRegisterResponse {
 }
 
 export interface ILoginPayload {
-    email: string;
+    username: string;
     password: string;
 }
 

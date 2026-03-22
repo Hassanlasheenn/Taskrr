@@ -1,240 +1,260 @@
 <section class="todo-view-wrapper p-2 p-sm-3 p-lg-4">
-    <div class="todo-view-container">
-        <a [routerLink]="['/' + LayoutPaths.DASHBOARD]" class="back-link">
-            <i class="bi bi-arrow-left"></i>
-            Back to Dashboard
-        </a>
-
-        <div *ngIf="!todo" class="loading-state">
-            <p>Loading...</p>
+    <div class="todo-view-layout d-flex flex-column flex-lg-row align-items-stretch gap-3 gap-lg-4">
+        <div class="side-nav-wrapper d-none d-lg-block">
+            <app-dashboard-side-nav
+                (sectionChange)="onDashboardSectionChange($event)"
+            />
         </div>
 
-        <article *ngIf="todo" class="todo-view-card" [ngClass]="'priority-' + todo.priority">
-            <header class="todo-view-header">
-                <div class="todo-view-title-row">
-                    <h1 class="todo-view-title">{{ todo.title }}</h1>
-                    <span *ngIf="todo.category" class="todo-view-category-tag">
-                        <i class="bi bi-tag-fill"></i>
-                        <span class="todo-view-category-tag-text">{{ todo.category }}</span>
-                    </span>
-                    <!-- Due Date Badge next to Category -->
-                    <div *ngIf="todo.due_date" 
-                         class="due-date-view-badge" 
-                         [ngClass]="getDueDateUrgencyClass(todo.due_date)">
-                        <i class="bi bi-alarm-fill"></i>
-                        <span class="due-label">Due Date:</span>
-                        <span class="due-value">{{ formatDate(todo.due_date)?.date }}</span>
-                    </div>
-                </div>
-                <div class="todo-view-meta">
-                    <ng-container *ngIf="formatDate(todo.created_at) as created">
-                        <span class="todo-view-meta-item"><i class="bi bi-calendar3"></i> {{ created.date }} {{ created.time }}</span>
-                    </ng-container>
-                </div>
-                <div class="todo-view-header-actions">
-                    <div class="todo-view-badges">
-                        <!-- Assignee Dropdown (Available to everyone in detailed view) -->
-                        <div class="todo-view-dropdown-wrap">
-                            <select
-                                class="todo-view-select assigned-select"
-                                [(ngModel)]="todo.assigned_to_user_id"
-                                aria-label="Assigned to"
-                            >
-                                <option [ngValue]="null">Unassigned</option>
-                                <option
-                                    *ngIf="todo.assigned_to_user_id && !assigneeInList(todo.assigned_to_user_id)"
-                                    [ngValue]="todo.assigned_to_user_id"
-                                >{{ todo.assigned_to_username || ('User #' + todo.assigned_to_user_id) }}</option>
-                                <option *ngFor="let u of mentionableUsers; trackBy: trackById" [ngValue]="u.id">{{ u.username }}</option>
-                            </select>
-                        </div>
-                        <div class="todo-view-dropdown-wrap">
-                            <select
-                                class="todo-view-select status-select"
-                                [ngClass]="'status-' + todo.status"
-                                [(ngModel)]="todo.status"
-                                aria-label="Status"
-                            >
-                                <option *ngFor="let opt of statusOptions; trackBy: trackByValue" [value]="opt.value">{{ opt.label }}</option>
-                            </select>
-                        </div>
-                        <!-- Priority: Dropdown for Admin, Badge for User -->
-                        <div class="todo-view-dropdown-wrap" *ngIf="isAdmin; else priorityBadge">
-                            <select
-                                class="todo-view-select priority-select"
-                                [ngClass]="'priority-' + todo.priority"
-                                [(ngModel)]="todo.priority"
-                                aria-label="Priority"
-                            >
-                                <option *ngFor="let opt of priorityOptions; trackBy: trackByValue" [value]="opt.value">{{ opt.label }}</option>
-                            </select>
-                        </div>
-                        <ng-template #priorityBadge>
-                            <span class="priority-badge" [ngClass]="'priority-' + todo.priority">
-                                <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
-                                <span>{{ todo.priority | titlecase }}</span>
-                            </span>
-                        </ng-template>
-                    </div>
-                    <button
-                        type="button"
-                        class="todo-view-save-btn"
-                        (click)="onSave()"
-                        [disabled]="!hasChanges || saving"
-                        aria-label="Save changes"
-                    >
-                        {{ saving ? 'Saving...' : 'Save' }}
-                    </button>
-                </div>
-            </header>
+        <div class="todo-view-content flex-grow-1 d-flex flex-column">
+            <div *ngIf="!todo" class="loading-state">
+                <p>Loading...</p>
+            </div>
 
-            <div class="todo-view-body">
-                <div class="todo-view-description-field">
-                    <label for="todo-description" class="todo-view-label">Description</label>
-                    <textarea
-                        id="todo-description"
-                        class="todo-view-description-input"
-                        [(ngModel)]="todo.description"
-                        placeholder="No description"
-                        rows="4"
-                        aria-label="Description"
-                    ></textarea>
-                </div>
-
-                <div class="todo-view-comments">
-                    <app-tabs
-                        [tabs]="commentHistoryTabs"
-                        [activeTabId]="commentHistoryTab"
-                        (activeTabIdChange)="setCommentHistoryTab($event)"
-                        ariaLabel="Comments and history"
-                    ></app-tabs>
-                    <ng-container *ngIf="commentHistoryTab === 'comments'">
-                    <ul class="todo-view-comments-list">
-                        <li *ngFor="let comment of comments; trackBy: trackById" class="todo-view-comment" [class.todo-view-comment--own]="isCurrentUser(comment.user_id)">
-                            <div class="todo-view-comment-header">
-                                <div class="todo-view-comment-author-row">
-                                    <span class="todo-view-comment-avatar" aria-hidden="true">
-                                        <img *ngIf="comment.user_photo" [src]="comment.user_photo" [alt]="comment.username" class="todo-view-comment-avatar-img" />
-                                        <i *ngIf="!comment.user_photo" class="bi bi-person-circle todo-view-comment-avatar-icon"></i>
-                                    </span>
-                                    <span class="todo-view-comment-author">{{ comment.username }}{{ isCurrentUser(comment.user_id) ? ' (you)' : '' }}</span>
-                                </div>
-                                <div class="todo-view-comment-header-right">
-                                    <span *ngIf="comment.created_at && formatDate(comment.created_at) as commentDate" class="todo-view-comment-date">{{ commentDate.date }} {{ commentDate.time }}</span>
-                                    <div *ngIf="isCurrentUser(comment.user_id) && editingCommentId !== comment.id" class="todo-view-comment-actions">
-                                        <button type="button" class="todo-view-comment-action-btn" (click)="onStartEditComment(comment)" [disabled]="deletingCommentId !== null" aria-label="Edit comment">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button type="button" class="todo-view-comment-action-btn todo-view-comment-action-btn--delete" (click)="onDeleteComment(comment)" [disabled]="deletingCommentId !== null" aria-label="Delete comment">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <ng-container *ngIf="editingCommentId === comment.id; else commentContent">
-                                <div class="todo-view-comment-edit">
-                                    <textarea [(ngModel)]="editContent" class="todo-view-description-input todo-view-comment-edit-input" rows="3" [disabled]="savingEdit"></textarea>
-                                    <div class="todo-view-comment-edit-actions">
-                                        <button type="button" class="todo-view-comment-edit-cancel" (click)="onCancelEditComment()" [disabled]="savingEdit">Cancel</button>
-                                        <button type="button" class="todo-view-save-btn todo-view-comment-edit-save" (click)="onSaveEditComment()" [disabled]="savingEdit || !editContent?.trim()">{{ savingEdit ? 'Saving...' : 'Save' }}</button>
-                                    </div>
-                                </div>
-                            </ng-container>
-                            <ng-template #commentContent>
-                                <p class="todo-view-comment-content">
-                                    <ng-container *ngFor="let seg of (comment.content | parseMentions); trackBy: trackById">
-                                        <ng-container *ngIf='seg.type === "text"'>{{ seg.value }}</ng-container>
-                                        <span *ngIf='seg.type === "mention"' class="todo-view-comment-mention">{{ seg.value }}</span>
-                                    </ng-container>
-                                </p>
-                            </ng-template>
-                        </li>
-                        <li *ngIf="comments.length === 0" class="todo-view-comments-empty">No comments yet. Add one below.</li>
-                    </ul>
-                    <div class="todo-view-comment-form">
-                        <label for="new-comment" class="todo-view-label">Add a comment</label>
-                        <div class="todo-view-comment-input-wrapper">
-                            <textarea
-                                #newCommentInput
-                                id="new-comment"
-                                class="todo-view-description-input todo-view-comment-input"
-                                [(ngModel)]="newCommentText"
-                                placeholder="Write a comment..."
-                                rows="3"
-                                [disabled]="addingComment"
-                                aria-label="New comment"
-                                (input)="onNewCommentInput()"
-                                (keydown)="onNewCommentKeydown($event)"
-                                (blur)="onCommentInputBlur()"
-                            ></textarea>
-                            <div
-                                *ngIf="showMentionDropdown"
-                                class="todo-view-mention-dropdown"
-                                role="listbox"
-                                aria-label="Mention a user"
-                            >
-                                <button
-                                    *ngFor="let user of mentionableUsersFiltered; let i = index; trackBy: trackById"
-                                    type="button"
-                                    class="todo-view-mention-item"
-                                    [class.todo-view-mention-item--active]="i === highlightedMentionIndex"
-                                    role="option"
-                                    [attr.aria-selected]="i === highlightedMentionIndex ? 'true' : 'false'"
-                                    (mousedown)="$event.preventDefault(); selectMention(user)"
+            <article *ngIf="todo" class="todo-view-card" [ngClass]="'priority-' + todo.priority">
+                <header class="todo-view-header">
+                    <div class="todo-view-title-row">
+                        <h1 class="todo-view-title">{{ todo.title }}</h1>
+                        <span *ngIf="todo.category" class="todo-view-category-tag">
+                            <i class="bi bi-tag-fill"></i>
+                            <span class="todo-view-category-tag-text">{{ todo.category }}</span>
+                        </span>
+                        <!-- Due Date Badge next to Category -->
+                        <div *ngIf="todo.due_date" 
+                             class="due-date-view-badge" 
+                             [ngClass]="getDueDateUrgencyClass(todo.due_date)">
+                            <i class="bi bi-alarm-fill"></i>
+                            <span class="due-label">Due Date:</span>
+                            <span class="due-value">{{ formatDate(todo.due_date)?.date }}</span>
+                        </div>
+                    </div>
+                    <div class="todo-view-meta">
+                        <ng-container *ngIf="formatDate(todo.created_at) as created">
+                            <span class="todo-view-meta-item"><i class="bi bi-calendar3"></i> {{ created.date }} {{ created.time }}</span>
+                        </ng-container>
+                    </div>
+                    <div class="todo-view-header-actions">
+                        <div class="todo-view-badges">
+                            <!-- Assignee Dropdown (Available to everyone in detailed view) -->
+                            <div class="todo-view-dropdown-wrap">
+                                <select
+                                    class="todo-view-select assigned-select"
+                                    [(ngModel)]="todo.assigned_to_user_id"
+                                    aria-label="Assigned to"
                                 >
-                                    <i class="bi bi-person-circle todo-view-mention-avatar"></i>
-                                    <span class="todo-view-mention-username">{{ user.username }}</span>
-                                </button>
-                                <p *ngIf="mentionableUsersFiltered.length === 0" class="todo-view-mention-empty">No users match</p>
+                                    <option [ngValue]="null">Unassigned</option>
+                                    <option
+                                        *ngIf="todo.assigned_to_user_id && !assigneeInList(todo.assigned_to_user_id)"
+                                        [ngValue]="todo.assigned_to_user_id"
+                                    >{{ todo.assigned_to_username || ('User #' + todo.assigned_to_user_id) }}</option>
+                                    <option *ngFor="let u of mentionableUsers; trackBy: trackById" [ngValue]="u.id">{{ u.username }}</option>
+                                </select>
                             </div>
+                            <div class="todo-view-dropdown-wrap">
+                                <select
+                                    class="todo-view-select status-select"
+                                    [ngClass]="'status-' + todo.status"
+                                    [(ngModel)]="todo.status"
+                                    aria-label="Status"
+                                >
+                                    <option *ngFor="let opt of statusOptions; trackBy: trackByValue" [value]="opt.value">{{ opt.label }}</option>
+                                </select>
+                            </div>
+                            <!-- Priority: Dropdown for Admin, Badge for User -->
+                            <div class="todo-view-dropdown-wrap" *ngIf="isAdmin; else priorityBadge">
+                                <select
+                                    class="todo-view-select priority-select"
+                                    [ngClass]="'priority-' + todo.priority"
+                                    [(ngModel)]="todo.priority"
+                                    aria-label="Priority"
+                                >
+                                    <option *ngFor="let opt of priorityOptions; trackBy: trackByValue" [value]="opt.value">{{ opt.label }}</option>
+                                </select>
+                            </div>
+                            <ng-template #priorityBadge>
+                                <span class="priority-badge" [ngClass]="'priority-' + todo.priority">
+                                    <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
+                                    <span>{{ todo.priority | titlecase }}</span>
+                                </span>
+                            </ng-template>
                         </div>
                         <button
                             type="button"
-                            class="todo-view-save-btn todo-view-comment-submit"
-                            (click)="onAddComment()"
-                            [disabled]="addingComment || !newCommentText?.trim()"
-                            aria-label="Add"
+                            class="todo-view-save-btn"
+                            (click)="onSave()"
+                            [disabled]="!hasChanges || saving"
+                            aria-label="Save changes"
                         >
-                            {{ addingComment ? 'Adding...' : 'Add' }}
+                            {{ saving ? 'Saving...' : 'Save' }}
                         </button>
                     </div>
-                    </ng-container>
-                    <ng-container *ngIf="commentHistoryTab === 'history'">
-                        <div class="todo-view-history">
-                            <p *ngIf="loadingHistory" class="todo-view-history-loading">Loading history...</p>
-                            <ul *ngIf="!loadingHistory && commentHistory.length > 0" class="todo-view-history-list">
-                                <ng-container *ngFor="let item of commentHistory; trackBy: trackByHistoryEntry">
-                                    <li *ngIf="item.type === 'comment'" class="todo-view-history-item">
-                                        <div class="todo-view-history-header">
-                                            <span class="todo-view-history-action" [attr.data-action]="item.action">{{ getHistoryActionLabel(item.action) }}</span>
-                                            <span class="todo-view-history-user-badge">{{ item.username }}</span>
-                                            <span *ngIf="item.created_at && formatDate(item.created_at) as itemDate" class="todo-view-history-date">{{ itemDate.date }} {{ itemDate.time }}</span>
+                </header>
+
+                <div class="todo-view-body">
+                    <div class="todo-view-description-field">
+                        <label for="todo-description" class="todo-view-label">Description</label>
+                        <textarea
+                            id="todo-description"
+                            class="todo-view-description-input"
+                            [(ngModel)]="todo.description"
+                            placeholder="No description"
+                            rows="4"
+                            aria-label="Description"
+                        ></textarea>
+                    </div>
+
+                    <div class="todo-view-comments">
+                        <app-tabs
+                            [tabs]="commentHistoryTabs"
+                            [activeTabId]="commentHistoryTab"
+                            (activeTabIdChange)="setCommentHistoryTab($event)"
+                            ariaLabel="Comments and history"
+                        ></app-tabs>
+                        <ng-container *ngIf="commentHistoryTab === 'comments'">
+                        <ul class="todo-view-comments-list">
+                            <li *ngFor="let comment of comments; trackBy: trackById" class="todo-view-comment" [class.todo-view-comment--own]="isCurrentUser(comment.user_id)">
+                                <div class="todo-view-comment-header">
+                                    <div class="todo-view-comment-author-row">
+                                        <span class="todo-view-comment-avatar" aria-hidden="true">
+                                            <img *ngIf="comment.user_photo" [src]="comment.user_photo" [alt]="comment.username" class="todo-view-comment-avatar-img" />
+                                            <i *ngIf="!comment.user_photo" class="bi bi-person-circle todo-view-comment-avatar-icon"></i>
+                                        </span>
+                                        <span class="todo-view-comment-author">{{ comment.username }}{{ isCurrentUser(comment.user_id) ? ' (you)' : '' }}</span>
+                                    </div>
+                                    <div class="todo-view-comment-header-right">
+                                        <span *ngIf="comment.created_at && formatDate(comment.created_at) as commentDate" class="todo-view-comment-date">{{ commentDate.date }} {{ commentDate.time }}</span>
+                                        <div *ngIf="isCurrentUser(comment.user_id) && editingCommentId !== comment.id" class="todo-view-comment-actions">
+                                            <button type="button" class="todo-view-comment-action-btn" (click)="onStartEditComment(comment)" [disabled]="deletingCommentId !== null" aria-label="Edit comment">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="todo-view-comment-action-btn todo-view-comment-action-btn--delete" (click)="onDeleteComment(comment)" [disabled]="deletingCommentId !== null" aria-label="Delete comment">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
-                                        <div *ngIf="item.action === 'created' && item.content_after" class="todo-view-history-content">{{ item.content_after }}</div>
-                                        <div *ngIf="item.action === 'updated'" class="todo-view-history-diff">
-                                            <p *ngIf="item.content_before" class="todo-view-history-before"><span class="todo-view-history-label">Before:</span> {{ item.content_before }}</p>
-                                            <p *ngIf="item.content_after" class="todo-view-history-after"><span class="todo-view-history-label">After:</span> {{ item.content_after }}</p>
+                                    </div>
+                                </div>
+                                <ng-container *ngIf="editingCommentId === comment.id; else commentContent">
+                                    <div class="todo-view-comment-edit">
+                                        <textarea [(ngModel)]="editContent" class="todo-view-description-input todo-view-comment-edit-input" rows="3" [disabled]="savingEdit"></textarea>
+                                        <div class="todo-view-comment-edit-actions">
+                                            <button type="button" class="todo-view-comment-edit-cancel" (click)="onCancelEditComment()" [disabled]="savingEdit">Cancel</button>
+                                            <button type="button" class="todo-view-save-btn todo-view-comment-edit-save" (click)="onSaveEditComment()" [disabled]="savingEdit || !editContent?.trim()">{{ savingEdit ? 'Saving...' : 'Save' }}</button>
                                         </div>
-                                        <div *ngIf="item.action === 'deleted' && item.content_before" class="todo-view-history-content todo-view-history-deleted">{{ item.content_before }}</div>
-                                    </li>
-                                    <li *ngIf="item.type === 'field'" class="todo-view-history-item">
-                                        <div class="todo-view-history-header">
-                                            <span class="todo-view-history-action">{{ getFieldHistoryLabel(item.field) }} changed</span>
-                                            <span class="todo-view-history-user-badge">{{ item.username }}</span>
-                                            <span *ngIf="item.created_at && formatDate(item.created_at) as itemDate" class="todo-view-history-date">{{ itemDate.date }} {{ itemDate.time }}</span>
-                                        </div>
-                                        <div class="todo-view-history-diff">
-                                            <p *ngIf="item.old_value != null" class="todo-view-history-before"><span class="todo-view-history-label">From:</span> {{ item.old_value }}</p>
-                                            <p *ngIf="item.new_value != null" class="todo-view-history-after"><span class="todo-view-history-label">To:</span> {{ item.new_value }}</p>
-                                        </div>
-                                    </li>
+                                    </div>
                                 </ng-container>
-                            </ul>
-                            <p *ngIf="!loadingHistory && commentHistory.length === 0" class="todo-view-history-empty">No history yet.</p>
+                                <ng-template #commentContent>
+                                    <p class="todo-view-comment-content">
+                                        <ng-container *ngFor="let seg of (comment.content | parseMentions); trackBy: trackById">
+                                            <ng-container *ngIf='seg.type === "text"'>{{ seg.value }}</ng-container>
+                                            <span *ngIf='seg.type === "mention"' class="todo-view-comment-mention">{{ seg.value }}</span>
+                                        </ng-container>
+                                    </p>
+                                </ng-template>
+                            </li>
+                            <li *ngIf="comments.length === 0" class="todo-view-comments-empty">No comments yet. Add one below.</li>
+                        </ul>
+                        <div class="todo-view-comment-form">
+                            <label for="new-comment" class="todo-view-label">Add a comment</label>
+                            <div class="todo-view-comment-input-wrapper">
+                                <textarea
+                                    #newCommentInput
+                                    id="new-comment"
+                                    class="todo-view-description-input todo-view-comment-input"
+                                    [(ngModel)]="newCommentText"
+                                    placeholder="Write a comment..."
+                                    rows="3"
+                                    [disabled]="addingComment"
+                                    aria-label="New comment"
+                                    (input)="onNewCommentInput()"
+                                    (keydown)="onNewCommentKeydown($event)"
+                                    (blur)="onCommentInputBlur()"
+                                ></textarea>
+                                <div
+                                    *ngIf="showMentionDropdown"
+                                    class="todo-view-mention-dropdown"
+                                    role="listbox"
+                                    aria-label="Mention a user"
+                                >
+                                    <button
+                                        *ngFor="let user of mentionableUsersFiltered; let i = index; trackBy: trackById"
+                                        type="button"
+                                        class="todo-view-mention-item"
+                                        [class.todo-view-mention-item--active]="i === highlightedMentionIndex"
+                                        role="option"
+                                        [attr.aria-selected]="i === highlightedMentionIndex ? 'true' : 'false'"
+                                        (mousedown)="$event.preventDefault(); selectMention(user)"
+                                    >
+                                        <i class="bi bi-person-circle todo-view-mention-avatar"></i>
+                                        <span class="todo-view-mention-username">{{ user.username }}</span>
+                                    </button>
+                                    <p *ngIf="mentionableUsersFiltered.length === 0" class="todo-view-mention-empty">No users match</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                class="todo-view-save-btn todo-view-comment-submit"
+                                (click)="onAddComment()"
+                                [disabled]="addingComment || !newCommentText?.trim()"
+                                aria-label="Add"
+                            >
+                                {{ addingComment ? 'Adding...' : 'Add' }}
+                            </button>
                         </div>
-                    </ng-container>
+                        </ng-container>
+                        <ng-container *ngIf="commentHistoryTab === 'history'">
+                            <div class="todo-view-history">
+                                <p *ngIf="loadingHistory" class="todo-view-history-loading">Loading history...</p>
+                                <ul *ngIf="!loadingHistory && commentHistory.length > 0" class="todo-view-history-list">
+                                    <ng-container *ngFor="let item of commentHistory; trackBy: trackByHistoryEntry">
+                                        <li *ngIf="item.type === 'comment'" class="todo-view-history-item">
+                                            <div class="todo-view-history-header">
+                                                <span class="todo-view-history-action" [attr.data-action]="item.action">{{ getHistoryActionLabel(item.action) }}</span>
+                                                <span class="todo-view-history-user-badge">{{ item.username }}</span>
+                                                <span *ngIf="item.created_at && formatDate(item.created_at) as itemDate" class="todo-view-history-date">{{ itemDate.date }} {{ itemDate.time }}</span>
+                                            </div>
+                                            <div *ngIf="item.action === 'created' && item.content_after" class="todo-view-history-content">{{ item.content_after }}</div>
+                                            <div *ngIf="item.action === 'updated'" class="todo-view-history-diff">
+                                                <p *ngIf="item.content_before" class="todo-view-history-before"><span class="todo-view-history-label">Before:</span> {{ item.content_before }}</p>
+                                                <p *ngIf="item.content_after" class="todo-view-history-after"><span class="todo-view-history-label">After:</span> {{ item.content_after }}</p>
+                                            </div>
+                                            <div *ngIf="item.action === 'deleted' && item.content_before" class="todo-view-history-content todo-view-history-deleted">{{ item.content_before }}</div>
+                                        </li>
+                                        <li *ngIf="item.type === 'field'" class="todo-view-history-item">
+                                            <div class="todo-view-history-header">
+                                                <span class="todo-view-history-action">{{ getFieldHistoryLabel(item.field) }} changed</span>
+                                                <span class="todo-view-history-user-badge">{{ item.username }}</span>
+                                                <span *ngIf="item.created_at && formatDate(item.created_at) as itemDate" class="todo-view-history-date">{{ itemDate.date }} {{ itemDate.time }}</span>
+                                            </div>
+                                            <div class="todo-view-history-diff">
+                                                <p *ngIf="item.old_value != null" class="todo-view-history-before"><span class="todo-view-history-label">From:</span> {{ item.old_value }}</p>
+                                                <p *ngIf="item.new_value != null" class="todo-view-history-after"><span class="todo-view-history-label">To:</span> {{ item.new_value }}</p>
+                                            </div>
+                                        </li>
+                                    </ng-container>
+                                </ul>
+                                <p *ngIf="!loadingHistory && commentHistory.length === 0" class="todo-view-history-empty">No history yet.</p>
+                            </div>
+                        </ng-container>
+                    </div>
                 </div>
-            </div>
-        </article>
+            </article>
+        </div>
     </div>
 </section>
+
+<!-- Mobile Navigation Sidebar -->
+<div class="d-lg-none">
+    <app-sidebar
+        [isOpen]="isNavSidebarOpen"
+        [title]="'Taskrr'"
+        [width]="'280px'"
+        [position]="'left'"
+        (closed)="onNavSidebarClose()"
+    >
+        <div class="mobile-nav-content">
+            <app-dashboard-side-nav
+                (sectionChange)="onDashboardSectionChange($event); onNavSidebarClose()"
+            />
+        </div>
+    </app-sidebar>
+</div>

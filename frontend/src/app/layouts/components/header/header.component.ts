@@ -28,8 +28,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     LayoutPaths = LayoutPaths;
 
     constructor(
-        private readonly _authService: AuthService,
-        private readonly _router: Router,
+        public readonly _authService: AuthService,
+        public readonly _router: Router,
         private readonly _navService: NavigationService,
         private readonly _themeService: ThemeService
     ) {}
@@ -57,17 +57,20 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     private updateMobileMenuVisibility(): void {
         const url = this._router.url.split('?')[0];
-        const dashboardPaths = [
-            '/',
+        const dashboardPrefixes = [
+            '/' + LayoutPaths.DASHBOARD,
             '/home',
-            '/' + LayoutPaths.CALENDAR,
-            '/' + LayoutPaths.MY_TODOS,
             '/' + LayoutPaths.COMPLETED,
-            '/' + LayoutPaths.PROFILE,
-            '/' + LayoutPaths.ADMIN
+            '/' + LayoutPaths.CALENDAR,
+            '/' + LayoutPaths.ADMIN,
+            '/' + LayoutPaths.TODO_VIEW,
+            '/' + LayoutPaths.USER_DETAILS
         ];
-        // Check if on dashboard or related paths
-        this.showMobileMenu = this.isAuthenticated && dashboardPaths.includes(url);
+        
+        // Check if on dashboard or related paths (including dynamic ones)
+        this.showMobileMenu = this.isAuthenticated && dashboardPrefixes.some(prefix => 
+            url === prefix || (prefix !== '/' && url.startsWith(prefix + '/'))
+        );
     }
 
     toggleMobileMenu(): void {

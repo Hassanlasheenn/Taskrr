@@ -1,12 +1,19 @@
 .dashboard-side-nav {
     width: 100%;
-    background: var(--card-color);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--card-border-color);
-    border-radius: 16px;
-    box-shadow: var(--card-shadow);
-    height: 100%;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    height: auto;
+
+    @media (min-width: 992px) {
+        background: var(--card-color);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--card-border-color);
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+        height: 100%;
+    }
 
     .side-nav-item {
         background: transparent;
@@ -32,14 +39,6 @@
 
         &:hover {
             background: var(--btn-secondary-hover-bg);
-
-            @media (min-width: 992px) {
-                transform: translateX(4px);
-            }
-
-            @media (max-width: 991.98px) {
-                transform: translateY(-2px);
-            }
 
             i {
                 color: var(--primary-gradient-start);

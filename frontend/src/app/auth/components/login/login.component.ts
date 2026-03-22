@@ -28,15 +28,14 @@ export class LoginComponent implements OnInit, OnDestroy {
     errorSummary: string | null = null;
     fields: IFieldControl[] = [
         {
-            label: 'Email',
-            type: InputTypes.EMAIL,
-            formControlName: 'email',
-            placeholder: 'Enter your email',
+            label: 'Email or Username',
+            type: InputTypes.TEXT,
+            formControlName: 'username',
+            placeholder: 'Enter your email or username',
             value: '',
             required: true,
             validations: [
-                { type: ValidatorTypes.REQUIRED, message: 'Email is required' },
-                { type: ValidatorTypes.EMAIL, message: 'Please enter a valid email address', value: RegexPatterns.EMAIL }
+                { type: ValidatorTypes.REQUIRED, message: 'Email or username is required' }
             ],
         },
         {
@@ -85,7 +84,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.isSubmitted = false;
 
         const payload: ILoginPayload = {
-            email: this.form.get('email')?.value,
+            username: this.form.get('username')?.value,
             password: this.form.get('password')?.value,
         };
 

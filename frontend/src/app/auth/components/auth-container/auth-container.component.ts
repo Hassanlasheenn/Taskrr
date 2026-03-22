@@ -40,15 +40,14 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
     loginError: string | null = null;
     loginFields: IFieldControl[] = [
         {
-            label: 'Email',
-            type: InputTypes.EMAIL,
-            formControlName: 'email',
-            placeholder: 'Enter your email',
+            label: 'Email or Username',
+            type: InputTypes.TEXT,
+            formControlName: 'username',
+            placeholder: 'Enter your email or username',
             value: '',
             required: true,
             validations: [
-                { type: ValidatorTypes.REQUIRED, message: 'Email is required' },
-                { type: ValidatorTypes.EMAIL, message: 'Please enter a valid email address', value: RegexPatterns.EMAIL }
+                { type: ValidatorTypes.REQUIRED, message: 'Email or username is required' }
             ],
         },
         {
@@ -192,9 +191,9 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
     private performLogin(): void {
         this.loginError = null;
         
-        const email = this.loginForm.get('email')?.value;
+        const username = this.loginForm.get('username')?.value;
         const payload: ILoginPayload = {
-            email: email,
+            username: username,
             password: this.loginForm.get('password')?.value,
         };
 
@@ -211,7 +210,7 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
                         this._authService.setCurrentUserId(res.data.id);
                         this._authService.setCurrentUserData(res.data);
                     }
-                    this._posthogService.capture('user_login_success', { email: payload.email });
+                    this._posthogService.capture('user_login_success', { username: payload.username });
                     this._router.navigate([LayoutPaths.DASHBOARD]);
                 },
                 error: (err: HttpErrorResponse) => {
@@ -219,9 +218,10 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
                     const errorMessage = err?.error?.detail || err?.error?.message || err?.message || 'An error occurred during login. Please try again.';
                     this.loginError = errorMessage;
                     
-                    // If the error is about verification, store the email so we can offer a resend button
+                    // If the error is about verification, store the username (which might be an email) 
+                    // so we can offer a resend button (though resend needs actual email)
                     if (err.status === 403 && errorMessage.toLowerCase().includes('verified')) {
-                        this.registeredEmail = email;
+                        this.registeredEmail = username;
                     }
                     
                     this._toastService.error(errorMessage);

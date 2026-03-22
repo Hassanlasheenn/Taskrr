@@ -17,9 +17,8 @@ export const routes: Routes = [
     
     // Dashboard Sections
     { path: LayoutPaths.DASHBOARD, component: DashboardComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard], pathMatch: 'full' },
-    { path: LayoutPaths.CALENDAR, component: DashboardComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard] },
-    { path: LayoutPaths.MY_TODOS, component: DashboardComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard] },
     { path: LayoutPaths.COMPLETED, component: DashboardComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard] },
+    { path: LayoutPaths.CALENDAR, component: DashboardComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard] },
     { path: LayoutPaths.ADMIN_PANEL, component: DashboardComponent, canActivate: [authGuard, adminGuard], canDeactivate: [canDeactivateGuard] },
     {
         path: `${LayoutPaths.TODO_VIEW}/:id`,
@@ -29,6 +28,7 @@ export const routes: Routes = [
     },
     { path: LayoutPaths.PROFILE, component: ProfileComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard] },
     { path: LayoutPaths.ADMIN, component: DashboardComponent, canActivate: [authGuard, adminGuard] },
+    { path: `${LayoutPaths.USER_DETAILS}/:id`, loadComponent: () => import('./layouts/components/user-details/user-details.component').then(m => m.UserDetailsComponent), canActivate: [authGuard, adminGuard] },
     { path: AuthPaths.NOT_FOUND, component: NotFoundComponent },
     { path: '**', redirectTo: AuthPaths.NOT_FOUND },
 ];

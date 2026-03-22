@@ -17,6 +17,10 @@ import { CanComponentDeactivate } from "../../../auth/guards";
 import { ParseMentionsPipe } from "../../../core/pipes/parse-mentions.pipe";
 import { TabsComponent, ITabItem } from "../../../shared/components/tabs";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
+import { DashboardSideNavComponent } from "../dashboard/components/dashboard-side-nav/dashboard-side-nav.component";
+import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.component";
+import { DashboardSections } from "../../enums/dashboard-sections.enum";
+import { NavigationService } from "../../../core/services/navigation.service";
 
 type StatusOption = { value: TodoStatus; label: string };
 type PriorityOption = { value: 'low' | 'medium' | 'high'; label: string };
@@ -39,7 +43,7 @@ const PRIORITY_OPTIONS: PriorityOption[] = [
     templateUrl: './todo-view.component.html',
     styleUrls: ['./todo-view.component.scss'],
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterLink, ParseMentionsPipe, TabsComponent],
+    imports: [CommonModule, FormsModule, RouterLink, ParseMentionsPipe, TabsComponent, DashboardSideNavComponent, SidebarComponent],
 })
 export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactivate {
     private readonly _destroy$ = new Subject<void>();
@@ -68,6 +72,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     commentHistory: ITodoHistoryEntry[] = [];
     loadingHistory = false;
     trackById = trackById;
+    isNavSidebarOpen: boolean = false;
 
     trackByValue(index: number, item: any): any {
         return item.value ?? index;
@@ -116,7 +121,8 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         private readonly _loaderService: LoaderService,
         private readonly _toastService: ToastService,
         private readonly _confirmationDialog: ConfirmationDialogService,
-        private readonly _cdr: ChangeDetectorRef
+        private readonly _cdr: ChangeDetectorRef,
+        private readonly _navService: NavigationService
     ) {}
 
     canDeactivate(): boolean | Observable<boolean> {
@@ -143,6 +149,13 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
             this._router.navigate([LayoutPaths.DASHBOARD]);
             return;
         }
+
+        this._navService.toggleNavSidebar$
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(() => {
+                this.isNavSidebarOpen = !this.isNavSidebarOpen;
+            });
+
         this._loaderService.show();
         this._todoService.getTodo(userId, todoId).subscribe({
             next: (response) => {
@@ -172,6 +185,21 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     ngOnDestroy(): void {
         this._destroy$.next();
         this._destroy$.complete();
+    }
+
+    onDashboardSectionChange(section: DashboardSections): void {
+        let path = '';
+        switch(section) {
+            case DashboardSections.CALENDAR: path = LayoutPaths.CALENDAR; break;
+            case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
+            case DashboardSections.USER_MANAGEMENT: path = LayoutPaths.ADMIN; break;
+            default: path = LayoutPaths.DASHBOARD; break;
+        }
+        this._router.navigate([path]);
+    }
+
+    onNavSidebarClose(): void {
+        this.isNavSidebarOpen = false;
     }
 
     private _loadMentionableUsers(): void {

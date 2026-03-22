@@ -26,7 +26,7 @@ export class AuthHttpService {
 
     loginUser(payload: ILoginPayload): Observable<ILoginResponse> {
         const body = new HttpParams()
-            .set('username', payload.email)
+            .set('username', payload.username)
             .set('password', payload.password)
             .set('grant_type', 'password');
 

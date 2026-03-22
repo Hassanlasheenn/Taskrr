@@ -18,30 +18,6 @@
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(107, 207, 209, 0.3);
 
-    // Shine effect on hover
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, 
-            transparent, 
-            rgba(255, 255, 255, 0.3), 
-            transparent);
-        transition: left 0.5s ease;
-    }
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(107, 207, 209, 0.4);
-        
-        &::before {
-            left: 100%;
-        }
-    }
-
     &:focus {
         outline: 2px solid var(--primary-gradient-start);
         outline-offset: 2px;
@@ -59,14 +35,6 @@
         cursor: default;
         opacity: 0.6;
         box-shadow: none;
-        
-        &:hover {
-            transform: none;
-            
-            &::before {
-                left: -100%;
-            }
-        }
     }
 }
 
@@ -82,24 +50,8 @@
     border-radius: 4px;
     position: relative;
 
-    &::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        width: 0;
-        height: 2px;
-        background: linear-gradient(90deg, var(--primary-gradient-start), var(--primary-gradient-end));
-        transition: all 0.3s ease;
-        transform: translateX(-50%);
-    }
-
     &:hover {
         color: var(--primary-gradient-start);
-        
-        &::after {
-            width: 100%;
-        }
     }
 
     &:focus {

@@ -1,72 +1,25 @@
 <div class="admin-panel-container">
-    <div class="users-grid">
-        <div *ngFor="let userData of usersWithTodos; trackBy: trackByUserId" class="user-card">
-            <div class="user-card-header" [class.no-todos]="userData.todos.length === 0" (click)="toggleUserExpansion(userData.user.id)">
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <img *ngIf="userData.user.photo" [src]="userData.user.photo" [alt]="userData.user.username" />
-                        <i *ngIf="!userData.user.photo" class="bi bi-person-circle"></i>
-                    </div>
-                    <div class="user-details">
-                        <h3 class="username">{{ userData.user.username | titlecase }}</h3>
-                        <p class="user-email">{{ userData.user.email }}</p>
-                        <span class="user-role" [class.role-admin]="userData.user.role === 'admin'">
-                            {{ userData.user.role === 'admin' ? 'Admin' : 'User' }}
-                        </span>
-                    </div>
-                </div>
-                <div class="user-stats">
-                    <div class="stat-item">
-                        <i class="bi bi-list-check"></i>
-                        <span class="stat-value">{{ userData.todo_count }}</span>
-                        <span class="stat-label">Todos</span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="bi bi-check-circle"></i>
-                        <span class="stat-value">{{ getCompletedCount(userData.user.id) }}</span>
-                        <span class="stat-label">Completed</span>
-                    </div>
-                </div>
-                <button class="expand-btn" [class.expanded]="isUserExpanded(userData.user.id)">
-                    <i class="bi bi-chevron-down"></i>
-                </button>
+    <div class="users-minimal-list">
+        <div *ngFor="let userData of usersWithTodos; trackBy: trackByUserId" class="user-minimal-row">
+            <div class="user-main-info">
+                <h3 class="username">{{ userData.user.username | titlecase }}</h3>
+                <span class="user-role-badge" [class.role-admin]="userData.user.role === 'admin'">
+                    {{ userData.user.role === 'admin' ? 'Admin' : 'User' }}
+                </span>
             </div>
 
-            <div class="user-todos" *ngIf="isUserExpanded(userData.user.id) && userData.todos.length > 0">
-                <div class="todos-list">
-                    <div *ngFor="let todo of userData.todos; trackBy: trackById" class="todo-item" [class.completed]="todo.status === 'done'">
-                        <div class="todo-priority" [class]="getPriorityClass(todo.priority)"></div>
-                        <div class="todo-content">
-                            <div class="todo-header">
-                                <h4 class="todo-title">{{ todo.title }}</h4>
-                                <div class="todo-header-badges">
-                                    <span class="todo-priority-badge" [class]="getPriorityClass(todo.priority)">
-                                        {{ todo.priority }}
-                                    </span>
-                                    <a [routerLink]="['/', layoutPaths.TODO_VIEW, todo.id]" class="todo-view-icon" aria-label="View todo">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="todo-meta">
-                                <span *ngIf="todo.due_date" 
-                                      class="todo-due-date-badge" 
-                                      [ngClass]="getDueDateUrgencyClass(todo.due_date)">
-                                    <i class="bi bi-alarm-fill"></i>
-                                    <span class="due-label">Due Date:</span>
-                                    <span class="due-value">{{ formatDate(todo.due_date)?.date }}</span>
-                                </span>
-                                <span *ngIf="todo.category" class="todo-category">
-                                    <i class="bi bi-tag"></i> {{ todo.category }}
-                                </span>
-                                <span class="todo-status" [class.completed]="todo.status === 'done'">
-                                    <i [class]="todo.status === 'done' ? 'bi bi-check-circle-fill' : 'bi bi-circle'"></i>
-                                    {{ todo.status === 'done' ? 'Completed' : 'Not Completed' }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+            <div class="user-stats-end">
+                <div class="stat-group">
+                    <span class="stat-value">{{ userData.todo_count }}</span>
+                    <span class="stat-label">Todos</span>
                 </div>
+                <div class="stat-group">
+                    <span class="stat-value">{{ getCompletedCount(userData.user.id) }}</span>
+                    <span class="stat-label">Done</span>
+                </div>
+                <a *ngIf="_authService.isAdmin() && userData.user.id !== _authService.getCurrentUserId()" [routerLink]="['/', layoutPaths.USER_DETAILS, userData.user.id]" class="view-details-btn" title="View user details">
+                    <i class="bi bi-eye"></i>
+                </a>
             </div>
         </div>
 

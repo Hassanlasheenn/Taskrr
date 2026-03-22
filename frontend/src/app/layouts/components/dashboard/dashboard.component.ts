@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnInit, OnDestroy, ViewChild } from "@angular/core";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { Subject, takeUntil, debounceTime, Observable, map } from "rxjs";
 import { AuthService } from "../../../auth/services";
 import { TodoService } from "../../../core/services/todo.service";
@@ -15,9 +15,7 @@ import { TodoListComponent } from "../todo-list/todo-list.component";
 import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.component";
 import { DashboardSideNavComponent } from "./components/dashboard-side-nav/dashboard-side-nav.component";
 import { CalendarComponent } from "./components/calendar/calendar.component";
-import { SearchBarComponent } from "./components/search-bar/search-bar.component";
-import { StatusFilterComponent, TodoStatus as FilterStatus } from "./components/status-filter/status-filter.component";
-import { PriorityFilterComponent } from "./components/priority-filter/priority-filter.component";
+import { TodoStatus as FilterStatus } from "./components/status-filter/status-filter.component";
 import { AdminPanelComponent } from "./components/admin-panel/admin-panel.component";
 import { AdminComponent } from "../admin/admin.component";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
@@ -33,13 +31,11 @@ import { PosthogService } from "../../../core/services";
     standalone: true,
     imports: [
         CommonModule, 
+        RouterLink,
         TodoListComponent, 
         SidebarComponent, 
         DashboardSideNavComponent, 
         CalendarComponent, 
-        SearchBarComponent, 
-        StatusFilterComponent, 
-        PriorityFilterComponent,
         AdminPanelComponent,
         AdminComponent,
         TodoFormComponent
@@ -62,6 +58,8 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     activePriority: string = 'all';
     selectedCategory: string | null = null;
     trackById = trackById;
+    readonly LayoutPaths = LayoutPaths;
+    collapsedSections: Set<string> = new Set();
 
     constructor(
         public readonly _authService: AuthService,
@@ -298,13 +296,24 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         let path = '';
         switch(section) {
             case DashboardSections.CALENDAR: path = LayoutPaths.CALENDAR; break;
-            case DashboardSections.MY_ASSIGNED: path = LayoutPaths.MY_TODOS; break;
             case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
-            case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;
             case DashboardSections.USER_MANAGEMENT: path = LayoutPaths.ADMIN; break;
+            case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;
             default: path = LayoutPaths.DASHBOARD; break;
         }
         this._router.navigate([path]);
+    }
+
+    toggleSection(section: string): void {
+        if (this.collapsedSections.has(section)) {
+            this.collapsedSections.delete(section);
+        } else {
+            this.collapsedSections.add(section);
+        }
+    }
+
+    isSectionCollapsed(section: string): boolean {
+        return this.collapsedSections.has(section);
     }
 
     private _syncSectionWithUrl(): void {
@@ -312,10 +321,9 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         
         switch(url) {
             case LayoutPaths.CALENDAR: this.activeSection = DashboardSections.CALENDAR; break;
-            case LayoutPaths.MY_TODOS: this.activeSection = DashboardSections.MY_ASSIGNED; break;
             case LayoutPaths.COMPLETED: this.activeSection = DashboardSections.COMPLETED; break;
-            case LayoutPaths.ADMIN_PANEL: this.activeSection = DashboardSections.ADMIN_PANEL; break;
             case LayoutPaths.ADMIN: this.activeSection = DashboardSections.USER_MANAGEMENT; break;
+            case LayoutPaths.ADMIN_PANEL: this.activeSection = DashboardSections.ADMIN_PANEL; break;
             case LayoutPaths.DASHBOARD: 
             case 'home':
             default: this.activeSection = DashboardSections.DASHBOARD; break;
@@ -329,58 +337,77 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     }
 
     get unassignedCount(): number {
+        return this.unassignedTodos.length;
+    }
+
+    get unassignedTodos(): ITodo[] {
         return this.todos.filter(todo => 
             todo.status !== 'done' && 
             (!todo.assigned_to_user_id || todo.assigned_to_user_id === null)
-        ).length;
-    }
-
-    get assignedCount(): number {
-        const userId = this._authService.getCurrentUserId();
-        return this.todos.filter(todo => 
-            todo.status !== 'done' && 
-            todo.assigned_to_user_id === userId
-        ).length;
+        );
     }
 
     get completedCount(): number {
         return this.todos.filter(todo => todo.status === 'done').length;
     }
 
-    get inProgressCount(): number {
-        const userId = this._authService.getCurrentUserId();
-        return this.todos.filter(todo => 
-            todo.status === 'inProgress' && 
-            todo.assigned_to_user_id === userId
-        ).length;
-    }
-
-    get newCount(): number {
-        const userId = this._authService.getCurrentUserId();
-        return this.todos.filter(todo => 
-            todo.status === 'new' && 
-            todo.assigned_to_user_id === userId
-        ).length;
-    }
-
     get hasActiveTodosInSection(): boolean {
         if (this.activeSection === DashboardSections.DASHBOARD) {
-            // For admins, the dashboard shows unassigned tasks
-            // For users, it shows all their tasks
             return this._authService.isAdmin() ? this.unassignedCount > 0 : this.todos.length > 0;
         }
-        if (this.activeSection === DashboardSections.MY_ASSIGNED) {
-            return this.assignedCount > 0;
-        }
         return false;
+    }
+
+    get inProgressTodos(): ITodo[] { return this.filteredTodos.filter(t => t.status === 'inProgress'); }
+    get newTodos(): ITodo[] { return this.filteredTodos.filter(t => t.status === 'new'); }
+    get pausedTodos(): ITodo[] { return this.filteredTodos.filter(t => t.status === 'paused'); }
+    get completedTodos(): ITodo[] { return this.filteredTodos.filter(t => t.status === 'done'); }
+
+    get combinedActiveTodos(): ITodo[] {
+        return [...this.newTodos, ...this.inProgressTodos];
+    }
+
+    getPriorityClass(priority: string): string {
+        return `priority-${priority?.toLowerCase() || 'medium'}`;
+    }
+
+    getPriorityIcon(priority: string): string {
+        switch (priority?.toLowerCase()) {
+            case 'high': return 'bi-arrow-up';
+            case 'low': return 'bi-arrow-down';
+            default: return 'bi-dash';
+        }
+    }
+
+    formatDate(dateString?: string): string {
+        if (!dateString) return 'No date';
+        const date = new Date(dateString);
+        return date.toLocaleDateString(undefined, { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+    }
+
+    getDueDateUrgencyClass(dateString?: string): string {
+        if (!dateString) return '';
+        
+        const dueDate = new Date(dateString);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const diffTime = dueDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays <= 3) return 'urgency-high';
+        if (diffDays <= 10) return 'urgency-medium';
+        return 'urgency-low';
     }
 
     get sectionTitle(): string {
         switch (this.activeSection) {
             case DashboardSections.COMPLETED:
                 return 'Completed Todos';
-            case DashboardSections.MY_ASSIGNED:
-                return 'My Todos';
             case DashboardSections.DASHBOARD:
                 return this._authService.isAdmin() ? 'Pending Todos' : 'Your Todos';
             default:
@@ -414,25 +441,16 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             case DashboardSections.COMPLETED:
                 filtered = filtered.filter(todo => todo.status === 'done');
                 break;
-            case DashboardSections.MY_ASSIGNED:
-                filtered = filtered.filter(todo => 
-                    todo.status !== 'done' && 
-                    todo.assigned_to_user_id === userId
-                );
-                break;
             case DashboardSections.DASHBOARD:
-                if (isAdmin) {
-                    filtered = filtered.filter(todo => 
-                        todo.status !== 'done' && 
-                        (!todo.assigned_to_user_id || todo.assigned_to_user_id === null)
-                    );
+                if (!isAdmin) {
+                    filtered = filtered.filter(todo => todo.assigned_to_user_id === userId);
                 }
                 break;
             default:
                 break;
         }
 
-        if (this.activeSection === DashboardSections.DASHBOARD || this.activeSection === DashboardSections.MY_ASSIGNED) {
+        if (this.activeSection === DashboardSections.DASHBOARD) {
             filtered = this.applyStatusFilter(filtered);
             filtered = this.applyPriorityFilter(filtered);
         }
@@ -494,18 +512,9 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             case DashboardSections.COMPLETED:
                 filtered = filtered.filter(todo => todo.status === 'done');
                 break;
-            case DashboardSections.MY_ASSIGNED:
-                filtered = filtered.filter(todo => 
-                    todo.status !== 'done' && 
-                    todo.assigned_to_user_id === userId
-                );
-                break;
             case DashboardSections.DASHBOARD:
-                if (isAdmin) {
-                    filtered = filtered.filter(todo => 
-                        todo.status !== 'done' && 
-                        (!todo.assigned_to_user_id || todo.assigned_to_user_id === null)
-                    );
+                if (!isAdmin) {
+                    filtered = filtered.filter(todo => todo.assigned_to_user_id === userId);
                 }
                 break;
             default:
@@ -513,7 +522,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         }
 
         // Apply status filter
-        if (this.activeSection === DashboardSections.DASHBOARD || this.activeSection === DashboardSections.MY_ASSIGNED) {
+        if (this.activeSection === DashboardSections.DASHBOARD) {
             filtered = this.applyStatusFilter(filtered);
             filtered = this.applyPriorityFilter(filtered);
         }

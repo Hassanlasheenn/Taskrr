@@ -22,8 +22,6 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     readonly layoutPaths = LayoutPaths;
     private readonly _destroy$ = new Subject<void>();
     usersWithTodos: IUserWithTodos[] = [];
-    private originalTodosMap: Map<number, ITodoResponse[]> = new Map();
-    expandedUsers: Set<number> = new Set();
     private hasLoadedData: boolean = false;
     trackById = trackById;
 
@@ -32,7 +30,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         private readonly _loaderService: LoaderService,
         private readonly _toastService: ToastService,
         private readonly _notificationService: NotificationService,
-        private readonly _authService: AuthService
+        public readonly _authService: AuthService
     ) {}
 
     ngOnInit(): void {
@@ -63,16 +61,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this._destroy$))
             .subscribe({
                 next: (data) => {
-                    this.originalTodosMap.clear();
-                    data.forEach(userData => {
-                        this.originalTodosMap.set(userData.user.id, userData.todos);
-                    });
-                    
-                    this.usersWithTodos = data.map(userData => ({
-                        ...userData,
-                        todos: userData.todos.filter(todo => todo.status !== 'done'),
-                        todo_count: userData.todos.filter(todo => todo.status !== 'done').length
-                    }));
+                    this.usersWithTodos = data;
                     this._loaderService.hide();
                 },
                 error: (error) => {
@@ -86,75 +75,10 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         return item.user.id;
     }
 
-    toggleUserExpansion(userId: number): void {
-        const userData = this.usersWithTodos.find(u => u.user.id === userId);
-        if (!userData || userData.todos.length === 0) {
-            return;
-        }
-        
-        if (this.expandedUsers.has(userId)) {
-            this.expandedUsers.delete(userId);
-        } else {
-            this.expandedUsers.add(userId);
-        }
-    }
-
-    isUserExpanded(userId: number): boolean {
-        return this.expandedUsers.has(userId);
-    }
-
     getCompletedCount(userId: number): number {
-        const originalTodos = this.originalTodosMap.get(userId);
-        if (!originalTodos) return 0;
-        return originalTodos.filter(t => t.status === 'done').length;
-    }
-
-    getPriorityClass(priority: string): string {
-        switch (priority?.toLowerCase()) {
-            case 'high':
-                return 'priority-high';
-            case 'medium':
-                return 'priority-medium';
-            case 'low':
-                return 'priority-low';
-            default:
-                return '';
-        }
-    }
-
-    getDueDateUrgencyClass(dateString?: string): string {
-        if (!dateString) return '';
-        
-        const dueDate = new Date(dateString);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const diffTime = dueDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays <= 3) return 'urgency-high';
-        if (diffDays <= 10) return 'urgency-medium';
-        return 'urgency-low';
-    }
-
-    formatDate(dateString?: string): { date: string; day: string; time: string } | null {
-        if (!dateString) return null;
-        
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return null;
-
-        return {
-            date: date.toLocaleDateString(undefined, { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
-            }),
-            day: date.toLocaleDateString(undefined, { weekday: 'long' }),
-            time: date.toLocaleTimeString(undefined, { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            })
-        };
+        const user = this.usersWithTodos.find(u => u.user.id === userId);
+        if (!user) return 0;
+        return user.todos.filter(t => t.status === 'done').length;
     }
 
     ngOnDestroy(): void {

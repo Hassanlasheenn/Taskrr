@@ -41,6 +41,31 @@
     }
 }
 
+.header-brand-group {
+    gap: 0.5rem;
+}
+
+.mobile-toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-gradient-start);
+    transition: transform 0.2s ease;
+
+    i {
+        font-size: 1.75rem;
+        line-height: 1;
+    }
+
+    &:active {
+        transform: scale(0.9);
+    }
+}
+
 .header-logo-btn {
     background: transparent;
     border: none;
@@ -60,43 +85,6 @@
         font-family: 'Caveat', 'Montserrat', cursive;
         font-weight: 400;
         letter-spacing: 0.05em;
-    }
-
-    &:hover {
-        transform: scale(1.02);
-    }
-}
-
-.mobile-nav-trigger {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: var(--btn-secondary-bg);
-    border: 1px solid var(--header-border);
-    color: var(--header-logo-gradient-start);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    padding: 0;
-    margin-right: 0.5rem;
-
-    i {
-        font-size: 1.5rem;
-    }
-
-    &:hover {
-        background: var(--btn-secondary-hover-bg);
-        transform: scale(1.05);
-    }
-
-    @media (max-width: 576px) {
-        width: 32px;
-        height: 32px;
-        
-        i {
-            font-size: 1.25rem;
-        }
     }
 }
 

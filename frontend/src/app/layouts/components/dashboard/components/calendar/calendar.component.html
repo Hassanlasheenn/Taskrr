@@ -86,9 +86,12 @@
                                 <div class="todo-card-content">
                                     <div class="todo-content">
                                         <div class="todo-header-row d-flex justify-content-between align-items-start">
-                                            <div class="todo-title-group">
+                                            <div class="todo-title-group d-flex flex-wrap align-items-center gap-2">
                                                 <h4 class="todo-title">{{ todo.title }}</h4>
-                                                <span *ngIf="todo.status === 'done'" class="done-badge-small mt-1">Done</span>
+                                                <span class="todo-priority-badge" [ngClass]="getPriorityClass(todo.priority)">
+                                                    {{ todo.priority }}
+                                                </span>
+                                                <span *ngIf="todo.status === 'done'" class="done-badge-small">Done</span>
                                             </div>
                                             <button 
                                                 type="button" 
@@ -99,20 +102,6 @@
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                         </div>
-                                        
-                                        <!-- Urgency-colored Full Due Date Badge for Calendar (Below Title) -->
-                                        <div *ngIf="$any(todo).due_date" 
-                                             class="calendar-due-badge mt-1" 
-                                             [ngClass]="getDueDateUrgencyClass($any(todo).due_date)">
-                                            <i class="bi" [ngClass]="isDueDate(todo, selectedDate) ? (isOverdue($any(todo).due_date) ? 'bi-exclamation-circle-fill' : 'bi-alarm-fill') : 'bi-plus-circle-fill'"></i>
-                                            <span *ngIf="isDueDate(todo, selectedDate)" class="due-label">{{ isOverdue($any(todo).due_date) ? 'Overdue:' : 'Due:' }}</span>
-                                            <span class="due-value">{{ formatFullDate(isDueDate(todo, selectedDate) ? $any(todo).due_date : todo.created_at) }}</span>
-                                        </div>
-
-                                        <p *ngIf="todo.description" class="todo-description mt-2">{{ todo.description }}</p>
-                                        <span class="todo-priority-badge" [ngClass]="getPriorityClass(todo.priority)">
-                                            {{ todo.priority }}
-                                        </span>
                                     </div>
                                 </div>
                             </div>

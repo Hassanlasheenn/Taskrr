@@ -5,6 +5,26 @@
                 <app-card [card]="{ title: 'All Users' }" class="admin-card">
                     <p class="section-description">Manage users, assign roles, and delete accounts.</p>
                     
+                    <div *ngIf="users.length > 0" class="admin-filters-section mb-4">
+                        <div class="search-wrapper">
+                            <i class="bi bi-search search-icon"></i>
+                            <input 
+                                type="text" 
+                                class="admin-search-input" 
+                                [(ngModel)]="searchQuery" 
+                                placeholder="Search by ID, username or email..."
+                                aria-label="Search users"
+                            >
+                        </div>
+                        <div class="role-filter-wrapper">
+                            <select class="admin-role-filter" [(ngModel)]="selectedRole" aria-label="Filter by role">
+                                <option value="all">All Roles</option>
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="users-table-wrapper">
                         <table class="users-table">
                             <thead>
@@ -18,7 +38,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr *ngFor="let user of users; let i = index; trackBy: trackById" [class.current-user]="isCurrentUser(user.id)">
+                                <tr *ngFor="let user of filteredUsers; let i = index; trackBy: trackById" [class.current-user]="isCurrentUser(user.id)">
                                     <td>{{ i + 1 }}</td>
                                     <td>{{ user.id }}</td>
                                     <td>{{ user.username | titlecase }}</td>
@@ -45,8 +65,11 @@
                                         </button>
                                     </td>
                                 </tr>
-                                <tr *ngIf="users.length === 0">
-                                    <td colspan="6" class="no-users">No users found</td>
+                                <tr *ngIf="filteredUsers.length === 0">
+                                    <td colspan="6" class="no-users">
+                                        <i class="bi bi-person-x mb-2 d-block fs-2"></i>
+                                        No users found matching your criteria
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>

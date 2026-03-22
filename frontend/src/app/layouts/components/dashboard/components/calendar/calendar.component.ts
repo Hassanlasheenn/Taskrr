@@ -180,7 +180,7 @@ export class CalendarComponent implements OnInit, OnChanges {
         if (!this.selectedDate) return [];
         
         const todosInHour = this.selectedDayTodos.filter(todo => {
-            const dateStr = (todo as any).due_date || todo.created_at;
+            const dateStr = todo.created_at;
             if (!dateStr) return false;
             
             const todoDate = this.parseTodoDate(dateStr);
@@ -188,8 +188,8 @@ export class CalendarComponent implements OnInit, OnChanges {
         });
 
         return todosInHour.sort((a, b) => {
-            const dateAStr = (a as any).due_date || a.created_at;
-            const dateBStr = (b as any).due_date || b.created_at;
+            const dateAStr = a.created_at;
+            const dateBStr = b.created_at;
             if (!dateAStr || !dateBStr) return 0;
             
             const dateA = this.parseTodoDate(dateAStr);

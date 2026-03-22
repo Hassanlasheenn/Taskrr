@@ -1,0 +1,245 @@
+<section class="user-details-wrapper p-2 p-sm-3 p-lg-4">
+    <div class="user-details-layout d-flex flex-column flex-lg-row align-items-stretch gap-3 gap-lg-4">
+        <div class="side-nav-wrapper d-none d-lg-block">
+            <app-dashboard-side-nav
+                (sectionChange)="onDashboardSectionChange($event)"
+            />
+        </div>
+
+        <div class="user-details-content flex-grow-1 d-flex flex-column">
+            <header class="user-details-header mb-4" *ngIf="userData">
+                <div class="user-profile-summary">
+                    <div class="user-avatar-large">
+                        <img *ngIf="userData.user.photo" [src]="userData.user.photo" [alt]="userData.user.username">
+                        <i *ngIf="!userData.user.photo" class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="user-info-text">
+                        <div class="user-name-row">
+                            <h1>{{ userData.user.username | titlecase }}</h1>
+                            <span class="role-badge" [class.admin]="userData.user.role === 'admin'">
+                                {{ userData.user.role | titlecase }}
+                            </span>
+                        </div>
+                        <p class="user-email"><i class="bi bi-envelope"></i> {{ userData.user.email }}</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="todos-dashboard" *ngIf="userData">
+                <!-- Status Columns -->
+                <div class="status-grid">
+                    <!-- Pending Column (Admin Viewer Only) -->
+                    <div *ngIf="_authService.isAdmin()" class="status-col pending" [class.collapsed]="isSectionCollapsed('pending')">
+                        <div class="col-header" (click)="toggleSection('pending')">
+                            <i class="bi bi-clock-history"></i>
+                            <h3>Unassigned</h3>
+                            <span class="count">{{ unassignedCount }}</span>
+                            <i class="bi bi-chevron-down toggle-arrow"></i>
+                        </div>
+                        <div class="todos-scroll-container">
+                            <div class="todos-list">
+                                <div *ngFor="let todo of unassignedTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)">
+                                    <div class="todo-card-top">
+                                        <div class="badge-group">
+                                            <span class="priority-mini-badge" [ngClass]="getPriorityClass(todo.priority)">
+                                                <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
+                                                {{ todo.priority | titlecase }}
+                                            </span>
+                                            <span *ngIf="todo.category" class="category-mini-badge">
+                                                <i class="bi bi-tag"></i>
+                                                {{ todo.category }}
+                                            </span>
+                                        </div>
+                                        <span class="due-date" *ngIf="todo.due_date" [ngClass]="getDueDateUrgencyClass(todo.due_date)">
+                                            <i class="bi bi-alarm"></i>
+                                            {{ formatDate(todo.due_date) }}
+                                        </span>
+                                    </div>
+                                    <h4>{{ todo.title }}</h4>
+                                    <div class="todo-mini-meta">
+                                        <a [routerLink]="['/', layoutPaths.TODO_VIEW, todo.id]" class="view-link" title="View Details">
+                                            <i class="bi bi-arrow-right-circle-fill"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <p *ngIf="unassignedCount === 0" class="empty-col">No unassigned tasks</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New Column -->
+                    <div class="status-col new-tasks" [class.collapsed]="isSectionCollapsed('new-tasks')">
+                        <div class="col-header" (click)="toggleSection('new-tasks')">
+                            <i class="bi bi-plus-circle-fill"></i>
+                            <h3>New</h3>
+                            <span class="count">{{ newTodos.length }}</span>
+                            <i class="bi bi-chevron-down toggle-arrow"></i>
+                        </div>
+                        <div class="todos-scroll-container">
+                            <div class="todos-list">
+                                <div *ngFor="let todo of newTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)">
+                                    <div class="todo-card-top">
+                                        <div class="badge-group">
+                                            <span class="priority-mini-badge" [ngClass]="getPriorityClass(todo.priority)">
+                                                <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
+                                                {{ todo.priority | titlecase }}
+                                            </span>
+                                            <span *ngIf="todo.category" class="category-mini-badge">
+                                                <i class="bi bi-tag"></i>
+                                                {{ todo.category }}
+                                            </span>
+                                        </div>
+                                        <span class="due-date" *ngIf="todo.due_date" [ngClass]="getDueDateUrgencyClass(todo.due_date)">
+                                            <i class="bi bi-alarm"></i>
+                                            {{ formatDate(todo.due_date) }}
+                                        </span>
+                                    </div>
+                                    <h4>{{ todo.title }}</h4>
+                                    <div class="todo-mini-meta">
+                                        <a [routerLink]="['/', layoutPaths.TODO_VIEW, todo.id]" class="view-link" title="View Details">
+                                            <i class="bi bi-arrow-right-circle-fill"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <p *ngIf="newTodos.length === 0" class="empty-col">No new tasks</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- In Progress -->
+                    <div class="status-col in-progress" [class.collapsed]="isSectionCollapsed('in-progress')">
+                        <div class="col-header" (click)="toggleSection('in-progress')">
+                            <i class="bi bi-play-circle-fill"></i>
+                            <h3>In Progress</h3>
+                            <span class="count">{{ inProgressTodos.length }}</span>
+                            <i class="bi bi-chevron-down toggle-arrow"></i>
+                        </div>
+                        <div class="todos-scroll-container">
+                            <div class="todos-list">
+                                <div *ngFor="let todo of inProgressTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)">
+                                    <div class="todo-card-top">
+                                        <div class="badge-group">
+                                            <span class="priority-mini-badge" [ngClass]="getPriorityClass(todo.priority)">
+                                                <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
+                                                {{ todo.priority | titlecase }}
+                                            </span>
+                                            <span *ngIf="todo.category" class="category-mini-badge">
+                                                <i class="bi bi-tag"></i>
+                                                {{ todo.category }}
+                                            </span>
+                                        </div>
+                                        <span class="due-date" *ngIf="todo.due_date" [ngClass]="getDueDateUrgencyClass(todo.due_date)">
+                                            <i class="bi bi-alarm"></i>
+                                            {{ formatDate(todo.due_date) }}
+                                        </span>
+                                    </div>
+                                    <h4>{{ todo.title }}</h4>
+                                    <div class="todo-mini-meta">
+                                        <a [routerLink]="['/', layoutPaths.TODO_VIEW, todo.id]" class="view-link" title="View Details">
+                                            <i class="bi bi-arrow-right-circle-fill"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <p *ngIf="inProgressTodos.length === 0" class="empty-col">No tasks in progress</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paused -->
+                    <div class="status-col paused" [class.collapsed]="isSectionCollapsed('paused')">
+                        <div class="col-header" (click)="toggleSection('paused')">
+                            <i class="bi bi-pause-circle-fill"></i>
+                            <h3>Paused</h3>
+                            <span class="count">{{ pausedTodos.length }}</span>
+                            <i class="bi bi-chevron-down toggle-arrow"></i>
+                        </div>
+                        <div class="todos-scroll-container">
+                            <div class="todos-list">
+                                <div *ngFor="let todo of pausedTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)">
+                                    <div class="todo-card-top">
+                                        <div class="badge-group">
+                                            <span class="priority-mini-badge" [ngClass]="getPriorityClass(todo.priority)">
+                                                <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
+                                                {{ todo.priority | titlecase }}
+                                            </span>
+                                            <span *ngIf="todo.category" class="category-mini-badge">
+                                                <i class="bi bi-tag"></i>
+                                                {{ todo.category }}
+                                            </span>
+                                        </div>
+                                        <span class="due-date" *ngIf="todo.due_date" [ngClass]="getDueDateUrgencyClass(todo.due_date)">
+                                            <i class="bi bi-alarm"></i>
+                                            {{ formatDate(todo.due_date) }}
+                                        </span>
+                                    </div>
+                                    <h4>{{ todo.title }}</h4>
+                                    <div class="todo-mini-meta">
+                                        <a [routerLink]="['/', layoutPaths.TODO_VIEW, todo.id]" class="view-link" title="View Details">
+                                            <i class="bi bi-arrow-right-circle-fill"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <p *ngIf="pausedTodos.length === 0" class="empty-col">No paused tasks</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Completed -->
+                    <div class="status-col completed" [class.collapsed]="isSectionCollapsed('completed')">
+                        <div class="col-header" (click)="toggleSection('completed')">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <h3>Completed</h3>
+                            <span class="count">{{ completedTodos.length }}</span>
+                            <i class="bi bi-chevron-down toggle-arrow"></i>
+                        </div>
+                        <div class="todos-scroll-container">
+                            <div class="todos-list">
+                                <div *ngFor="let todo of completedTodos; trackBy: trackById" class="todo-mini-card done">
+                                    <div class="todo-card-top">
+                                        <div class="badge-group">
+                                            <span class="priority-mini-badge priority-done">
+                                                <i class="bi bi-check2-all"></i>
+                                                Done
+                                            </span>
+                                            <span *ngIf="todo.category" class="category-mini-badge">
+                                                <i class="bi bi-tag"></i>
+                                                {{ todo.category }}
+                                            </span>
+                                        </div>
+                                        <span class="due-date" [ngClass]="getDueDateUrgencyClass(todo.updated_at)">
+                                            <i class="bi bi-calendar-check"></i>
+                                            {{ formatDate(todo.updated_at) }}
+                                        </span>
+                                    </div>
+                                    <h4>{{ todo.title }}</h4>
+                                    <div class="todo-mini-meta">
+                                        <a [routerLink]="['/', layoutPaths.TODO_VIEW, todo.id]" class="view-link" title="View Details">
+                                            <i class="bi bi-arrow-right-circle-fill"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <p *ngIf="completedTodos.length === 0" class="empty-col">No completed tasks</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>        </div>
+    </div>
+</section>
+
+<!-- Mobile Navigation Sidebar -->
+<div class="d-lg-none">
+    <app-sidebar
+        [isOpen]="isNavSidebarOpen"
+        [title]="'Taskrr'"
+        [width]="'280px'"
+        [position]="'left'"
+        (closed)="onNavSidebarClose()"
+    >
+        <div class="mobile-nav-content">
+            <app-dashboard-side-nav
+                (sectionChange)="onDashboardSectionChange($event); onNavSidebarClose()"
+            />
+        </div>
+    </app-sidebar>
+</div>

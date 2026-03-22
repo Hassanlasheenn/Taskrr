@@ -16,13 +16,14 @@ import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { NavigationService } from "../../../core/services/navigation.service";
 import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.component";
+import { FormsModule } from "@angular/forms";
 
 @Component({
     selector: 'app-admin',
     templateUrl: './admin.component.html',
     styleUrls: ['./admin.component.scss'],
     standalone: true,
-    imports: [CommonModule, CardComponent, DashboardSideNavComponent, SidebarComponent]
+    imports: [CommonModule, CardComponent, DashboardSideNavComponent, SidebarComponent, FormsModule]
 })
 export class AdminComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
@@ -32,6 +33,10 @@ export class AdminComponent implements OnInit, OnDestroy {
     private isDeleting: boolean = false;
     private hasLoadedUsers: boolean = false;
     isNavSidebarOpen: boolean = false;
+    
+    // Filter properties
+    searchQuery: string = '';
+    selectedRole: string = 'all';
     
     readonly DashboardSections = DashboardSections;
 
@@ -88,20 +93,33 @@ export class AdminComponent implements OnInit, OnDestroy {
                     this._loaderService.hide();
                     const errorMessage = error?.error?.detail || error?.message || 'Failed to load users';
                     this._toastService.error(errorMessage);
-                    
-                    // If 401, suggest logging out and back in
-                    if (error?.status === 401) {
-                        console.error('Authentication error. Please log out and log back in to refresh your session.');
-                    }
                 }
             });
     }
 
-    onDeleteUser(userId: number): void {
-        // Prevent multiple simultaneous delete operations
-        if (this.isDeleting) {
-            return;
+    get filteredUsers(): IUserListResponse[] {
+        let filtered = this.users;
+
+        // Apply Role Filter
+        if (this.selectedRole !== 'all') {
+            filtered = filtered.filter(user => user.role === this.selectedRole);
         }
+
+        // Apply Search Filter (ID, Username, Email)
+        if (this.searchQuery.trim()) {
+            const query = this.searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(user => 
+                user.id.toString() === query ||
+                user.username.toLowerCase().includes(query) ||
+                user.email.toLowerCase().includes(query)
+            );
+        }
+
+        return filtered;
+    }
+
+    onDeleteUser(userId: number): void {
+        if (this.isDeleting) return;
 
         this._confirmationDialog.show({
             title: 'Delete User',
@@ -119,12 +137,10 @@ export class AdminComponent implements OnInit, OnDestroy {
                         .pipe(takeUntil(this._destroy$))
                         .subscribe({
                             next: () => {
-                                // Remove user from local array instead of reloading all users
                                 this.users = this.users.filter(user => user.id !== userId);
                                 this._loaderService.hide();
                                 this.isDeleting = false;
                                 this._toastService.success('User deleted successfully');
-                                this._posthogService.capture('user_deleted_by_admin', { deleted_user_id: userId });
                             },
                             error: (error) => {
                                 this._loaderService.hide();
@@ -133,9 +149,6 @@ export class AdminComponent implements OnInit, OnDestroy {
                             }
                         });
                 }
-            },
-            error: () => {
-                // Handle any errors from the dialog
             }
         });
     }
@@ -148,10 +161,6 @@ export class AdminComponent implements OnInit, OnDestroy {
                 next: () => {
                     this._loaderService.hide();
                     this._toastService.success(`User role updated to ${newRole}`);
-                    this._posthogService.capture('user_role_changed_by_admin', { 
-                        target_user_id: userId,
-                        new_role: newRole 
-                    });
                     this.loadUsers();
                 },
                 error: (error) => {
@@ -169,7 +178,6 @@ export class AdminComponent implements OnInit, OnDestroy {
         let path = '';
         switch(section) {
             case DashboardSections.CALENDAR: path = LayoutPaths.CALENDAR; break;
-            case DashboardSections.MY_ASSIGNED: path = LayoutPaths.MY_TODOS; break;
             case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
             case DashboardSections.USER_MANAGEMENT: path = LayoutPaths.ADMIN; break;
             default: path = LayoutPaths.DASHBOARD; break;

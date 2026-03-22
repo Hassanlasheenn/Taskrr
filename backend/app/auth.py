@@ -107,10 +107,16 @@ def login(
     db: Session = Depends(database.get_db),
     response: Response = Response()
 ):
-    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    from sqlalchemy import or_
+    user = db.query(models.User).filter(
+        or_(
+            models.User.email == form_data.username,
+            models.User.username == form_data.username
+        )
+    ).first()
 
     if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email/username or password", headers={"WWW-Authenticate": "Bearer"})
     
     if not user.is_verified:
         raise HTTPException(

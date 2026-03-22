@@ -1,35 +1,70 @@
 @use '../../../assets/components/scrollbar' as *;
 
 .todo-view-wrapper {
-    max-width: 960px;
+    max-width: 1400px;
     margin: 0 auto;
     width: 100%;
-    box-sizing: border-box;
 }
 
-.todo-view-container {
+.todo-view-layout {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+    min-height: 0;
+}
+
+.side-nav-wrapper {
+    &.d-lg-block {
+        @media (min-width: 992px) {
+            display: block !important;
+            width: 220px;
+            flex-shrink: 0;
+        }
+    }
+    
+    @media (max-width: 991.98px) {
+        display: none !important;
+    }
+}
+
+.mobile-nav-content {
+    ::ng-deep {
+        .dashboard-side-nav {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            width: 100% !important;
+
+            .side-nav-list {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 0.75rem !important;
+            }
+
+            .side-nav-item {
+                margin-bottom: 0 !important;
+                text-align: left !important;
+                justify-content: flex-start !important;
+                flex-direction: row !important;
+                padding: 0.75rem 1rem !important;
+                
+                i {
+                    font-size: 1.25rem !important;
+                }
+            }
+        }
+    }
+}
+
+.todo-view-content {
+    min-width: 0;
+    width: 100%;
+    overflow: visible;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    transition: color 0.2s ease;
-
-    &:hover {
-        color: var(--primary-gradient-start);
-    }
-
-    i {
-        font-size: 1.125rem;
-    }
 }
 
 .loading-state {
@@ -171,13 +206,11 @@
         border-color: var(--primary-gradient-start);
     }
 
-    // Dropdown options list: neutral style (do not apply status/priority colors to options)
     option {
         background: var(--card-color-solid, var(--dropdown-bg));
         color: var(--text-primary);
     }
 
-    // Only the closed select (selected value) gets status/priority colors - one at a time via ngClass (use background-color so arrow stays)
     &.status-select {
         &.status-new {
             background-color: rgba(108, 117, 125, 0.12);
@@ -260,7 +293,6 @@
         font-weight: 700;
     }
 
-    // Urgency Colors
     &.urgency-high {
         background: rgba(220, 53, 69, 0.12);
         color: #dc3545;

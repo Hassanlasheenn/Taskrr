@@ -74,10 +74,12 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             type: InputTypes.DROPDOWN,
             formControlName: 'assigned_to_user_id',
             placeholder: 'Select user',
-            value: 0,
-            required: false,
-            validations: [],
-            options: [{ key: 0, value: 'Unassigned' }],
+            value: null,
+            required: true,
+            validations: [
+                { type: ValidatorTypes.REQUIRED, message: 'Assignee is required' }
+            ],
+            options: [],
         },
     ];
 
@@ -109,7 +111,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.isAdmin = this._authService.isAdmin();
-        this.updateFieldsBasedOnRole();
         this.form = this._formService.initializeForm(this.fields);
         this.loadUsers();
     }
@@ -121,13 +122,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
 
     trackByValue(index: number, item: any): any {
         return item.value ?? index;
-    }
-
-    updateFieldsBasedOnRole(): void {
-        // If not admin, remove the "Assign To" field always (Create & Edit)
-        if (!this.isAdmin) {
-            this.fields = this.fields.filter(f => f.formControlName !== 'assigned_to_user_id');
-        }
     }
 
     loadUsers(): void {
@@ -155,7 +149,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     updateUserDropdownField(): void {
         const userFieldIndex = this.fields.findIndex(f => f.formControlName === 'assigned_to_user_id');
         if (userFieldIndex !== -1) {
-            const unassignedOption = { key: 0, value: 'Unassigned' };
             const userOptions = this.users.map(user => ({ key: user.id, value: user.username }));
             
             // Always add the current user to the list if not already present
@@ -164,7 +157,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 userOptions.unshift({ key: currentUser.id, value: `${currentUser.username} (Me)` });
             }
             
-            this.fields[userFieldIndex].options = [unassignedOption, ...userOptions];
+            this.fields[userFieldIndex].options = userOptions;
         }
     }
 
@@ -269,7 +262,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         this.isEditMode = false;
         this.editingTodo = null;
         
-        // Reset fields to original state and then filter based on role
+        // Reset fields to original state
         const baseFields = [
             {
                 label: 'Title',
@@ -306,22 +299,21 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 type: InputTypes.DROPDOWN,
                 formControlName: 'assigned_to_user_id',
                 placeholder: 'Select user',
-                value: 0,
-                required: false,
-                validations: [],
-                options: [{ key: 0, value: 'Unassigned' }],
+                value: null,
+                required: true,
+                validations: [
+                    { type: ValidatorTypes.REQUIRED, message: 'Assignee is required' }
+                ],
+                options: [],
             },
         ];
         
         this.fields = baseFields;
-        this.updateFieldsBasedOnRole();
         this.form = this._formService.initializeForm(this.fields);
+        this.updateUserDropdownField();
         
         if (this.form.get('due_date')) {
             this.form.get('due_date')?.setValue('');
-        }
-        if (this.isAdmin && this.form.get('assigned_to_user_id')) {
-            this.form.patchValue({ assigned_to_user_id: 0 });
         }
         this.selectedPriority = null;
         this.selectedStatus = 'new';
@@ -338,7 +330,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         this.editingTodo = todo;
         this.selectedUserId = todo.assigned_to_user_id || null;
         
-        // Restore all fields (including Assign To) for edit mode
+        // Restore all fields
         const baseFields = [
             {
                 label: 'Title',
@@ -375,16 +367,18 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 type: InputTypes.DROPDOWN,
                 formControlName: 'assigned_to_user_id',
                 placeholder: 'Select user',
-                value: 0,
-                required: false,
-                validations: [],
-                options: [{ key: 0, value: 'Unassigned' }],
+                value: null,
+                required: true,
+                validations: [
+                    { type: ValidatorTypes.REQUIRED, message: 'Assignee is required' }
+                ],
+                options: [],
             },
         ];
         
         this.fields = baseFields;
-        this.updateFieldsBasedOnRole();
         this.form = this._formService.initializeForm(this.fields);
+        this.updateUserDropdownField();
         
         if (this.users.length === 0) {
             this.loadUsers();

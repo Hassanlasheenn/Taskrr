@@ -2,7 +2,7 @@ import os
 import io
 import uuid
 import logging
-from PIL import Image
+from PIL import Image, ImageOps
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from typing import Optional, List
@@ -182,6 +182,13 @@ async def update_user_data(
             
             save_path = os.path.join(PROFILE_PICS_DIR, unique_filename)
             img = Image.open(io.BytesIO(content))
+            
+            # Handle EXIF orientation metadata
+            try:
+                img = ImageOps.exif_transpose(img)
+            except Exception as e:
+                logger.warning(f"Could not transpose image EXIF: {e}")
+
             img.thumbnail((150, 150), Image.Resampling.LANCZOS)
             img.save(save_path, format="JPEG", quality=85)
             user_db.profile_pic = unique_filename

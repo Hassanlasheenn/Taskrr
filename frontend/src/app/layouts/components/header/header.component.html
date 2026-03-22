@@ -1,12 +1,12 @@
 <section class="header">
     <div class="d-flex justify-content-between align-items-center h-100">
-        <div class="d-flex align-items-center gap-2">
+        <div class="header-brand-group d-flex align-items-center">
             <button 
                 *ngIf="showMobileMenu"
                 type="button" 
-                class="mobile-nav-trigger d-lg-none" 
+                class="mobile-toggle-btn d-lg-none" 
                 (click)="toggleMobileMenu()"
-                aria-label="Open navigation menu"
+                aria-label="Toggle navigation"
             >
                 <i class="bi bi-list"></i>
             </button>

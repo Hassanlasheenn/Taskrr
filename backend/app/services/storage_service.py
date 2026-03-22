@@ -5,7 +5,7 @@ import logging
 import io
 from botocore.exceptions import ClientError
 from typing import Optional, Tuple
-from PIL import Image
+from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +88,13 @@ class S3StorageService:
     def _optimize_image(self, file_content: bytes) -> bytes:
         """Internal helper to resize and compress image before S3 upload."""
         img = Image.open(io.BytesIO(file_content))
+        
+        # Handle EXIF orientation metadata (prevent images from being flipped/rotated)
+        try:
+            img = ImageOps.exif_transpose(img)
+        except Exception as e:
+            logger.warning(f"Could not transpose image EXIF: {e}")
+
         if img.mode != "RGB":
             img = img.convert("RGB")
         
