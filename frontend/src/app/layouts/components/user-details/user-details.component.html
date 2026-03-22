@@ -9,16 +9,18 @@
         <div class="user-details-content flex-grow-1 d-flex flex-column">
             <header class="user-details-header mb-4" *ngIf="userData">
                 <div class="user-profile-summary">
-                    <div class="user-avatar-large">
-                        <img *ngIf="userData.user.photo" [src]="userData.user.photo" [alt]="userData.user.username">
-                        <i *ngIf="!userData.user.photo" class="bi bi-person-circle"></i>
+                    <div class="user-avatar-container">
+                        <div class="user-avatar-large">
+                            <img *ngIf="userData.user.photo" [src]="userData.user.photo" [alt]="userData.user.username">
+                            <i *ngIf="!userData.user.photo" class="bi bi-person-circle"></i>
+                        </div>
+                        <span class="role-badge" [class.admin]="userData.user.role === 'admin'">
+                            {{ userData.user.role | titlecase }}
+                        </span>
                     </div>
                     <div class="user-info-text">
                         <div class="user-name-row">
-                            <h1>{{ userData.user.username | titlecase }}</h1>
-                            <span class="role-badge" [class.admin]="userData.user.role === 'admin'">
-                                {{ userData.user.role | titlecase }}
-                            </span>
+                            <h1 class="user-name">{{ userData.user.username | titlecase }}</h1>
                         </div>
                         <p class="user-email"><i class="bi bi-envelope"></i> {{ userData.user.email }}</p>
                     </div>

@@ -99,23 +99,49 @@
         gap: 1rem;
     }
 
-    .user-avatar-large {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        overflow: hidden;
-        border: 4px solid var(--primary-gradient-start);
-        background: var(--bg-soft);
+    .user-avatar-container {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        box-shadow: 0 8px 20px rgba(107, 207, 209, 0.2);
+        gap: 0.75rem;
 
-        img { width: 100%; height: 100%; object-fit: cover; }
-        i { font-size: 4rem; color: var(--text-secondary); }
+        .user-avatar-large {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid var(--primary-gradient-start);
+            background: var(--bg-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(107, 207, 209, 0.2);
+
+            img { width: 100%; height: 100%; object-fit: cover; }
+            i { font-size: 4rem; color: var(--text-secondary); }
+        }
+
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: rgba(107, 207, 209, 0.1);
+            color: var(--primary-gradient-start);
+            white-space: nowrap;
+
+            &.admin {
+                background: rgba(139, 92, 246, 0.1);
+                color: #8b5cf6;
+            }
+        }
     }
 
     .user-info-text {
+        flex: 1;
+        min-width: 0; // Crucial for flex child word-break
+
         .user-name-row {
             display: flex;
             align-items: center;
@@ -124,21 +150,13 @@
 
             @media (max-width: 576px) { justify-content: center; }
 
-            h1 { margin: 0; font-size: 2rem; font-weight: 700; color: var(--text-primary); }
-            
-            .role-badge {
-                padding: 4px 12px;
-                border-radius: 12px;
-                font-size: 0.75rem;
-                font-weight: 600;
-                text-transform: uppercase;
-                background: rgba(107, 207, 209, 0.1);
-                color: var(--primary-gradient-start);
-
-                &.admin {
-                    background: rgba(139, 92, 246, 0.1);
-                    color: #8b5cf6;
-                }
+            h1.user-name { 
+                margin: 0; 
+                font-size: 2rem; 
+                font-weight: 700; 
+                color: var(--text-primary); 
+                word-break: break-all;
+                line-height: 1.2;
             }
         }
 
@@ -149,6 +167,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            word-break: break-all;
             @media (max-width: 576px) { justify-content: center; }
         }
     }
