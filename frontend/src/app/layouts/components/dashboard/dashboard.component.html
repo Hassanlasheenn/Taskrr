@@ -36,7 +36,7 @@
                 <div *ngIf="activeSection === DashboardSections.DASHBOARD" class="status-grid-wrapper">
                     <div class="status-grid">
                         <!-- Pending Column (Admin Only) -->
-                        <div *ngIf="_authService.isAdmin()" class="status-col pending" [class.collapsed]="isSectionCollapsed('pending')">
+                        <div *ngIf="isAdmin" class="status-col pending" [class.collapsed]="isSectionCollapsed('pending')">
                             <div class="col-header" (click)="toggleSection('pending')">
                                 <i class="bi bi-clock-history"></i>
                                 <h3>Unassigned</h3>

@@ -60,6 +60,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     trackById = trackById;
     readonly LayoutPaths = LayoutPaths;
     collapsedSections: Set<string> = new Set();
+    isAdmin: boolean = false;
 
     constructor(
         public readonly _authService: AuthService,
@@ -74,6 +75,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     ) {}
 
     ngOnInit(): void {
+        this.isAdmin = this._authService.isAdmin();
         this.userData = this._authService.getCurrentUserData();
         this.loadTodos();
         this._syncSectionWithUrl();
@@ -353,7 +355,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
 
     get hasActiveTodosInSection(): boolean {
         if (this.activeSection === DashboardSections.DASHBOARD) {
-            return this._authService.isAdmin() ? this.unassignedCount > 0 : this.todos.length > 0;
+            return this.isAdmin ? this.unassignedCount > 0 : this.todos.length > 0;
         }
         return false;
     }
@@ -409,7 +411,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             case DashboardSections.COMPLETED:
                 return 'Completed Todos';
             case DashboardSections.DASHBOARD:
-                return this._authService.isAdmin() ? 'Pending Todos' : 'Your Todos';
+                return this.isAdmin ? 'Pending Todos' : 'Your Todos';
             default:
                 return 'Your Todos';
         }
@@ -434,7 +436,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
 
     get filteredTodos(): ITodo[] {
         let filtered = this.todos;
-        const isAdmin = this._authService.isAdmin();
+        const isAdmin = this.isAdmin;
         const userId = this._authService.getCurrentUserId();
 
         switch (this.activeSection) {
@@ -504,7 +506,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     get categories(): string[] {
         // Get categories from filtered todos (after status and search filters, but not category filter)
         let filtered = this.todos;
-        const isAdmin = this._authService.isAdmin();
+        const isAdmin = this.isAdmin;
         const userId = this._authService.getCurrentUserId();
 
         // Apply section filter

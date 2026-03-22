@@ -108,7 +108,7 @@ export class UploadPhotoComponent implements ControlValueAccessor, OnChanges, On
             return;
         }
         
-        // Photo is stored as base64 data URL in database, use directly
+        // Use currentPhotoUrl which can be a full URL or base64
         this.displayPhotoUrl = this.currentPhotoUrl || null;
     }
 
@@ -117,6 +117,7 @@ export class UploadPhotoComponent implements ControlValueAccessor, OnChanges, On
         if (this.isRemoved) {
             return null;
         }
+        // previewUrl (from new selection) takes precedence over displayPhotoUrl (from backend)
         return this.previewUrl || this.displayPhotoUrl;
     }
 

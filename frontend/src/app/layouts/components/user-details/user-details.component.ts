@@ -31,6 +31,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     trackById = trackById;
     isNavSidebarOpen: boolean = false;
     collapsedSections: Set<string> = new Set();
+    isAdmin: boolean = false;
 
     constructor(
         private readonly _route: ActivatedRoute,
@@ -44,6 +45,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit(): void {
+        this.isAdmin = this._authService.isAdmin();
         const idParam = this._route.snapshot.paramMap.get('id');
         if (idParam) {
             this.userId = parseInt(idParam, 10);

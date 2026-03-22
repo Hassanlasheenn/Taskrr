@@ -24,6 +24,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     usersWithTodos: IUserWithTodos[] = [];
     private hasLoadedData: boolean = false;
     trackById = trackById;
+    isAdmin: boolean = false;
 
     constructor(
         private readonly _adminService: AdminService,
@@ -34,10 +35,11 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit(): void {
+        this.isAdmin = this._authService.isAdmin();
         this._authService.currentUserData$
             .pipe(takeUntil(this._destroy$))
             .subscribe((userData) => {
-                if (userData && this._authService.isAdmin() && !this.hasLoadedData) {
+                if (userData && this.isAdmin && !this.hasLoadedData) {
                     this.hasLoadedData = true;
                     this.loadUsersWithTodos();
                 }

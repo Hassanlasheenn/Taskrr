@@ -17,7 +17,7 @@
                     <span class="stat-value">{{ getCompletedCount(userData.user.id) }}</span>
                     <span class="stat-label">Done</span>
                 </div>
-                <a *ngIf="_authService.isAdmin() && userData.user.id !== _authService.getCurrentUserId()" [routerLink]="['/', layoutPaths.USER_DETAILS, userData.user.id]" class="view-details-btn" title="View user details">
+                <a *ngIf="isAdmin && userData.user.id !== _authService.getCurrentUserId()" [routerLink]="['/', layoutPaths.USER_DETAILS, userData.user.id]" class="view-details-btn" title="View user details">
                     <i class="bi bi-eye"></i>
                 </a>
             </div>
