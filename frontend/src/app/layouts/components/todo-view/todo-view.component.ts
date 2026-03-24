@@ -74,6 +74,11 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     trackById = trackById;
     isNavSidebarOpen: boolean = false;
     selectedFile: File | null = null;
+    previewSelectedUrl: string | null = null;
+    previewAttachmentUrl: string | null = null;
+    previewAttachmentName: string | null = null;
+    editAttachmentUrl: string | null = null;
+    shouldDeleteAttachment: boolean = false;
 
     trackByValue(index: number, item: any): any {
         return item.value ?? index;
@@ -201,6 +206,23 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
 
     onNavSidebarClose(): void {
         this.isNavSidebarOpen = false;
+    }
+
+    isImage(filename?: string | null): boolean {
+        if (!filename) return false;
+        const ext = filename.split('.').pop()?.toLowerCase();
+        return !!ext && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+    }
+
+    openPreview(url: string, name: string, event: MouseEvent): void {
+        event.preventDefault();
+        this.previewAttachmentUrl = url;
+        this.previewAttachmentName = name;
+    }
+
+    closePreview(): void {
+        this.previewAttachmentUrl = null;
+        this.previewAttachmentName = null;
     }
 
     private _loadMentionableUsers(): void {
@@ -390,7 +412,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 this.comments = [...this.comments, comment];
                 this.newCommentText = '';
                 this.mentionedUserIdsInComment = [];
-                this.selectedFile = null;
+                this.removeSelectedFile();
                 this.addingComment = false;
                 if (this.commentHistoryTab === 'history') this._loadCommentHistory();
                 this._toastService.success('Comment added');
@@ -410,35 +432,54 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 return;
             }
             this.selectedFile = file;
+            if (this.isImage(file.name)) {
+                this.previewSelectedUrl = URL.createObjectURL(file);
+            } else {
+                this.previewSelectedUrl = null;
+            }
         }
     }
 
     removeSelectedFile(): void {
+        if (this.previewSelectedUrl) {
+            URL.revokeObjectURL(this.previewSelectedUrl);
+        }
         this.selectedFile = null;
+        this.previewSelectedUrl = null;
     }
 
     onStartEditComment(comment: ITodoComment): void {
         this.editingCommentId = comment.id;
         this.editContent = comment.content;
+        this.editAttachmentUrl = comment.attachment_url || null;
+        this.shouldDeleteAttachment = false;
     }
 
     onCancelEditComment(): void {
         this.editingCommentId = null;
         this.editContent = '';
+        this.editAttachmentUrl = null;
+        this.shouldDeleteAttachment = false;
+    }
+
+    removeEditAttachment(): void {
+        this.editAttachmentUrl = null;
+        this.shouldDeleteAttachment = true;
     }
 
     onSaveEditComment(): void {
         if (!this.todo || this.editingCommentId == null) return;
         const content = this.editContent?.trim();
-        if (!content) return;
+        if (!content && this.shouldDeleteAttachment && !this.editAttachmentUrl) {
+            return;
+        }
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
         this.savingEdit = true;
-        this._todoService.updateTodoComment(userId, this.todo.id, this.editingCommentId, content).subscribe({
+        this._todoService.updateTodoComment(userId, this.todo.id, this.editingCommentId, content || '', this.shouldDeleteAttachment).subscribe({
             next: (updated) => {
                 this.comments = this.comments.map((c) => (c.id === updated.id ? updated : c));
-                this.editingCommentId = null;
-                this.editContent = '';
+                this.onCancelEditComment();
                 this.savingEdit = false;
                 if (this.commentHistoryTab === 'history') this._loadCommentHistory();
                 this._toastService.success('Comment updated');

@@ -496,6 +496,7 @@ def update_todo_comment(
     comment_id: int,
     user_id: int,
     body: schemas.CommentCreate,
+    delete_attachment: bool = False,
     db: Session = Depends(database.get_db)
 ):
     """Update a comment. Only the comment author can update."""
@@ -512,11 +513,22 @@ def update_todo_comment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     if comment_db.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only edit your own comment")
+    
     content = (body.content or "").strip()
-    if not content:
+    if not content and not (delete_attachment and comment_db.attachment_url):
+        # We don't allow empty comments unless we are just deleting an attachment 
+        # and there's something else left, but let's just keep it simple: content required.
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Comment content is required")
+    
     old_content = comment_db.content
     comment_db.content = content
+
+    # Handle attachment deletion
+    if delete_attachment and comment_db.attachment_url:
+        storage_service.delete_file(comment_db.attachment_url)
+        comment_db.attachment_url = None
+        comment_db.attachment_name = None
+
     db.commit()
     db.refresh(comment_db)
     _add_comment_history(db, todo_id, comment_db.id, user_id, models.TodoCommentHistoryAction.UPDATED.value, content_before=old_content, content_after=content)

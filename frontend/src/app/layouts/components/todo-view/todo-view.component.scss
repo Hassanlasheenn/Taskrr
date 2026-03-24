@@ -915,19 +915,37 @@
 
 .selected-file-preview {
     background: rgba(107, 207, 209, 0.1);
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
     border: 1px solid rgba(107, 207, 209, 0.2);
     font-size: 0.85rem;
     color: var(--text-primary);
 
-    i { color: var(--primary-gradient-start); }
-    
-    .file-name {
-        flex: 1;
+    .preview-thumbnail {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        background: var(--bg-soft);
+        border: 1px solid var(--card-border-color);
+        flex-shrink: 0;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .file-info {
+        min-width: 0;
+        
+        .file-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 600;
+        }
     }
 
     .btn-remove-file {
@@ -944,25 +962,170 @@
 }
 
 .todo-view-comment-attachment {
-    .attachment-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.4rem 0.75rem;
-        background: var(--bg-primary);
+    .attachment-thumbnail {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        border-radius: 12px;
+        overflow: hidden;
+        cursor: pointer;
+        margin-bottom: 0.5rem;
         border: 1px solid var(--card-border-color);
-        border-radius: 8px;
-        color: var(--primary-gradient-start);
-        text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
+        background: var(--bg-soft);
 
-        &:hover {
-            border-color: var(--primary-gradient-start);
-            background: rgba(107, 207, 209, 0.05);
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
         }
 
-        i { font-size: 1rem; }
+        .thumbnail-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+
+            i {
+                color: white;
+                font-size: 1.5rem;
+            }
+        }
+
+        &:hover {
+            img { transform: scale(1.05); }
+            .thumbnail-overlay { opacity: 1; }
+        }
+    }
+}
+
+.edit-attachment-preview {
+    background: rgba(0, 0, 0, 0.03);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px dashed var(--card-border-color);
+
+    .small-thumbnail {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid var(--card-border-color);
+        
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .btn-remove-attachment {
+        margin-left: auto;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        padding: 0;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: color 0.2s ease;
+        
+        &:hover { color: #dc3545; }
+        i { font-size: 1.1rem; }
+    }
+}
+
+.attachment-preview-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    padding: 2rem;
+
+    .preview-content {
+        position: relative;
+        max-width: 90%;
+        max-height: 90%;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .close-preview {
+        position: absolute;
+        top: -3rem;
+        right: -1rem;
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        transition: transform 0.2s ease;
+
+        &:hover { transform: scale(1.1); }
+    }
+
+    .preview-image-wrapper {
+        background: #1a1a1a;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 70vh;
+            display: block;
+            object-fit: contain;
+        }
+    }
+
+    .preview-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.75rem 1.25rem;
+        border-radius: 10px;
+
+        .file-name {
+            font-weight: 500;
+            font-size: 0.95rem;
+            max-width: 70%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .download-link {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.4rem 0.8rem;
+            background: var(--primary-gradient-start);
+            border-radius: 6px;
+            transition: opacity 0.2s;
+
+            &:hover { opacity: 0.9; }
+        }
     }
 }

@@ -77,9 +77,9 @@ export class TodoService {
             .pipe(take(1));
     }
 
-    updateTodoComment(userId: number, todoId: number, commentId: number, content: string): Observable<ITodoComment> {
+    updateTodoComment(userId: number, todoId: number, commentId: number, content: string, deleteAttachment: boolean = false): Observable<ITodoComment> {
         return this._http
-            .put<ITodoComment>(`${this._baseUrl}/${todoId}/comments/${commentId}?user_id=${userId}`, { content }, {
+            .put<ITodoComment>(`${this._baseUrl}/${todoId}/comments/${commentId}?user_id=${userId}&delete_attachment=${deleteAttachment}`, { content }, {
                 withCredentials: true
             })
             .pipe(take(1));

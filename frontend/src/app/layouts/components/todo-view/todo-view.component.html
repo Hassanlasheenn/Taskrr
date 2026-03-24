@@ -136,6 +136,21 @@
                                 <ng-container *ngIf="editingCommentId === comment.id; else commentContent">
                                     <div class="todo-view-comment-edit">
                                         <textarea [(ngModel)]="editContent" class="todo-view-description-input todo-view-comment-edit-input" rows="3" [disabled]="savingEdit"></textarea>
+                                        
+                                        <!-- Edit Mode Attachment Preview & Removal -->
+                                        <div *ngIf="editAttachmentUrl" class="edit-attachment-preview mt-2 mb-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div *ngIf="isImage(comment.attachment_name)" class="small-thumbnail">
+                                                    <img [src]="editAttachmentUrl" alt="Attachment thumbnail">
+                                                </div>
+                                                <i *ngIf="!isImage(comment.attachment_name)" class="bi bi-file-earmark"></i>
+                                                <span class="text-secondary small">Attachment attached</span>
+                                                <button type="button" class="btn-remove-attachment" (click)="removeEditAttachment()" title="Remove attachment">
+                                                    <i class="bi bi-x-circle-fill"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         <div class="todo-view-comment-edit-actions">
                                             <button type="button" class="todo-view-comment-edit-cancel" (click)="onCancelEditComment()" [disabled]="savingEdit">Cancel</button>
                                             <button type="button" class="todo-view-save-btn todo-view-comment-edit-save" (click)="onSaveEditComment()" [disabled]="savingEdit || !editContent?.trim()">{{ savingEdit ? 'Saving...' : 'Save' }}</button>
@@ -151,10 +166,13 @@
                                     </p>
                                     <!-- Attachment in comment -->
                                     <div *ngIf="comment.attachment_url" class="todo-view-comment-attachment mt-2">
-                                        <a [href]="comment.attachment_url" target="_blank" class="attachment-link">
-                                            <i class="bi bi-paperclip"></i>
-                                            <span>{{ comment.attachment_name || 'Attachment' }}</span>
-                                        </a>
+                                        <!-- Image Thumbnail -->
+                                        <div *ngIf="isImage(comment.attachment_name)" class="attachment-thumbnail" (click)="openPreview(comment.attachment_url, comment.attachment_name || 'Image', $event)">
+                                            <img [src]="comment.attachment_url" [alt]="comment.attachment_name" />
+                                            <div class="thumbnail-overlay">
+                                                <i class="bi bi-zoom-in"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 </ng-template>
                             </li>
@@ -199,9 +217,15 @@
                             </div>
 
                             <!-- Selected File Preview -->
-                            <div *ngIf="selectedFile" class="selected-file-preview mb-2 d-flex align-items-center gap-2">
-                                <i class="bi bi-file-earmark-check"></i>
-                                <span class="file-name">{{ selectedFile.name }}</span>
+                            <div *ngIf="selectedFile" class="selected-file-preview mb-2 d-flex align-items-center gap-3">
+                                <div *ngIf="previewSelectedUrl" class="preview-thumbnail">
+                                    <img [src]="previewSelectedUrl" alt="Selected file preview" />
+                                </div>
+                                <i *ngIf="!previewSelectedUrl" class="bi bi-file-earmark-check fs-4"></i>
+                                <div class="file-info flex-grow-1">
+                                    <span class="file-name d-block">{{ selectedFile.name }}</span>
+                                    <span class="file-size d-block text-secondary small">{{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</span>
+                                </div>
                                 <button type="button" class="btn-remove-file" (click)="removeSelectedFile()">
                                     <i class="bi bi-x-circle-fill"></i>
                                 </button>
@@ -276,6 +300,25 @@
         </div>
     </div>
 </section>
+
+<!-- Attachment Preview Overlay -->
+<div class="attachment-preview-overlay" *ngIf="previewAttachmentUrl" (click)="closePreview()">
+    <div class="preview-content" (click)="$event.stopPropagation()">
+        <button type="button" class="close-preview" (click)="closePreview()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <div class="preview-image-wrapper">
+            <img [src]="previewAttachmentUrl" [alt]="previewAttachmentName" class="preview-image" />
+        </div>
+        <div class="preview-footer">
+            <span class="file-name">{{ previewAttachmentName }}</span>
+            <a [href]="previewAttachmentUrl" download class="download-link">
+                <i class="bi bi-download"></i>
+                Download
+            </a>
+        </div>
+    </div>
+</div>
 
 <!-- Mobile Navigation Sidebar -->
 <div class="d-lg-none">
