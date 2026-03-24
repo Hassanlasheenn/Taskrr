@@ -6,7 +6,7 @@ from ..dependencies import get_current_admin_user
 from ..cache import cache_get, cache_set, invalidate_user_list_caches
 from ..cache import PREFIX_ADMIN_USERS, PREFIX_ADMIN_USERS_WITH_TODOS
 from ..config import CACHE_TTL_USER_LISTS
-from .users import get_photo_url
+from ..utils import get_photo_url
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

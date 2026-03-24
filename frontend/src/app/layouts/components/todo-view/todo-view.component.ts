@@ -73,6 +73,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     loadingHistory = false;
     trackById = trackById;
     isNavSidebarOpen: boolean = false;
+    selectedFile: File | null = null;
 
     trackByValue(index: number, item: any): any {
         return item.value ?? index;
@@ -379,16 +380,17 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
 
     onAddComment(): void {
         const content = this.newCommentText?.trim();
-        if (!content || !this.todo) return;
+        if ((!content && !this.selectedFile) || !this.todo) return;
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
         this.addingComment = true;
         const mentionedIds = this.mentionedUserIdsInComment.length > 0 ? [...this.mentionedUserIdsInComment] : undefined;
-        this._todoService.addTodoComment(userId, this.todo.id, content, mentionedIds).subscribe({
+        this._todoService.addTodoComment(userId, this.todo.id, content || '', mentionedIds, this.selectedFile || undefined).subscribe({
             next: (comment) => {
                 this.comments = [...this.comments, comment];
                 this.newCommentText = '';
                 this.mentionedUserIdsInComment = [];
+                this.selectedFile = null;
                 this.addingComment = false;
                 if (this.commentHistoryTab === 'history') this._loadCommentHistory();
                 this._toastService.success('Comment added');
@@ -398,6 +400,21 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 this._toastService.error(err?.error?.detail || 'Failed to add comment');
             },
         });
+    }
+
+    onFileSelected(event: any): void {
+        const file = event.target.files[0];
+        if (file) {
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                this._toastService.error('File size must be less than 10MB');
+                return;
+            }
+            this.selectedFile = file;
+        }
+    }
+
+    removeSelectedFile(): void {
+        this.selectedFile = null;
     }
 
     onStartEditComment(comment: ITodoComment): void {

@@ -64,6 +64,8 @@ export interface ITodoComment {
     username: string;
     user_photo?: string | null;
     content: string;
+    attachment_url?: string | null;
+    attachment_name?: string | null;
     created_at?: string;
 }
 

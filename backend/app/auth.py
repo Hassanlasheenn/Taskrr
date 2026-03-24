@@ -14,7 +14,7 @@ from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from .cache import invalidate_user_list_caches
 from .services.email_service import EmailService
 from .routers.notifications import create_welcome_notification
-from .routers.users import get_photo_url
+from .utils import get_photo_url
 
 ph = PasswordHasher()
 email_service = EmailService()

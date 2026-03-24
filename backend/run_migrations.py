@@ -32,6 +32,7 @@ from migrations.add_todo_comments_table import run_migration as migration12
 from migrations.add_due_date_column import run_migration as migration13
 from migrations.add_reminder_sent_at_column import migrate as migration14
 from migrations.add_verification_fields import run_migration as migration15
+from migrations.add_comment_attachments import migrate as migration16
 
 from app.database import engine
 
@@ -60,6 +61,7 @@ def run_all_migrations():
         ("Add due_date column", migration13),
         ("Add reminder_sent_at column", migration14),
         ("Add email verification fields", migration15),
+        ("Add comment attachments", migration16),
     ]
     
     # We don't open a session here because each migration opens its own

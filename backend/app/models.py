@@ -70,6 +70,8 @@ class TodoComment(Base):
     todo_id = Column(Integer, ForeignKey("todos.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
+    attachment_url = Column(String(500), nullable=True)
+    attachment_name = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     todo = relationship("Todo", back_populates="comments", foreign_keys=[todo_id])

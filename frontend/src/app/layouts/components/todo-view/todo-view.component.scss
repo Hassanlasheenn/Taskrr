@@ -885,3 +885,84 @@
 .todo-view-comment-submit {
     margin-top: 0;
 }
+
+.attachment-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border-color);
+    background: var(--bg-soft);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    i { font-size: 1.25rem; }
+
+    &:hover:not(:disabled) {
+        border-color: var(--primary-gradient-start);
+        color: var(--primary-gradient-start);
+        background: rgba(107, 207, 209, 0.05);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: default;
+    }
+}
+
+.selected-file-preview {
+    background: rgba(107, 207, 209, 0.1);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(107, 207, 209, 0.2);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+
+    i { color: var(--primary-gradient-start); }
+    
+    .file-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .btn-remove-file {
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        padding: 0;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        
+        &:hover { color: #dc3545; }
+    }
+}
+
+.todo-view-comment-attachment {
+    .attachment-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.75rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--card-border-color);
+        border-radius: 8px;
+        color: var(--primary-gradient-start);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &:hover {
+            border-color: var(--primary-gradient-start);
+            background: rgba(107, 207, 209, 0.05);
+        }
+
+        i { font-size: 1rem; }
+    }
+}

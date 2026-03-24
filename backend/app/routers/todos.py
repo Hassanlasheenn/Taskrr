@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
-from typing import List
+from typing import List, Optional
 from .. import database, models, schemas
 from ..routers.notifications import create_notification
 from ..services.notification_service import notification_manager
@@ -18,10 +18,13 @@ from ..cache import (
     PREFIX_TODO_COMMENTS,
 )
 from ..config import CACHE_TTL_TODO_LIST, CACHE_TTL_TODO_DETAIL, CACHE_TTL_TODO_COMMENTS
+from ..utils import get_photo_url
+from ..services.storage_service import S3StorageService
 
 router = APIRouter(prefix="/todos", tags=["todos"])
 
 email_service = EmailService()
+storage_service = S3StorageService()
 
 
 @router.get("", response_model=schemas.TodoListResponse)
@@ -334,6 +337,7 @@ def get_todo(
 
 @router.get("/{todo_id}/comments", response_model=schemas.CommentListResponse)
 def get_todo_comments(
+    request: Request,
     todo_id: int,
     user_id: int,
     db: Session = Depends(database.get_db)
@@ -345,57 +349,116 @@ def get_todo_comments(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
     if not _can_access_todo(todo_db, user_id, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to view this todo")
+    
     cached = cache_get(cache_key)
     if cached is not None:
-        return schemas.CommentListResponse(comments=[schemas.CommentResponse(**c) for c in cached])
-    comments = db.query(models.TodoComment).filter(models.TodoComment.todo_id == todo_id).order_by(models.TodoComment.created_at.asc()).all()
+        comments = []
+        for c in cached:
+            # Process the raw photo path from cache into a full URL
+            c['user_photo'] = get_photo_url(request, c.get('user_photo'))
+            comments.append(schemas.CommentResponse(**c))
+        return schemas.CommentListResponse(comments=comments)
+        
+    # Join with User table to get author info efficiently
+    comments_with_authors = (
+        db.query(models.TodoComment, models.User)
+        .join(models.User, models.TodoComment.user_id == models.User.id)
+        .filter(models.TodoComment.todo_id == todo_id)
+        .order_by(models.TodoComment.created_at.asc())
+        .all()
+    )
+    
     result = []
-    for c in comments:
-        author = db.query(models.User).filter(models.User.id == c.user_id).first()
-        username = author.username if author else f"User#{c.user_id}"
-        user_photo = getattr(author, 'profile_pic', None) if author else None
-        result.append(schemas.CommentResponse(
+    cache_data = []
+    
+    for c, author in comments_with_authors:
+        # Create the response object with full URL
+        response_item = schemas.CommentResponse(
             id=c.id,
             todo_id=c.todo_id,
             user_id=c.user_id,
-            username=username,
-            user_photo=user_photo,
+            username=author.username,
+            user_photo=get_photo_url(request, author.profile_pic),
             content=c.content,
+            attachment_url=c.attachment_url,
+            attachment_name=c.attachment_name,
             created_at=c.created_at,
-        ))
-    cache_set(cache_key, [r.model_dump(mode="json") for r in result], CACHE_TTL_TODO_COMMENTS)
+        )
+        result.append(response_item)
+        
+        # Prepare cache data with RAW photo path
+        cache_item = response_item.model_dump(mode="json")
+        cache_item['user_photo'] = author.profile_pic
+        cache_data.append(cache_item)
+        
+    cache_set(cache_key, cache_data, CACHE_TTL_TODO_COMMENTS)
     return schemas.CommentListResponse(comments=result)
 
 
 @router.post("/{todo_id}/comments", response_model=schemas.CommentResponse, status_code=status.HTTP_201_CREATED)
 async def create_todo_comment(
+    request: Request,
     todo_id: int,
     user_id: int,
-    body: schemas.CommentCreate,
+    content: str = Form(...),
+    mentioned_user_ids: Optional[str] = Form(None), # JSON string
+    attachment: Optional[UploadFile] = File(None),
     db: Session = Depends(database.get_db)
 ):
-    """Add a comment to a todo. User must be creator or assigned to the todo."""
+    """Add a comment to a todo with an optional attachment."""
     todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
     if not todo_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
     if not _can_access_todo(todo_db, user_id, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to comment on this todo")
-    content = (body.content or "").strip()
-    if not content:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Comment content is required")
+    
+    content = (content or "").strip()
+    if not content and not attachment:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Comment content or attachment is required")
+    
     author = db.query(models.User).filter(models.User.id == user_id).first()
     if not author:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    comment = models.TodoComment(todo_id=todo_id, user_id=user_id, content=content)
+    
+    # Handle attachment
+    attachment_url = None
+    attachment_name = None
+    if attachment:
+        file_content = await attachment.read()
+        attachment_url = storage_service.upload_file(file_content, attachment.filename or "file")
+        attachment_name = attachment.filename
+
+    comment = models.TodoComment(
+        todo_id=todo_id, 
+        user_id=user_id, 
+        content=content,
+        attachment_url=attachment_url,
+        attachment_name=attachment_name
+    )
     db.add(comment)
     db.commit()
     db.refresh(comment)
     _add_comment_history(db, todo_id, comment.id, user_id, models.TodoCommentHistoryAction.CREATED.value, content_before=None, content_after=content)
 
+    # Handle mentions
+    author_username = author.username or "Someone"
+    todo_title = todo_db.title or "Todo"
+    
+    if mentioned_user_ids:
+        try:
+            import json
+            ids = json.loads(mentioned_user_ids)
+            for m_id in ids:
+                if m_id == user_id: continue
+                mentioned_user = db.query(models.User).filter(models.User.id == m_id).first()
+                if mentioned_user:
+                    message = f"{author_username} mentioned you in a comment on todo: {todo_title}"
+                    await create_notification(db, mentioned_user.id, todo_id, message, author_username, mentioned_user.email or "", todo_title)
+        except:
+            pass
+
     # Notify the other party: admin comments -> notify assigned user; user comments -> notify todo creator
     author_is_admin = author.role == models.UserRole.ADMIN.value
-    todo_title = todo_db.title or "Todo"
-    author_username = author.username or "Someone"
 
     if author_is_admin:
         # Admin commented: notify the user assigned to this todo (if any and not self)
@@ -403,48 +466,14 @@ async def create_todo_comment(
             assigned_user = db.query(models.User).filter(models.User.id == todo_db.assigned_to_user_id).first()
             if assigned_user:
                 message = f"{author_username} commented on todo: {todo_title}"
-                await create_notification(
-                    db,
-                    assigned_user.id,
-                    todo_id,
-                    message,
-                    author_username,
-                    assigned_user.email or "",
-                    todo_title,
-                )
+                await create_notification(db, assigned_user.id, todo_id, message, author_username, assigned_user.email or "", todo_title)
     else:
         # User (non-admin) commented: notify the todo creator (admin/owner)
         if todo_db.user_id != user_id:
             creator = db.query(models.User).filter(models.User.id == todo_db.user_id).first()
             if creator:
                 message = f"{author_username} commented on todo: {todo_title}"
-                await create_notification(
-                    db,
-                    creator.id,
-                    todo_id,
-                    message,
-                    author_username,
-                    creator.email or "",
-                    todo_title,
-                )
-
-    # Notify mentioned users
-    for mentioned_id in body.mentioned_user_ids or []:
-        if mentioned_id == user_id:
-            continue
-        mentioned_user = db.query(models.User).filter(models.User.id == mentioned_id).first()
-        if not mentioned_user:
-            continue
-        message = f"{author_username} mentioned you in a comment on todo: {todo_title}"
-        await create_notification(
-            db,
-            mentioned_user.id,
-            todo_id,
-            message,
-            author_username,
-            mentioned_user.email or "",
-            todo_title,
-        )
+                await create_notification(db, creator.id, todo_id, message, author_username, creator.email or "", todo_title)
 
     invalidate_todo_comments(todo_id)
     return schemas.CommentResponse(
@@ -452,14 +481,17 @@ async def create_todo_comment(
         todo_id=comment.todo_id,
         user_id=comment.user_id,
         username=author.username,
-        user_photo=getattr(author, 'profile_pic', None),
+        user_photo=get_photo_url(request, author.profile_pic),
         content=comment.content,
+        attachment_url=comment.attachment_url,
+        attachment_name=comment.attachment_name,
         created_at=comment.created_at,
     )
 
 
 @router.put("/{todo_id}/comments/{comment_id}", response_model=schemas.CommentResponse)
 def update_todo_comment(
+    request: Request,
     todo_id: int,
     comment_id: int,
     user_id: int,
@@ -495,8 +527,10 @@ def update_todo_comment(
         todo_id=comment_db.todo_id,
         user_id=comment_db.user_id,
         username=author.username if author else f"User#{comment_db.user_id}",
-        user_photo=getattr(author, 'profile_pic', None) if author else None,
+        user_photo=get_photo_url(request, author.profile_pic) if author else None,
         content=comment_db.content,
+        attachment_url=comment_db.attachment_url,
+        attachment_name=comment_db.attachment_name,
         created_at=comment_db.created_at,
     )
 
@@ -522,6 +556,11 @@ def delete_todo_comment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     if comment_db.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own comment")
+    
+    # Delete attachment if exists
+    if comment_db.attachment_url:
+        storage_service.delete_file(comment_db.attachment_url)
+        
     comment_id_val = comment_db.id
     content_before = comment_db.content
     db.delete(comment_db)

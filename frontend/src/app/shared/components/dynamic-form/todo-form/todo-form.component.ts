@@ -111,8 +111,24 @@ export class TodoFormComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.isAdmin = this._authService.isAdmin();
+        this._updateFieldsForRole();
         this.form = this._formService.initializeForm(this.fields);
         this.loadUsers();
+    }
+
+    private _updateFieldsForRole(): void {
+        const userFieldIndex = this.fields.findIndex(f => f.formControlName === 'assigned_to_user_id');
+        if (userFieldIndex !== -1) {
+            if (this.isAdmin) {
+                this.fields[userFieldIndex].required = false;
+                this.fields[userFieldIndex].validations = [];
+            } else {
+                this.fields[userFieldIndex].required = true;
+                this.fields[userFieldIndex].validations = [
+                    { type: ValidatorTypes.REQUIRED, message: 'Assignee is required' }
+                ];
+            }
+        }
     }
 
     ngOnDestroy(): void {
@@ -157,7 +173,13 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 userOptions.unshift({ key: currentUser.id, value: `${currentUser.username} (Me)` });
             }
             
-            this.fields[userFieldIndex].options = userOptions;
+            if (this.isAdmin) {
+                // Admins get the Unassigned option
+                this.fields[userFieldIndex].options = [{ key: null, value: 'Unassigned' }, ...userOptions];
+            } else {
+                // Non-admins must choose a user
+                this.fields[userFieldIndex].options = userOptions;
+            }
         }
     }
 
@@ -309,6 +331,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         ];
         
         this.fields = baseFields;
+        this._updateFieldsForRole();
         this.form = this._formService.initializeForm(this.fields);
         this.updateUserDropdownField();
         
@@ -377,6 +400,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         ];
         
         this.fields = baseFields;
+        this._updateFieldsForRole();
         this.form = this._formService.initializeForm(this.fields);
         this.updateUserDropdownField();
         

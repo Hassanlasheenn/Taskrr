@@ -19,6 +19,7 @@ from ..cache import (
 )
 from ..config import CACHE_TTL_USER_LISTS, CACHE_TTL_USER_PROFILE
 from ..services.storage_service import S3StorageService
+from ..utils import get_photo_url
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["users"])
@@ -27,36 +28,6 @@ storage_service = S3StorageService()
 # Local directory configuration (for fallback/legacy)
 STATIC_DIR = "static"
 PROFILE_PICS_DIR = os.path.join(STATIC_DIR, "profile_pics")
-
-
-def get_photo_url(request: Request, photo_path: Optional[str]) -> Optional[str]:
-    """
-    Helper to convert stored path to a full public URL.
-    Handles both S3 full URLs and local relative paths.
-    Ensures correct protocol and host when behind a reverse proxy.
-    """
-    if not photo_path:
-        return None
-    
-    # If it's already a full URL (S3, external) or data URI, return as is
-    if photo_path.startswith(("http", "data:")):
-        return photo_path
-        
-    try:
-        # Check for proxy headers to construct the correct base URL
-        # Priority: X-Forwarded headers -> Host header -> Request URL info
-        proto = request.headers.get("x-forwarded-proto") or request.url.scheme
-        host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
-        
-        # If host contains the upstream name, we might still have an issue, 
-        # but the Nginx config fix should handle that.
-        base_url = f"{proto}://{host}"
-        
-        filename = os.path.basename(photo_path)
-        return f"{base_url}/static/profile_pics/{filename}"
-    except Exception:
-        # Fallback if request info is not fully available
-        return photo_path
 
 
 @router.get("/mentionable", response_model=List[schemas.UserListResponse])

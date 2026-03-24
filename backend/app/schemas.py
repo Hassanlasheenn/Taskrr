@@ -124,6 +124,8 @@ class CommentResponse(BaseModel):
     username: str
     user_photo: Optional[str] = None
     content: str
+    attachment_url: Optional[str] = None
+    attachment_name: Optional[str] = None
     created_at: Optional[datetime] = None
 
     class Config:

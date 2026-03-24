@@ -60,12 +60,18 @@ export class TodoService {
             .pipe(take(1));
     }
 
-    addTodoComment(userId: number, todoId: number, content: string, mentionedUserIds?: number[]): Observable<ITodoComment> {
-        const body = mentionedUserIds?.length
-            ? { content, mentioned_user_ids: mentionedUserIds }
-            : { content };
+    addTodoComment(userId: number, todoId: number, content: string, mentionedUserIds?: number[], attachment?: File): Observable<ITodoComment> {
+        const formData = new FormData();
+        formData.append('content', content);
+        if (mentionedUserIds?.length) {
+            formData.append('mentioned_user_ids', JSON.stringify(mentionedUserIds));
+        }
+        if (attachment) {
+            formData.append('attachment', attachment);
+        }
+
         return this._http
-            .post<ITodoComment>(`${this._baseUrl}/${todoId}/comments?user_id=${userId}`, body, {
+            .post<ITodoComment>(`${this._baseUrl}/${todoId}/comments?user_id=${userId}`, formData, {
                 withCredentials: true
             })
             .pipe(take(1));

@@ -81,6 +81,46 @@ class S3StorageService:
             logger.error(f"❌ Image processing or S3 upload failed: {e}")
             return None
 
+    def upload_file(self, file_content: bytes, filename: str, folder: str = "attachments") -> Optional[str]:
+        """
+        Uploads a general file to S3.
+        Returns the full S3 URL or None if failed.
+        """
+        if not self.s3_client:
+            return None
+
+        try:
+            # Generate unique filename to avoid collisions
+            ext = os.path.splitext(filename)[1].lower()
+            unique_filename = f"{folder}/{uuid.uuid4().hex}{ext}"
+            
+            # Detect content type (simplistic)
+            content_type = 'application/octet-stream'
+            if ext in ['.jpg', '.jpeg', '.png', '.webp']: content_type = 'image/jpeg'
+            elif ext == '.pdf': content_type = 'application/pdf'
+            elif ext in ['.doc', '.docx']: content_type = 'application/msword'
+            
+            # Upload to S3
+            self.s3_client.put_object(
+                Bucket=self.bucket_name,
+                Key=unique_filename,
+                Body=file_content,
+                ContentType=content_type
+            )
+            
+            # Construct public URL
+            if self.region == 'us-east-1':
+                url = f"https://{self.bucket_name}.s3.amazonaws.com/{unique_filename}"
+            else:
+                url = f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{unique_filename}"
+                
+            logger.info(f"✅ Successfully uploaded file to S3: {url}")
+            return url
+
+        except Exception as e:
+            logger.error(f"❌ S3 General upload failed: {e}")
+            return None
+
     def delete_file(self, file_url: str) -> bool:
         """Deletes a file from S3 given its full URL."""
         if not self.s3_client or not file_url:
