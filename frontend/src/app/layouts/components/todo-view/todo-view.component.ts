@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { ActivatedRoute, Router, RouterLink } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { Observable, Subject } from "rxjs";
 import { map, takeUntil } from "rxjs/operators";
 import { AuthService } from "../../../auth/services/auth.service";
@@ -43,7 +43,7 @@ const PRIORITY_OPTIONS: PriorityOption[] = [
     templateUrl: './todo-view.component.html',
     styleUrls: ['./todo-view.component.scss'],
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterLink, ParseMentionsPipe, TabsComponent, DashboardSideNavComponent, SidebarComponent],
+    imports: [CommonModule, FormsModule, ParseMentionsPipe, TabsComponent, DashboardSideNavComponent, SidebarComponent],
 })
 export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactivate {
     private readonly _destroy$ = new Subject<void>();

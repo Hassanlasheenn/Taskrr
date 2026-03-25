@@ -166,7 +166,7 @@
 
                                         <div class="todo-view-comment-edit-actions d-flex align-items-center gap-2">
                                             <button type="button" class="todo-view-comment-edit-cancel" (click)="onCancelEditComment()" [disabled]="savingEdit">Cancel</button>
-                                            <button type="button" class="todo-view-save-btn todo-view-comment-edit-save" (click)="onSaveEditComment()" [disabled]="savingEdit || (!editContent?.trim() && !selectedEditFile && !editAttachmentUrl)">{{ savingEdit ? 'Saving...' : 'Save' }}</button>
+                                            <button type="button" class="todo-view-save-btn todo-view-comment-edit-save" (click)="onSaveEditComment()" [disabled]="savingEdit || (!editContent.trim() && !selectedEditFile && !editAttachmentUrl)">{{ savingEdit ? 'Saving...' : 'Save' }}</button>
                                             
                                             <!-- Expandable Extras Menu (Edit) -->
                                             <div class="comment-extras-container d-flex align-items-center" [class.active]="isExtrasMenuOpen">
@@ -309,7 +309,7 @@
                                     type="button"
                                     class="todo-view-save-btn todo-view-comment-submit"
                                     (click)="onAddComment()"
-                                    [disabled]="addingComment || (!newCommentText?.trim() && !selectedFile)"
+                                    [disabled]="addingComment || (!newCommentText.trim() && !selectedFile)"
                                     aria-label="Add"
                                 >
                                     {{ addingComment ? 'Adding...' : 'Add' }}
