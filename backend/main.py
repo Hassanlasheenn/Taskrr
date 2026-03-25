@@ -116,8 +116,8 @@ if environment == "production":
     else:
         # Default production origin
         allowed_origins = [
-            "https://full-stack-todo-i0ggb4p23-hassanlasheenns-projects.vercel.app",
-            "https://hassanlasheenn.github.io",
+            "https://taskrr.app",
+            "https://www.taskrr.app",
         ]
 else:
     # Development: Only allow localhost

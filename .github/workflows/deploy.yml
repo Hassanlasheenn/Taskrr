@@ -5,103 +5,50 @@ on:
     branches:
       - main
       - master
-      - develop
     paths:
       - 'frontend/**'
       - 'backend/**'
-      - '.github/workflows/deploy.yml'
-  pull_request:
-    branches:
-      - main
-      - master
-      - develop
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
+      - 'nginx/**'
+      - 'docker-compose.prod.yml'
+      - 'Dockerfile.prod'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
-    inputs:
-      build_frontend:
-        description: 'Build and deploy frontend'
-        required: false
-        default: 'true'
-        type: boolean
-      build_backend:
-        description: 'Build and deploy backend'
-        required: false
-        default: 'true'
-        type: boolean
-      force_build_all:
-        description: 'Force build everything (ignores change detection)'
-        required: false
-        default: 'true'
-        type: boolean
 
 jobs:
   detect-changes:
     name: Detect Changes
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
     outputs:
-      frontend: ${{ steps.set-outputs.outputs.frontend }}
-      backend: ${{ steps.set-outputs.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      any_changes: ${{ steps.filter.outputs.any_changes }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check if first push
-        id: first-push
-        run: |
-          if [ -z "${{ github.event.before }}" ] || [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
-            echo "first=true" >> $GITHUB_OUTPUT
-          else
-            echo "first=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Detect changes
         uses: dorny/paths-filter@v2
         id: filter
-        if: |
-          steps.first-push.outputs.first != 'true' &&
-          (github.event_name != 'workflow_dispatch' || github.event.inputs.force_build_all != 'true')
         with:
-          base: ${{ github.event.before || 'HEAD~1' }}
           filters: |
             frontend:
               - 'frontend/**'
-              - '.github/workflows/deploy.yml'
             backend:
               - 'backend/**'
+            any_changes:
+              - 'frontend/**'
+              - 'backend/**'
+              - 'nginx/**'
+              - 'docker-compose.prod.yml'
+              - 'Dockerfile.prod'
               - '.github/workflows/deploy.yml'
-          list-files: shell
-          
-      - name: Set outputs
-        id: set-outputs
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            if [ "${{ github.event.inputs.force_build_all }}" == "true" ]; then
-              echo "frontend=${{ github.event.inputs.build_frontend }}" >> $GITHUB_OUTPUT
-              echo "backend=${{ github.event.inputs.build_backend }}" >> $GITHUB_OUTPUT
-            else
-              echo "frontend=${{ steps.filter.outputs.frontend }}" >> $GITHUB_OUTPUT
-              echo "backend=${{ steps.filter.outputs.backend }}" >> $GITHUB_OUTPUT
-            fi
-          elif [ "${{ steps.first-push.outputs.first }}" == "true" ]; then
-            echo "frontend=true" >> $GITHUB_OUTPUT
-            echo "backend=true" >> $GITHUB_OUTPUT
-          else
-            echo "frontend=${{ steps.filter.outputs.frontend }}" >> $GITHUB_OUTPUT
-            echo "backend=${{ steps.filter.outputs.backend }}" >> $GITHUB_OUTPUT
-          fi
 
-  build-frontend:
-    name: Build Frontend
+  validate-frontend:
+    name: Validate Frontend Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true'
+    if: needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -116,137 +63,14 @@ jobs:
         working-directory: ./frontend
         run: npm install
 
-      - name: Run linter (if configured)
+      - name: Test Production Build
         working-directory: ./frontend
-        run: npm run lint || echo "Linter not configured, skipping..."
+        run: npm run build -- --configuration=production
 
-      - name: Replace API URL for production
-        working-directory: ./frontend
-        env:
-          API_BASE_URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.yourdomain.com' }}
-        run: |
-          if [ ! -f src/environments/environment.prod.ts ]; then
-            echo "environment.prod.ts not found" && exit 1
-          fi
-          if [ -f scripts/replace-api-url.js ]; then
-            node scripts/replace-api-url.js "$API_BASE_URL" || true
-          fi
-          sed -i "s|apiBaseUrl: '.*'|apiBaseUrl: '$API_BASE_URL'|g" src/environments/environment.prod.ts 2>/dev/null || \
-          sed -i "s|apiBaseUrl: \".*\"|apiBaseUrl: '$API_BASE_URL'|g" src/environments/environment.prod.ts
-          grep -q "apiBaseUrl:" src/environments/environment.prod.ts || (echo "apiBaseUrl not found after replacement" && exit 1)
-
-      - name: Build Angular application (Production)
-        working-directory: ./frontend
-        run: npm run build -- --base-href /TaskHub/
-        env:
-          NODE_OPTIONS: '--max-old-space-size=4096'
-
-      - name: Verify build output
-        working-directory: ./frontend
-        run: |
-          BUILD_OUTPUT=""
-          for path in dist/frontend/browser dist/frontend dist/browser dist; do
-            [ -f "$path/index.html" ] && BUILD_OUTPUT="$path" && break
-          done
-          if [ -z "$BUILD_OUTPUT" ]; then
-            find dist -name "index.html" 2>/dev/null; exit 1
-          fi
-          echo "BUILD_OUTPUT_PATH=$BUILD_OUTPUT" >> $GITHUB_ENV
-
-      - name: Prepare frontend artifacts
-        working-directory: ./frontend
-        run: |
-          BUILD_OUTPUT="${BUILD_OUTPUT_PATH:-dist/frontend}"
-          mkdir -p ../frontend-dist
-          cp -r "$BUILD_OUTPUT"/* ../frontend-dist/ 2>/dev/null || cp -r "$BUILD_OUTPUT"/. ../frontend-dist/ 2>/dev/null || true
-
-      - name: Upload frontend build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend-dist
-          retention-days: 7
-
-  build-backend:
-    name: Build Backend
+  validate-backend:
+    name: Validate Backend Dependencies
     needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      REDIS_URL: ${{ secrets.REDIS_URL || 'redis://localhost:6379/0' }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        working-directory: ./backend
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            pip install fastapi uvicorn sqlalchemy pyodbc python-dotenv argon2-cffi PyJWT
-          fi
-
-      - name: Run Python linter (if configured)
-        working-directory: ./backend
-        run: |
-          pip install pylint || echo "Pylint not available"
-          pylint app/ --disable=all --enable=E,F || echo "Linting skipped"
-
-      - name: Run type checking (if configured)
-        working-directory: ./backend
-        run: |
-          pip install mypy || echo "MyPy not available"
-          mypy app/ --ignore-missing-imports || echo "Type checking skipped"
-
-      - name: Test backend (if tests exist)
-        working-directory: ./backend
-        run: |
-          if [ -f pytest.ini ] || [ -d tests ]; then
-            pip install pytest pytest-asyncio
-            pytest tests/ -v || echo "Tests not found or failed"
-          else
-            echo "No tests found, skipping..."
-          fi
-
-      - name: Create backend artifact
-        working-directory: ./backend
-        run: |
-          mkdir -p ../backend-artifact
-          cp -r app ../backend-artifact/
-          cp main.py requirements.txt ../backend-artifact/ 2>/dev/null || true
-          cp -r migrations ../backend-artifact/ 2>/dev/null || true
-
-      - name: Upload backend build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-artifact
-          path: backend-artifact
-          retention-days: 7
-
-  deploy-database:
-    name: Deploy Database Migrations
-    needs: [detect-changes]
-    if: |
-      needs.detect-changes.outputs.backend == 'true' &&
-      github.event_name == 'push' &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
+    if: needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -261,125 +85,28 @@ jobs:
         working-directory: ./backend
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            pip install fastapi uvicorn sqlalchemy pyodbc python-dotenv argon2-cffi PyJWT
-          fi
+          pip install -r requirements.txt
 
-      - name: Run Database Migrations
-        env:
-          AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-          RENDER_DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
-          AWS_RDS_CONNECTION_STRING: ${{ secrets.AWS_RDS_CONNECTION_STRING }}
+      - name: Syntax Check (including Migrations)
+        working-directory: ./backend
         run: |
-          DATABASE_URL="${AZURE_SQL_CONNECTION_STRING:-${RAILWAY_DATABASE_URL:-${RENDER_DATABASE_URL:-$AWS_RDS_CONNECTION_STRING}}}"
-          if [ -z "$DATABASE_URL" ]; then
-            echo "No database secret set; skipping migrations." && exit 0
-          fi
-          export DATABASE_URL
-          python -m pip install --upgrade pip -q
-          pip install -r backend/requirements.txt -q
-          (cd backend && [ -f run_migrations.py ] && python run_migrations.py) || true
-
-  deploy:
-    name: Deploy Application
-    needs: [detect-changes, build-frontend, build-backend, deploy-database]
-    if: |
-      always() &&
-      (needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.backend == 'true') &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download frontend artifacts
-        if: |
-          needs.detect-changes.outputs.frontend == 'true' &&
-          needs.build-frontend.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend-dist
-          continue-on-error: false
-          
-      - name: Fix frontend artifact structure
-        if: needs.detect-changes.outputs.frontend == 'true'
-        run: |
-          [ -d "frontend-dist/frontend" ] && mv frontend-dist/frontend/* frontend-dist/ 2>/dev/null; rmdir frontend-dist/frontend 2>/dev/null || true
-          [ -d "frontend-dist/browser" ] && mv frontend-dist/browser/* frontend-dist/ 2>/dev/null; rmdir frontend-dist/browser 2>/dev/null || true
-          [ -f "frontend-dist/index.html" ] || (find frontend-dist -name "index.html" -type f; exit 1)
-
-      - name: Download backend artifacts
-        if: |
-          needs.detect-changes.outputs.backend == 'true' &&
-          needs.build-backend.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-artifact
-          path: backend-artifact
-          continue-on-error: false
-
-      - name: Display deployment summary
-        run: |
-          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Changes Detected:" >> $GITHUB_STEP_SUMMARY
-          echo "- Frontend: ${{ needs.detect-changes.outputs.frontend }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Backend: ${{ needs.detect-changes.outputs.backend }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Artifacts Ready for Deployment" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ needs.detect-changes.outputs.frontend }}" == "true" ]; then
-            echo "✅ Frontend build artifacts available" >> $GITHUB_STEP_SUMMARY
-          fi
-          if [ "${{ needs.detect-changes.outputs.backend }}" == "true" ]; then
-            echo "✅ Backend build artifacts available" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Prepare GitHub Pages deployment
-        if: needs.detect-changes.outputs.frontend == 'true'
-        run: |
-          [ -f "frontend-dist/index.html" ] || exit 1
-          # Fix for Angular SPA routing on GitHub Pages:
-          # Copy index.html to 404.html so that direct links/refreshes work
-          cp frontend-dist/index.html frontend-dist/404.html
-          # Create .nojekyll to prevent GitHub from ignoring files starting with underscores
-          touch frontend-dist/.nojekyll
-
-      - name: Deploy to GitHub Pages
-        if: needs.detect-changes.outputs.frontend == 'true'
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: frontend-dist
-          branch: gh-pages
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Deployment Complete
-        run: |
-          echo "Deployment finished."
-          if [ "${{ needs.detect-changes.outputs.frontend }}" == "true" ]; then
-            echo "Frontend will be available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
-          fi
+          # Check for syntax errors in the entire backend and migrations folder
+          python -m compileall app/ migrations/ main.py
 
   deploy-aws:
     name: Deploy to AWS (Self-Hosted)
-    needs: [detect-changes]
+    needs: [detect-changes, validate-frontend, validate-backend]
+    # This job runs if any changes were detected AND the validation jobs (if they ran) passed
     if: |
+      always() &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
+      (needs.detect-changes.outputs.any_changes == 'true' || github.event_name == 'workflow_dispatch') &&
+      (needs.validate-frontend.result == 'success' || needs.validate-frontend.result == 'skipped') &&
+      (needs.validate-backend.result == 'success' || needs.validate-backend.result == 'skipped')
     runs-on: self-hosted
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Deploy via Docker Compose
+      - name: Sync Code and Deploy
         run: |
           cd ~/TaskHub
           git fetch origin master

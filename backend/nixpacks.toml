@@ -1,7 +1,0 @@
-[phases.setup]
-nixPkgs = ["unixodbc", "unixodbcDev"]
-
-[phases.install]
-cmds = [
-  "pip install -r requirements.txt"
-]
