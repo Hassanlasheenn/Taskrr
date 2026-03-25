@@ -2,6 +2,36 @@
 <app-toast />
 <app-confirmation-dialog />
 <app-header></app-header>
-<div class="page-wrapper">
-  <router-outlet />
+
+<div class="app-layout" [class.logged-in]="isLoggedIn">
+  <!-- Desktop Side Nav (Visible on lg screens) -->
+  <aside class="side-nav-container d-none d-lg-block" *ngIf="isLoggedIn">
+    <app-dashboard-side-nav
+      [activeSection]="activeSection"
+      (sectionChange)="onSectionChange($event)"
+    />
+  </aside>
+
+  <!-- Main Content -->
+  <main class="page-wrapper">
+    <router-outlet />
+  </main>
+</div>
+
+<!-- Mobile Navigation Sidebar -->
+<div class="d-lg-none" *ngIf="isLoggedIn">
+  <app-sidebar
+    [isOpen]="isNavSidebarOpen"
+    [title]="'Taskrr'"
+    [width]="'280px'"
+    [position]="'left'"
+    (closed)="onNavSidebarClose()"
+  >
+    <div class="mobile-nav-content">
+      <app-dashboard-side-nav
+        [activeSection]="activeSection"
+        (sectionChange)="onSectionChange($event); onNavSidebarClose()"
+      />
+    </div>
+  </app-sidebar>
 </div>

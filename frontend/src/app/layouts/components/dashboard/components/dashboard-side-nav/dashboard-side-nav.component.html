@@ -1,9 +1,9 @@
-<nav class="dashboard-side-nav d-flex justify-content-center justify-content-lg-start p-2 p-lg-3">
-    <ul class="side-nav-list d-flex flex-row flex-lg-column flex-wrap flex-lg-nowrap justify-content-center justify-content-lg-start align-items-center align-items-lg-stretch gap-2 list-unstyled m-0 p-0 w-100">
-        <li *ngFor="let item of navItems; trackBy: trackById" class="flex-lg-grow-0">
+<nav class="dashboard-side-nav-container">
+    <ul class="side-nav-list">
+        <li *ngFor="let item of navItems; trackBy: trackById">
             <button
                 type="button"
-                class="side-nav-item d-flex flex-column flex-sm-row align-items-center justify-content-center justify-content-lg-start gap-1 gap-sm-2 w-100 px-3 py-2 text-center text-lg-start"
+                class="side-nav-item"
                 [class.active]="activeSection === item.section"
                 (click)="onSectionClick(item.section)"
             >
@@ -13,4 +13,3 @@
         </li>
     </ul>
 </nav>
-

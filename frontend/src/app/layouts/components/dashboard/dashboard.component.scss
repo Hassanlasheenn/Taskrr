@@ -1,10 +1,18 @@
 .dashboard-wrapper {
     max-width: 1400px;
-    margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
     overflow: visible;
     min-height: 0;
+    padding: 1.5rem 0;
+
+    @media (max-width: 991.98px) {
+        padding: 1rem;
+    }
+}
+
+.dashboard-container {
+    width: 100%;
 }
 
 .filters-section {
@@ -52,6 +60,10 @@
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
     align-items: start;
+
+    @media (min-width: 1200px) {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .status-col {
@@ -281,6 +293,9 @@
             &:hover { 
                 color: var(--primary-gradient-end);
             }
+            &.delete:hover {
+                color: #ef4444;
+            }
         }
     }
 
@@ -314,6 +329,10 @@
     overflow: visible;
     transition: all 0.3s ease;
     padding: 0;
+
+    @media (min-width: 992px) {
+        padding-top: 1.5rem;
+    }
 
     .greeting-container {
         display: flex;

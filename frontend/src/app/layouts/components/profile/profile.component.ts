@@ -9,13 +9,9 @@ import { ProfileSections } from "../../enums/profile-sections.enum";
 import { PersonalDataComponent } from "./components/personal-data/personal-data.component";
 import { PosthogService } from "../../../core/services";
 import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
-import { Observable, Subject, map, takeUntil } from "rxjs";
+import { Observable, Subject, map } from "rxjs";
 import { Router } from "@angular/router";
-import { DashboardSideNavComponent } from "../dashboard/components/dashboard-side-nav/dashboard-side-nav.component";
-import { DashboardSections } from "../../enums/dashboard-sections.enum";
-import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { NavigationService } from "../../../core/services/navigation.service";
-import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.component";
 
 @Component({
     selector: 'app-profile',
@@ -24,9 +20,7 @@ import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.com
     standalone: true,
     imports: [
         CommonModule,
-        PersonalDataComponent,
-        DashboardSideNavComponent,
-        SidebarComponent
+        PersonalDataComponent
     ],
 })
 export class ProfileComponent implements OnInit, OnDestroy, CanComponentDeactivate {
@@ -35,7 +29,6 @@ export class ProfileComponent implements OnInit, OnDestroy, CanComponentDeactiva
     activeSection: ProfileSections = ProfileSections.PERSONAL_DATA;
     ProfileSections = ProfileSections;
     private readonly _destroy$ = new Subject<void>();
-    isNavSidebarOpen: boolean = false;
 
     constructor(
         private readonly _authService: AuthService,
@@ -49,28 +42,6 @@ export class ProfileComponent implements OnInit, OnDestroy, CanComponentDeactiva
 
     ngOnInit(): void {
         this.userData = this._authService.getCurrentUserData();
-
-        this._navService.toggleNavSidebar$
-            .pipe(takeUntil(this._destroy$))
-            .subscribe(() => {
-                this.isNavSidebarOpen = !this.isNavSidebarOpen;
-            });
-    }
-
-    onDashboardSectionChange(section: DashboardSections): void {
-        let path = '';
-        switch(section) {
-            case DashboardSections.CALENDAR: path = LayoutPaths.CALENDAR; break;
-            case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
-            case DashboardSections.USER_MANAGEMENT: path = LayoutPaths.ADMIN; break;
-            case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;
-            default: path = LayoutPaths.DASHBOARD; break;
-        }
-        this._router.navigate([path]);
-    }
-
-    onNavSidebarClose(): void {
-        this.isNavSidebarOpen = false;
     }
 
     onPersonalDataSubmit(event: { form: any; photoRemoved: boolean; updateCallback: (user: IUserResponse) => void }): void {

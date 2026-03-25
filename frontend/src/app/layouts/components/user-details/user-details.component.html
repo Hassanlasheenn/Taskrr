@@ -1,11 +1,5 @@
-<section class="user-details-wrapper p-2 p-sm-3 p-lg-4">
-    <div class="user-details-layout d-flex flex-column flex-lg-row align-items-stretch gap-3 gap-lg-4">
-        <div class="side-nav-wrapper d-none d-lg-block">
-            <app-dashboard-side-nav
-                (sectionChange)="onDashboardSectionChange($event)"
-            />
-        </div>
-
+<section class="user-details-wrapper">
+    <div class="user-details-layout">
         <div class="user-details-content flex-grow-1 d-flex flex-column">
             <header class="user-details-header mb-4" *ngIf="userData">
                 <div class="user-profile-summary">
@@ -228,20 +222,3 @@
             </div>        </div>
     </div>
 </section>
-
-<!-- Mobile Navigation Sidebar -->
-<div class="d-lg-none">
-    <app-sidebar
-        [isOpen]="isNavSidebarOpen"
-        [title]="'Taskrr'"
-        [width]="'280px'"
-        [position]="'left'"
-        (closed)="onNavSidebarClose()"
-    >
-        <div class="mobile-nav-content">
-            <app-dashboard-side-nav
-                (sectionChange)="onDashboardSectionChange($event); onNavSidebarClose()"
-            />
-        </div>
-    </app-sidebar>
-</div>

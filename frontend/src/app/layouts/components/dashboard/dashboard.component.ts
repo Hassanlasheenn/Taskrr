@@ -13,7 +13,6 @@ import { ConfirmationDialogService } from "../../../core/services/confirmation-d
 import { NavigationService } from "../../../core/services/navigation.service";
 import { TodoListComponent } from "../todo-list/todo-list.component";
 import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.component";
-import { DashboardSideNavComponent } from "./components/dashboard-side-nav/dashboard-side-nav.component";
 import { CalendarComponent } from "./components/calendar/calendar.component";
 import { TodoStatus as FilterStatus } from "./components/status-filter/status-filter.component";
 import { AdminPanelComponent } from "./components/admin-panel/admin-panel.component";
@@ -34,7 +33,6 @@ import { PosthogService } from "../../../core/services";
         RouterLink,
         TodoListComponent, 
         SidebarComponent, 
-        DashboardSideNavComponent, 
         CalendarComponent, 
         AdminPanelComponent,
         AdminComponent,
@@ -49,7 +47,6 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     todos: ITodo[] = [];
     totalTodos: number = 0;
     isSidebarOpen: boolean = false;
-    isNavSidebarOpen: boolean = false;
     editingTodo: ITodo | null = null;
     activeSection: DashboardSections = DashboardSections.DASHBOARD;
     DashboardSections = DashboardSections;
@@ -96,12 +93,6 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 if (notification.todo_id) {
                     this.loadTodos(false);
                 }
-            });
-
-        this._navService.toggleNavSidebar$
-            .pipe(takeUntil(this._destroy$))
-            .subscribe(() => {
-                this.isNavSidebarOpen = !this.isNavSidebarOpen;
             });
     }
 
@@ -159,10 +150,6 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         if (this.todoFormComponent) {
             this.todoFormComponent.resetForm();
         }
-    }
-
-    onNavSidebarClose(): void {
-        this.isNavSidebarOpen = false;
     }
 
     onTodoSubmit(todoData: ITodoCreate): void {
@@ -285,25 +272,6 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 this._loaderService.hide();
             }
         });
-    }
-
-    onSectionChange(section: DashboardSections): void {
-        this.activeSection = section;
-        this.searchQuery = '';
-        this.activeStatus = 'all';
-        this.activePriority = 'all';
-        this.selectedCategory = null;
-
-        // Navigate to the correct URL
-        let path = '';
-        switch(section) {
-            case DashboardSections.CALENDAR: path = LayoutPaths.CALENDAR; break;
-            case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
-            case DashboardSections.USER_MANAGEMENT: path = LayoutPaths.ADMIN; break;
-            case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;
-            default: path = LayoutPaths.DASHBOARD; break;
-        }
-        this._router.navigate([path]);
     }
 
     toggleSection(section: string): void {

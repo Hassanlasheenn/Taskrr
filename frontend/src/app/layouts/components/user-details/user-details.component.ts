@@ -10,17 +10,15 @@ import { TodoService } from "../../../core/services/todo.service";
 import { ITodoResponse, ITodo } from "../../../core/interfaces/todo.interface";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
-import { DashboardSideNavComponent } from "../dashboard/components/dashboard-side-nav/dashboard-side-nav.component";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { NavigationService } from "../../../core/services/navigation.service";
-import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.component";
 
 @Component({
     selector: 'app-user-details',
     templateUrl: './user-details.component.html',
     styleUrls: ['./user-details.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterLink, DashboardSideNavComponent, SidebarComponent]
+    imports: [CommonModule, RouterLink]
 })
 export class UserDetailsComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
@@ -29,7 +27,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     allTodos: ITodoResponse[] = [];
     readonly layoutPaths = LayoutPaths;
     trackById = trackById;
-    isNavSidebarOpen: boolean = false;
     collapsedSections: Set<string> = new Set();
     isAdmin: boolean = false;
 
@@ -53,12 +50,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         } else {
             this._router.navigate(['/']);
         }
-
-        this._navService.toggleNavSidebar$
-            .pipe(takeUntil(this._destroy$))
-            .subscribe(() => {
-                this.isNavSidebarOpen = !this.isNavSidebarOpen;
-            });
     }
 
     loadUserData(): void {
@@ -93,22 +84,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
                     this._toastService.error(error?.error?.detail || 'Failed to load user details');
                 }
             });
-    }
-
-    onDashboardSectionChange(section: DashboardSections): void {
-        let path = '';
-        switch(section) {
-            case DashboardSections.CALENDAR: path = LayoutPaths.CALENDAR; break;
-            case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
-            case DashboardSections.USER_MANAGEMENT: path = LayoutPaths.ADMIN; break;
-            case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;
-            default: path = LayoutPaths.DASHBOARD; break;
-        }
-        this._router.navigate([path]);
-    }
-
-    onNavSidebarClose(): void {
-        this.isNavSidebarOpen = false;
     }
 
     toggleSection(section: string): void {

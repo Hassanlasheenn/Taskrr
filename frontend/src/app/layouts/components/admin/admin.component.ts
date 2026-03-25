@@ -11,11 +11,9 @@ import { CardComponent } from "../../../shared/components/card/card.component";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
 import { PosthogService } from "../../../core/services";
 import { Router } from "@angular/router";
-import { DashboardSideNavComponent } from "../dashboard/components/dashboard-side-nav/dashboard-side-nav.component";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { NavigationService } from "../../../core/services/navigation.service";
-import { SidebarComponent } from "../../../shared/components/sidebar/sidebar.component";
 import { FormsModule } from "@angular/forms";
 
 @Component({
@@ -23,7 +21,7 @@ import { FormsModule } from "@angular/forms";
     templateUrl: './admin.component.html',
     styleUrls: ['./admin.component.scss'],
     standalone: true,
-    imports: [CommonModule, CardComponent, DashboardSideNavComponent, SidebarComponent, FormsModule]
+    imports: [CommonModule, CardComponent, FormsModule]
 })
 export class AdminComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
@@ -31,7 +29,6 @@ export class AdminComponent implements OnInit, OnDestroy {
     currentUserId: number | null = null;
     trackById = trackById;
     isAdmin: boolean = false;
-    isNavSidebarOpen: boolean = false;
     private isDeleting: boolean = false;
     private hasLoadedUsers: boolean = false;
     
@@ -73,12 +70,6 @@ export class AdminComponent implements OnInit, OnDestroy {
                     this.hasLoadedUsers = true;
                     this._toastService.error('Access denied. Admin privileges required.');
                 }
-            });
-
-        this._navService.toggleNavSidebar$
-            .pipe(takeUntil(this._destroy$))
-            .subscribe(() => {
-                this.isNavSidebarOpen = !this.isNavSidebarOpen;
             });
     }
 
@@ -185,10 +176,6 @@ export class AdminComponent implements OnInit, OnDestroy {
             default: path = LayoutPaths.DASHBOARD; break;
         }
         this._router.navigate([path]);
-    }
-
-    onNavSidebarClose(): void {
-        this.isNavSidebarOpen = false;
     }
 
     ngOnDestroy(): void {

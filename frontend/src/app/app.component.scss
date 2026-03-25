@@ -1,5 +1,42 @@
 @use './assets/components/scrollbar' as *;
 
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--header-total-height, 80px));
+
+  &.logged-in {
+    @media (min-width: 992px) {
+      flex-direction: row;
+      align-items: stretch;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 0 1rem;
+      gap: 2rem;
+    }
+  }
+}
+
+.side-nav-container {
+  width: 250px;
+  flex-shrink: 0;
+  padding: 1.5rem 0;
+  position: sticky;
+  top: var(--header-total-height, 80px);
+  height: calc(100vh - var(--header-total-height, 80px));
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  @include custom-scrollbar;
+
+  & > * {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 .page-wrapper {
   flex: 1;
   display: flex;
@@ -7,6 +44,7 @@
   min-height: 0;
   box-sizing: border-box;
   position: relative;
+  width: 100%;
 
   ::ng-deep app-auth-container {
     min-height: calc(100vh - var(--header-total-height, 80px));
@@ -51,6 +89,38 @@
 
       scrollbar-width: thin;
       scrollbar-color: var(--primary-gradient-start) transparent;
+    }
+  }
+}
+
+.mobile-nav-content {
+  padding: 1rem;
+
+  ::ng-deep {
+    .dashboard-side-nav-container {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+    }
+
+    .side-nav-list {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 1rem !important;
+    }
+
+    .side-nav-item {
+      flex-direction: row !important;
+      justify-content: flex-start !important;
+      text-align: left !important;
+      padding: 0.75rem 1rem !important;
+      font-size: 0.875rem !important;
+      gap: 0.75rem !important;
+
+      i {
+        font-size: 1.25rem !important;
+      }
     }
   }
 }

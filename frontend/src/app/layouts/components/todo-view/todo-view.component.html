@@ -1,11 +1,5 @@
-<section class="todo-view-wrapper p-2 p-sm-3 p-lg-4">
-    <div class="todo-view-layout d-flex flex-column flex-lg-row align-items-stretch gap-3 gap-lg-4">
-        <div class="side-nav-wrapper d-none d-lg-block">
-            <app-dashboard-side-nav
-                (sectionChange)="onDashboardSectionChange($event)"
-            />
-        </div>
-
+<section class="todo-view-wrapper">
+    <div class="todo-view-layout">
         <div class="todo-view-content flex-grow-1 d-flex flex-column">
             <div *ngIf="!todo" class="loading-state">
                 <p>Loading...</p>
@@ -78,15 +72,26 @@
                                 </span>
                             </ng-template>
                         </div>
-                        <button
-                            type="button"
-                            class="todo-view-save-btn"
-                            (click)="onSave()"
-                            [disabled]="!hasChanges || saving"
-                            aria-label="Save changes"
-                        >
-                            {{ saving ? 'Saving...' : 'Save' }}
-                        </button>
+                        <div class="todo-view-header-buttons">
+                            <button
+                                type="button"
+                                class="todo-view-delete-btn"
+                                (click)="onDeleteTodo()"
+                                aria-label="Delete todo"
+                            >
+                                <i class="bi bi-trash"></i>
+                                Delete
+                            </button>
+                            <button
+                                type="button"
+                                class="todo-view-save-btn"
+                                (click)="onSave()"
+                                [disabled]="!hasChanges || saving"
+                                aria-label="Save changes"
+                            >
+                                {{ saving ? 'Saving...' : 'Save' }}
+                            </button>
+                        </div>
                     </div>
                 </header>
 
@@ -433,21 +438,4 @@
             </a>
         </div>
     </div>
-</div>
-
-<!-- Mobile Navigation Sidebar -->
-<div class="d-lg-none">
-    <app-sidebar
-        [isOpen]="isNavSidebarOpen"
-        [title]="'Taskrr'"
-        [width]="'280px'"
-        [position]="'left'"
-        (closed)="onNavSidebarClose()"
-    >
-        <div class="mobile-nav-content">
-            <app-dashboard-side-nav
-                (sectionChange)="onDashboardSectionChange($event); onNavSidebarClose()"
-            />
-        </div>
-    </app-sidebar>
 </div>

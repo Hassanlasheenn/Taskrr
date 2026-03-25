@@ -2,8 +2,15 @@
 
 .todo-view-wrapper {
     max-width: 1400px;
-    margin: 0 auto;
     width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+    min-height: 0;
+    padding: 1.5rem 0;
+
+    @media (max-width: 991.98px) {
+        padding: 1rem;
+    }
 }
 
 .todo-view-layout {
@@ -12,50 +19,6 @@
     box-sizing: border-box;
     overflow: visible;
     min-height: 0;
-}
-
-.side-nav-wrapper {
-    &.d-lg-block {
-        @media (min-width: 992px) {
-            display: block !important;
-            width: 220px;
-            flex-shrink: 0;
-        }
-    }
-    
-    @media (max-width: 991.98px) {
-        display: none !important;
-    }
-}
-
-.mobile-nav-content {
-    ::ng-deep {
-        .dashboard-side-nav {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            width: 100% !important;
-
-            .side-nav-list {
-                flex-direction: column !important;
-                align-items: stretch !important;
-                gap: 0.75rem !important;
-            }
-
-            .side-nav-item {
-                margin-bottom: 0 !important;
-                text-align: left !important;
-                justify-content: flex-start !important;
-                flex-direction: row !important;
-                padding: 0.75rem 1rem !important;
-                
-                i {
-                    font-size: 1.25rem !important;
-                }
-            }
-        }
-    }
 }
 
 .todo-view-content {
@@ -143,6 +106,36 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+}
+
+.todo-view-header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.todo-view-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    border: 1px solid #fee2e2;
+    background: #fef2f2;
+    color: #dc2626;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    i { font-size: 1rem; }
+
+    &:hover {
+        background: #fee2e2;
+        transform: translateY(-1px);
+    }
 }
 
 .todo-view-save-btn {

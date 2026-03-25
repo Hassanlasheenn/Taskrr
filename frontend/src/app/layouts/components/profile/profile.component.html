@@ -1,11 +1,5 @@
-<section class="user-profile-wrapper p-2 p-sm-3 p-lg-4">
-    <div class="user-profile-container d-flex flex-column flex-lg-row align-items-stretch gap-3 gap-lg-4">
-        <div class="side-nav-wrapper d-none d-lg-block">
-            <app-dashboard-side-nav
-                (sectionChange)="onDashboardSectionChange($event)"
-            />
-        </div>
-
+<section class="user-profile-wrapper">
+    <div class="user-profile-container">
         <div class="profile-content-wrapper flex-grow-1 d-flex flex-column">
             <div class="profile-header d-flex justify-content-center align-items-center px-3 py-3 px-sm-4 py-sm-4 px-lg-5 py-lg-4 mb-4">
                 <h1>Profile Settings</h1>
@@ -28,20 +22,3 @@
         </div>
     </div>
 </section>
-
-<!-- Mobile Navigation Sidebar -->
-<div class="d-lg-none">
-    <app-sidebar
-        [isOpen]="isNavSidebarOpen"
-        [title]="'Taskrr'"
-        [width]="'280px'"
-        [position]="'left'"
-        (closed)="onNavSidebarClose()"
-    >
-        <div class="mobile-nav-content">
-            <app-dashboard-side-nav
-                (sectionChange)="onDashboardSectionChange($event); onNavSidebarClose()"
-            />
-        </div>
-    </app-sidebar>
-</div>

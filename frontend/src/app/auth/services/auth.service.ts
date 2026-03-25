@@ -2,7 +2,7 @@ import { Injectable, PLATFORM_ID, inject } from "@angular/core";
 import { isPlatformBrowser } from "@angular/common";
 import { API_URLS } from "../../api.global";
 import { HttpClient } from "@angular/common/http";
-import { Observable, take, BehaviorSubject } from "rxjs";
+import { Observable, take, BehaviorSubject, map } from "rxjs";
 import { IUserResponse, ILoginPayload, ILoginResponse, IRegisterPayload, IRegisterResponse } from "../interfaces";
 import { AuthHttpService } from "./auth-http.service";
 import { PosthogService } from "../../core/services/posthog.service";
@@ -20,6 +20,9 @@ export class AuthService {
     private readonly _platformId = inject(PLATFORM_ID);
     private _currentUserDataSubject = new BehaviorSubject<IUserResponse | null>(null);
     public readonly currentUserData$ = this._currentUserDataSubject.asObservable();
+    public readonly isLoggedIn$ = this._currentUserDataSubject.pipe(
+        map(userData => userData !== null)
+    );
 
     constructor(
         private readonly _http: HttpClient,

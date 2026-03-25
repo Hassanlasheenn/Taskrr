@@ -1,7 +1,14 @@
 .user-details-wrapper {
     max-width: 1400px;
-    margin: 0 auto;
     width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+    min-height: 0;
+    padding: 1.5rem 0;
+
+    @media (max-width: 991.98px) {
+        padding: 1rem;
+    }
 }
 
 .user-details-layout {
@@ -10,50 +17,6 @@
     box-sizing: border-box;
     overflow: visible;
     min-height: 0;
-}
-
-.side-nav-wrapper {
-    &.d-lg-block {
-        @media (min-width: 992px) {
-            display: block !important;
-            width: 220px;
-            flex-shrink: 0;
-        }
-    }
-    
-    @media (max-width: 991.98px) {
-        display: none !important;
-    }
-}
-
-.mobile-nav-content {
-    ::ng-deep {
-        .dashboard-side-nav {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            width: 100% !important;
-
-            .side-nav-list {
-                flex-direction: column !important;
-                align-items: stretch !important;
-                gap: 0.75rem !important;
-            }
-
-            .side-nav-item {
-                margin-bottom: 0 !important;
-                text-align: left !important;
-                justify-content: flex-start !important;
-                flex-direction: row !important;
-                padding: 0.75rem 1rem !important;
-                
-                i {
-                    font-size: 1.25rem !important;
-                }
-            }
-        }
-    }
 }
 
 ::ng-deep {
@@ -178,6 +141,10 @@
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
     align-items: start;
+
+    @media (min-width: 1200px) {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .status-col {
