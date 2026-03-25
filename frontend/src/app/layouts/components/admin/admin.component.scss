@@ -1,4 +1,5 @@
 @use '../../../assets/components/buttons';
+@use '../../../assets/components/dropdowns' as *;
 
 .admin-content {
     min-width: 0;
@@ -30,7 +31,6 @@
     flex-wrap: wrap;
     padding: 1rem;
     border-radius: 12px;
-    border: 1px solid var(--border-color);
 
     .search-wrapper {
         position: relative;
@@ -49,46 +49,85 @@
         .admin-search-input {
             width: 100%;
             padding: 0.75rem 1rem 0.75rem 2.75rem;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--input-border);
             border-radius: 10px;
-            background-color: var(--card-color-solid, #ffffff);
+            background-color: var(--input-bg);
             color: var(--text-primary);
             font-size: 0.9375rem;
             line-height: 1.5;
-            height: 45px;
-            transition: all 0.2s ease;
+            height: 52px;
+            transition: all 0.3s ease;
 
             &:focus {
                 outline: none;
                 border-color: var(--primary-gradient-start);
-                box-shadow: 0 0 0 3px rgba(107, 207, 209, 0.1);
+                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
             }
         }
     }
 
     .role-filter-wrapper {
-        .admin-role-filter {
-            padding: 0 2.5rem 0 1rem;
-            height: 45px;
-            border: 1px solid var(--border-color);
+        position: relative;
+
+        .custom-dropdown {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.25rem;
+            height: 52px;
+            min-width: 160px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 10px;
-            background-color: var(--card-color-solid, #ffffff);
             color: var(--text-primary);
             font-size: 0.9375rem;
-            line-height: 45px;
             cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236bcfd1' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            min-width: 140px;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 
-            &:focus {
-                outline: none;
-                border-color: var(--primary-gradient-start);
-                box-shadow: 0 0 0 3px rgba(107, 207, 209, 0.1);
+            &:hover {
+                border-color: rgba(139, 92, 246, 0.4);
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.08);
             }
+
+            &.active {
+                border-color: var(--primary-gradient-start);
+                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            }
+
+            .custom-dropdown-value {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .dropdown-arrow {
+                font-size: 0.8rem;
+                color: var(--text-secondary);
+                transition: transform 0.3s ease;
+                margin-left: 0.75rem;
+
+                &.rotated {
+                    transform: rotate(180deg);
+                    color: var(--primary-gradient-start);
+                }
+            }
+        }
+
+        .custom-dropdown-popup {
+            @include custom-dropdown-popup;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            min-width: 180px;
+            animation: dropdownSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+
+        .custom-dropdown-option {
+            @include custom-dropdown-option;
         }
     }
 }
@@ -105,7 +144,7 @@
 
     thead {
         background-color: var(--card-background);
-        border-bottom: 2px solid var(--border-color);
+        border-bottom: 2px solid var(--input-border);
 
         th {
             padding: 1rem;
@@ -117,11 +156,11 @@
 
     tbody {
         tr {
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--input-border);
             transition: background-color 0.2s;
 
             &.current-user {
-                background-color: rgba(107, 207, 209, 0.05);
+                background-color: rgba(139, 92, 246, 0.05);
             }
 
             td {
@@ -133,16 +172,28 @@
 
     .role-select {
         padding: 0.5rem 2rem 0.5rem 0.75rem;
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--input-border);
         border-radius: 8px;
-        background-color: var(--bg-soft);
+        background-color: var(--input-bg);
         color: var(--text-primary);
         font-size: 0.875rem;
         cursor: pointer;
         appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236bcfd1' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%238b5cf6' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 0.75rem center;
+        transition: all 0.3s ease;
+
+        &:hover:not(:disabled) {
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.05);
+        }
+
+        &:focus {
+            outline: none;
+            border-color: var(--primary-gradient-start);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
 
         &:disabled {
             opacity: 0.6;
@@ -153,7 +204,7 @@
     .btn-delete {
         background-color: transparent;
         border: none;
-        color: var(--error-color, #dc3545);
+        color: var(--danger-color, #dc3545);
         cursor: pointer;
         padding: 0.5rem;
         border-radius: 4px;
@@ -161,7 +212,7 @@
         font-size: 1.125rem;
 
         &:hover:not(:disabled) {
-            background-color: var(--error-light, rgba(220, 53, 69, 0.1));
+            background-color: rgba(220, 53, 69, 0.1);
         }
 
         &:disabled {

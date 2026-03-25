@@ -1,3 +1,5 @@
+@use '../../../../assets/components/dropdowns' as *;
+
 .todo-form {
     display: flex;
     flex-direction: column;
@@ -179,47 +181,55 @@
         width: 100%;
     }
 
-    .status-select {
+    .status-custom-select {
         width: 100%;
-        padding: 0.75rem 2.5rem 0.75rem 1rem;
+        padding: 0.875rem 1rem;
         border: 2px solid var(--card-border-color);
         border-radius: 10px;
         background: var(--input-bg);
         color: var(--text-primary);
         font-size: 0.9375rem;
         cursor: pointer;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
         transition: all 0.2s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 52px;
 
         &:hover {
             border-color: var(--primary-gradient-start);
             background: var(--btn-secondary-hover-bg);
         }
 
-        &:focus {
-            outline: none;
+        &.active {
             border-color: var(--primary-gradient-start);
-            box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
-        }
-
-        option {
-            background: var(--input-bg);
-            color: var(--text-primary);
+            box-shadow: 0 0 0 3px rgba(107, 207, 209, 0.1);
         }
     }
 
-    .select-arrow {
+    .status-popup {
+        @include custom-dropdown-popup;
         position: absolute;
-        right: 0.75rem;
-        top: 50%;
-        transform: translateY(-50%);
-        pointer-events: none;
-        color: var(--text-secondary);
+        top: calc(100% + 8px);
+        left: 0;
+        width: 100%;
+        animation: dropdownSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-        svg {
-            display: block;
+    .status-option {
+        @include custom-dropdown-option;
+    }
+
+    .select-arrow {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        transition: transform 0.3s ease;
+        display: flex;
+        align-items: center;
+
+        .rotated {
+            transform: rotate(180deg);
+            display: inline-block;
         }
     }
 }
@@ -330,4 +340,3 @@
         }
     }
 }
-

@@ -1,104 +1,106 @@
+@use '../../../../assets/components/dropdowns' as *;
+
 .dropdown-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     margin-top: 1.5rem;
-    
+
+    &__label-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.25rem;
+    }
+
     &__label {
         font-size: 0.875rem;
         font-weight: 500;
         color: var(--text-primary);
-        transition: color 0.2s ease;
-        margin-bottom: 0.5rem;
-        display: block;
+        margin: 0;
     }
 
-    &__input {
+    &__container {
         position: relative;
         width: 100%;
-        display: block;
+    }
 
-        select {
-            width: 100%;
-            padding: 0.875rem 1rem;
-            font-size: 1rem;
-            font-family: 'Poppins', sans-serif;
-            color: var(--text-primary);
-            background: var(--input-bg);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid var(--input-border);
-            border-radius: 12px;
-            outline: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-sizing: border-box;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            padding-right: 2.5rem;
+    &__input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        background: var(--input-bg);
+        border: 1px solid var(--input-border);
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 
-            &::placeholder {
-                color: var(--input-placeholder);
-                font-weight: 400;
-            }
+        &:hover {
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.08);
+        }
 
-            &:hover {
-                border-color: rgba(107, 207, 209, 0.4);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            }
+        &.active {
+            border-color: var(--primary-gradient-start);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
 
-            &:focus {
-                border-color: var(--input-border-focus);
-                box-shadow: 0 0 0 3px rgba(107, 207, 209, 0.15), 
-                            0 4px 16px rgba(107, 207, 209, 0.2);
-            }
-
-            &:disabled {
-                background: var(--btn-secondary-bg);
-                cursor: default;
-                opacity: 0.6;
-                border-color: var(--card-border-color);
-            }
-
-            &.input-error {
-                border-color: var(--danger-color);
-                background: var(--error-summary-background-color);
-                
-                &:focus {
-                    border-color: var(--danger-color);
-                    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15), 
-                                0 4px 16px rgba(220, 53, 69, 0.1);
-                }
-            }
-
-            // Valid state styling - show success when valid and touched
-            &.ng-valid.ng-touched:not(.input-error) {
-                border-color: rgba(107, 207, 209, 0.5);
-                
-                &:focus {
-                    border-color: var(--primary-gradient-start);
-                    box-shadow: 0 0 0 3px rgba(107, 207, 209, 0.15), 
-                                0 4px 16px rgba(107, 207, 209, 0.2);
-                }
-            }
-
-            option {
-                padding: 0.5rem;
-                background-color: var(--input-bg);
-                color: var(--text-primary);
-            }
+        &.input-error {
+            border-color: var(--danger-color);
         }
     }
 
-    &__error {
-        color: var(--danger-color);
-        font-size: 0.75rem;
-        margin-top: 0.375rem;
-        font-weight: 400;
-        display: block;
+    &__field {
+        width: 100%;
+        padding: 0.875rem 1.25rem;
+        font-size: 0.95rem;
+        font-family: inherit;
+        color: var(--text-primary);
+        background: transparent;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        
+        &::placeholder {
+            color: var(--input-placeholder);
+        }
     }
 
-    &__label-wrapper {
-        margin-bottom: 0.5rem;
+    &__arrow-wrapper {
+        position: absolute;
+        right: 1.25rem;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        transition: transform 0.3s ease;
+
+        .rotated {
+            transform: rotate(180deg);
+            display: inline-block;
+        }
+    }
+
+    &__popup {
+        @include custom-dropdown-popup;
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        width: 100%;
+        min-width: 200px;
+        animation: dropdownSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    &__option {
+        @include custom-dropdown-option;
+    }
+
+    &__error {
+        font-size: 0.75rem;
+        color: var(--danger-color);
+        font-weight: 500;
     }
 }

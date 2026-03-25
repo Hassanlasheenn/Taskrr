@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnInit, OnDestroy, HostListener, ElementRef } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Subject, takeUntil } from "rxjs";
 import { AdminService } from "../../../core/services/admin.service";
@@ -35,6 +35,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     // Filter properties
     searchQuery: string = '';
     selectedRole: string = 'all';
+    isRoleDropdownOpen: boolean = false;
     
     readonly DashboardSections = DashboardSections;
 
@@ -46,8 +47,33 @@ export class AdminComponent implements OnInit, OnDestroy {
         private readonly _confirmationDialog: ConfirmationDialogService,
         private readonly _posthogService: PosthogService,
         private readonly _router: Router,
-        private readonly _navService: NavigationService
+        private readonly _navService: NavigationService,
+        private readonly _el: ElementRef
     ) {}
+
+    @HostListener('document:click', ['$event'])
+    onDocumentClick(event: MouseEvent): void {
+        if (!this._el.nativeElement.contains(event.target)) {
+            this.isRoleDropdownOpen = false;
+        }
+    }
+
+    toggleRoleDropdown(): void {
+        this.isRoleDropdownOpen = !this.isRoleDropdownOpen;
+    }
+
+    selectRole(role: string): void {
+        this.selectedRole = role;
+        this.isRoleDropdownOpen = false;
+    }
+
+    getSelectedRoleLabel(): string {
+        switch(this.selectedRole) {
+            case 'admin': return 'Admin';
+            case 'user': return 'User';
+            default: return 'All Roles';
+        }
+    }
 
     ngOnInit(): void {
         this.isAdmin = this._authService.isAdmin();

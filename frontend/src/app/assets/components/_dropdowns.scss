@@ -1,0 +1,57 @@
+@mixin custom-dropdown-popup {
+    background: var(--card-color-solid, #ffffff);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--card-border-color);
+    border-radius: 20px;
+    padding: 0.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    list-style: none;
+    margin: 0;
+    z-index: 1000;
+}
+
+@mixin custom-dropdown-option {
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(107, 207, 209, 0.1);
+        color: var(--primary-gradient-start);
+    }
+
+    &.selected {
+        background: rgba(107, 207, 209, 0.15);
+        color: var(--primary-gradient-start);
+        font-weight: 600;
+    }
+
+    i {
+        font-size: 1.25rem;
+    }
+}
+
+// Global classes for dropdowns
+.app-dropdown-popup {
+    @include custom-dropdown-popup;
+}
+
+.app-dropdown-option {
+    @include custom-dropdown-option;
+}
+
+.app-dropdown-slide-in {
+    animation: dropdownSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownSlideIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}

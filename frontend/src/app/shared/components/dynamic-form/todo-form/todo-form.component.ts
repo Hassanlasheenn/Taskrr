@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit, Input, OnDestroy } from "@angular/core";
+import { Component, Output, EventEmitter, OnInit, Input, OnDestroy, HostListener, ElementRef } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule, FormGroup } from "@angular/forms";
 import { DynamicFormComponent } from "../dynamic-form.component";
@@ -37,6 +37,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     selectedUserId: number | null = null;
     isAdmin: boolean = false;
     trackById = trackById;
+    isStatusOpen: boolean = false;
 
     fields: IFieldControl[] = [
         {
@@ -106,8 +107,30 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     constructor(
         private readonly _formService: ReactiveFormService,
         private readonly _userService: UserService,
-        private readonly _authService: AuthService
+        private readonly _authService: AuthService,
+        private readonly _el: ElementRef
     ) {}
+
+    @HostListener('document:click', ['$event'])
+    onDocumentClick(event: MouseEvent): void {
+        if (!this._el.nativeElement.contains(event.target)) {
+            this.isStatusOpen = false;
+        }
+    }
+
+    toggleStatusDropdown(): void {
+        this.isStatusOpen = !this.isStatusOpen;
+    }
+
+    selectStatus(status: TodoStatus): void {
+        this.selectedStatus = status;
+        this.isStatusOpen = false;
+    }
+
+    getSelectedStatusLabel(): string {
+        const status = this.statuses.find(s => s.value === this.selectedStatus);
+        return status ? status.label : 'Select Status';
+    }
 
     ngOnInit(): void {
         this.isAdmin = this._authService.isAdmin();

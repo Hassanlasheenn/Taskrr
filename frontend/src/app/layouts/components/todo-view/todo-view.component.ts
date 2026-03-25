@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, ViewChild } from "@angular/core";
+import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, ViewChild, HostListener } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Observable, Subject } from "rxjs";
@@ -114,6 +114,8 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         return statusChanged || priorityChanged || descriptionChanged || assignedChanged || dueDateChanged;
     }
 
+    openDropdown: 'assignee' | 'status' | 'priority' | null = null;
+
     constructor(
         private readonly _route: ActivatedRoute,
         private readonly _router: Router,
@@ -125,8 +127,55 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         private readonly _confirmationDialog: ConfirmationDialogService,
         private readonly _cdr: ChangeDetectorRef,
         private readonly _navService: NavigationService,
-        private readonly _posthogService: PosthogService
+        private readonly _posthogService: PosthogService,
+        private readonly _el: ElementRef
     ) {}
+
+    @HostListener('document:click', ['$event'])
+    onDocumentClick(event: MouseEvent): void {
+        if (!this._el.nativeElement.contains(event.target)) {
+            this.openDropdown = null;
+        }
+    }
+
+    toggleDropdown(type: 'assignee' | 'status' | 'priority'): void {
+        this.openDropdown = this.openDropdown === type ? null : type;
+    }
+
+    selectStatus(value: TodoStatus): void {
+        if (this.todo) {
+            this.todo.status = value;
+        }
+        this.openDropdown = null;
+    }
+
+    selectPriority(value: 'low' | 'medium' | 'high'): void {
+        if (this.todo) {
+            this.todo.priority = value;
+        }
+        this.openDropdown = null;
+    }
+
+    selectAssignee(userId: number | null): void {
+        if (this.todo) {
+            this.todo.assigned_to_user_id = userId;
+        }
+        this.openDropdown = null;
+    }
+
+    getSelectedStatusLabel(): string {
+        return this.statusOptions.find(opt => opt.value === this.todo?.status)?.label || 'Select Status';
+    }
+
+    getSelectedPriorityLabel(): string {
+        return this.priorityOptions.find(opt => opt.value === this.todo?.priority)?.label || 'Select Priority';
+    }
+
+    getSelectedAssigneeLabel(): string {
+        if (!this.todo?.assigned_to_user_id) return 'Unassigned';
+        const user = this.mentionableUsers.find(u => u.id === this.todo?.assigned_to_user_id);
+        return user ? user.username : (this.todo.assigned_to_username || 'User #' + this.todo.assigned_to_user_id);
+    }
 
     canDeactivate(): boolean | Observable<boolean> {
         if (!this.hasChanges) return true;

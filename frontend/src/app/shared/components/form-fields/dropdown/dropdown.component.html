@@ -5,16 +5,40 @@
             {{ errorMessage }}
         </div>
     </div>
-    <div class="dropdown-form__input" [formGroup]="formGroup">
-        <select
-            id="dropdown-{{ name }}"
-            [formControlName]="name"
+    
+    <div class="dropdown-form__container">
+        <div 
+            class="dropdown-form__input-wrapper"
             [ngClass]="getInputClasses()"
-            [ngStyle]="customInputStyle"
+            (click)="toggleDropdown()"
         >
-            <option *ngFor="let option of field?.options; trackBy: trackById" [value]="option.key">
+            <div class="dropdown-form__field">
+                {{ getSelectedLabel() }}
+            </div>
+            
+            <div class="dropdown-form__arrow-wrapper">
+                <i class="bi bi-chevron-down" [class.rotated]="isOpen"></i>
+            </div>
+        </div>
+
+        <!-- Custom Dropdown Popup -->
+        <ul *ngIf="isOpen" class="dropdown-form__popup">
+            <li 
+                *ngFor="let option of field?.options; trackBy: trackById"
+                (click)="selectOption(option.key)"
+                [class.selected]="control?.value == option.key"
+                class="dropdown-form__option"
+            >
                 {{ option.value }}
-            </option>
-        </select>
+                <i *ngIf="control?.value == option.key" class="bi bi-check"></i>
+            </li>
+        </ul>
     </div>
+
+    <!-- Hidden native select for form accessibility/compatibility -->
+    <select [formControlName]="formGroup.get(name) ? name : ''" [style.display]="'none'">
+        <option *ngFor="let option of field?.options" [value]="option.key">
+            {{ option.value }}
+        </option>
+    </select>
 </section>

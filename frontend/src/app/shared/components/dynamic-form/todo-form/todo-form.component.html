@@ -57,20 +57,31 @@
     <fieldset *ngIf="isEditMode" class="status-section">
         <legend class="status-label">Status</legend>
         <div class="status-select-wrapper">
-            <select 
-                class="status-select" 
-                [(ngModel)]="selectedStatus"
-                [ngModelOptions]="{standalone: true}"
+            <div 
+                class="status-custom-select" 
+                [class.active]="isStatusOpen"
+                (click)="toggleStatusDropdown()"
             >
-                <option *ngFor="let status of statuses; trackBy: trackById" [value]="status.value">
+                <div class="status-selected-value">
+                    {{ getSelectedStatusLabel() }}
+                </div>
+                <span class="select-arrow">
+                    <i class="bi bi-chevron-down" [class.rotated]="isStatusOpen"></i>
+                </span>
+            </div>
+            
+            <!-- Custom Status Popup -->
+            <ul *ngIf="isStatusOpen" class="status-popup">
+                <li 
+                    *ngFor="let status of statuses; trackBy: trackById"
+                    (click)="selectStatus(status.value)"
+                    [class.selected]="selectedStatus === status.value"
+                    class="status-option"
+                >
                     {{ status.label }}
-                </option>
-            </select>
-            <span class="select-arrow">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </span>
+                    <i *ngIf="selectedStatus === status.value" class="bi bi-check"></i>
+                </li>
+            </ul>
         </div>
     </fieldset>
 

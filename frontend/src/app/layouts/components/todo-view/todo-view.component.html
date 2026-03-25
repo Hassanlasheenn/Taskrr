@@ -29,41 +29,75 @@
                     </div>
                     <div class="todo-view-header-actions">
                         <div class="todo-view-badges">
-                            <!-- Assignee Dropdown (Available to everyone in detailed view) -->
+                            <!-- Assignee Dropdown -->
                             <div class="todo-view-dropdown-wrap">
-                                <select
-                                    class="todo-view-select assigned-select"
-                                    [(ngModel)]="todo.assigned_to_user_id"
-                                    aria-label="Assigned to"
-                                >
-                                    <option [ngValue]="null">Unassigned</option>
-                                    <option
-                                        *ngIf="todo.assigned_to_user_id && !assigneeInList(todo.assigned_to_user_id)"
-                                        [ngValue]="todo.assigned_to_user_id"
-                                    >{{ todo.assigned_to_username || ('User #' + todo.assigned_to_user_id) }}</option>
-                                    <option *ngFor="let u of mentionableUsers; trackBy: trackById" [ngValue]="u.id">{{ u.username }}</option>
-                                </select>
+                                <div class="custom-dropdown" (click)="toggleDropdown('assignee')" [class.active]="openDropdown === 'assignee'">
+                                    <div class="custom-dropdown-value">
+                                        <i class="bi bi-person"></i>
+                                        <span>{{ getSelectedAssigneeLabel() }}</span>
+                                    </div>
+                                    <i class="bi bi-chevron-down dropdown-arrow" [class.rotated]="openDropdown === 'assignee'"></i>
+                                    
+                                    <ul *ngIf="openDropdown === 'assignee'" class="custom-dropdown-popup">
+                                        <li (click)="selectAssignee(null); $event.stopPropagation()" class="custom-dropdown-option" [class.selected]="!todo.assigned_to_user_id">
+                                            Unassigned
+                                            <i *ngIf="!todo.assigned_to_user_id" class="bi bi-check"></i>
+                                        </li>
+                                        <li *ngIf="todo.assigned_to_user_id && !assigneeInList(todo.assigned_to_user_id)" 
+                                            (click)="selectAssignee(todo.assigned_to_user_id); $event.stopPropagation()" 
+                                            class="custom-dropdown-option selected">
+                                            {{ todo.assigned_to_username || ('User #' + todo.assigned_to_user_id) }}
+                                            <i class="bi bi-check"></i>
+                                        </li>
+                                        <li *ngFor="let u of mentionableUsers; trackBy: trackById" 
+                                            (click)="selectAssignee(u.id); $event.stopPropagation()" 
+                                            class="custom-dropdown-option"
+                                            [class.selected]="todo.assigned_to_user_id === u.id">
+                                            {{ u.username }}
+                                            <i *ngIf="todo.assigned_to_user_id === u.id" class="bi bi-check"></i>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
+
+                            <!-- Status Dropdown -->
                             <div class="todo-view-dropdown-wrap">
-                                <select
-                                    class="todo-view-select status-select"
-                                    [ngClass]="'status-' + todo.status"
-                                    [(ngModel)]="todo.status"
-                                    aria-label="Status"
-                                >
-                                    <option *ngFor="let opt of statusOptions; trackBy: trackById" [value]="opt.value">{{ opt.label }}</option>
-                                </select>
+                                <div class="custom-dropdown" (click)="toggleDropdown('status')" [class.active]="openDropdown === 'status'" [ngClass]="'status-' + todo.status">
+                                    <div class="custom-dropdown-value">
+                                        <span>{{ getSelectedStatusLabel() }}</span>
+                                    </div>
+                                    <i class="bi bi-chevron-down dropdown-arrow" [class.rotated]="openDropdown === 'status'"></i>
+
+                                    <ul *ngIf="openDropdown === 'status'" class="custom-dropdown-popup">
+                                        <li *ngFor="let opt of statusOptions; trackBy: trackById" 
+                                            (click)="selectStatus(opt.value); $event.stopPropagation()" 
+                                            class="custom-dropdown-option"
+                                            [class.selected]="todo.status === opt.value">
+                                            {{ opt.label }}
+                                            <i *ngIf="todo.status === opt.value" class="bi bi-check"></i>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
-                            <!-- Priority: Dropdown for Admin, Badge for User -->
+
+                            <!-- Priority Dropdown -->
                             <div class="todo-view-dropdown-wrap" *ngIf="isAdmin; else priorityBadge">
-                                <select
-                                    class="todo-view-select priority-select"
-                                    [ngClass]="'priority-' + todo.priority"
-                                    [(ngModel)]="todo.priority"
-                                    aria-label="Priority"
-                                >
-                                    <option *ngFor="let opt of priorityOptions; trackBy: trackById" [value]="opt.value">{{ opt.label }}</option>
-                                </select>
+                                <div class="custom-dropdown" (click)="toggleDropdown('priority')" [class.active]="openDropdown === 'priority'" [ngClass]="'priority-' + todo.priority">
+                                    <div class="custom-dropdown-value">
+                                        <span>{{ getSelectedPriorityLabel() }}</span>
+                                    </div>
+                                    <i class="bi bi-chevron-down dropdown-arrow" [class.rotated]="openDropdown === 'priority'"></i>
+
+                                    <ul *ngIf="openDropdown === 'priority'" class="custom-dropdown-popup">
+                                        <li *ngFor="let opt of priorityOptions; trackBy: trackById" 
+                                            (click)="selectPriority(opt.value); $event.stopPropagation()" 
+                                            class="custom-dropdown-option"
+                                            [class.selected]="todo.priority === opt.value">
+                                            {{ opt.label }}
+                                            <i *ngIf="todo.priority === opt.value" class="bi bi-check"></i>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                             <ng-template #priorityBadge>
                                 <span class="priority-badge" [ngClass]="'priority-' + todo.priority">

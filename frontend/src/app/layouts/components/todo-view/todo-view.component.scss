@@ -1,4 +1,5 @@
 @use '../../../assets/components/scrollbar' as *;
+@use '../../../assets/components/dropdowns' as *;
 
 .todo-view-wrapper {
     max-width: 1400px;
@@ -174,12 +175,12 @@
 .todo-view-dropdown-wrap {
     display: flex;
     width: fit-content;
+    position: relative;
 }
 
-.todo-view-select {
-    width: fit-content;
-    min-width: 3.5rem;
-    padding: 0.35rem 2rem 0.35rem 0.75rem;
+.custom-dropdown {
+    min-width: 6rem;
+    padding: 0.35rem 0.75rem;
     border-radius: 8px;
     border: 1px solid var(--card-border-color);
     background-color: var(--card-color);
@@ -187,80 +188,81 @@
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
-    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%236b757d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.6rem center;
-    background-size: 0.75rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    position: relative;
 
-    &:focus {
-        outline: none;
+    &.active {
         border-color: var(--primary-gradient-start);
+        box-shadow: 0 0 0 3px rgba(107, 207, 209, 0.1);
     }
 
-    option {
-        background: var(--card-color-solid, var(--dropdown-bg));
-        color: var(--text-primary);
+    .custom-dropdown-value {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
-    &.status-select {
-        &.status-new {
-            background-color: rgba(108, 117, 125, 0.12);
-            border-color: rgba(108, 117, 125, 0.35);
-            color: var(--text-secondary);
-        }
-        &.status-inProgress {
-            background-color: rgba(13, 110, 253, 0.12);
-            border-color: rgba(13, 110, 253, 0.35);
-            color: #0d6efd;
-        }
-        &.status-paused {
-            background-color: rgba(253, 126, 20, 0.12);
-            border-color: rgba(253, 126, 20, 0.35);
-            color: #fd7e14;
-        }
-        &.status-done {
-            background-color: color-mix(in srgb, var(--success-color) 15%, transparent);
-            border-color: color-mix(in srgb, var(--success-color) 40%, transparent);
-            color: var(--success-color);
+    .dropdown-arrow {
+        font-size: 0.75rem;
+        transition: transform 0.3s ease;
+        &.rotated {
+            transform: rotate(180deg);
         }
     }
 
-    &.priority-select {
-        &.priority-low {
-            background-color: var(--priority-low-bg);
-            border-color: color-mix(in srgb, var(--priority-low-text) 35%, transparent);
-            color: var(--priority-low-text);
-        }
-        &.priority-medium {
-            background-color: var(--priority-medium-bg);
-            border-color: color-mix(in srgb, var(--priority-medium-text) 35%, transparent);
-            color: var(--priority-medium-text);
-        }
-        &.priority-high {
-            background-color: var(--priority-high-bg);
-            border-color: color-mix(in srgb, var(--priority-high-text) 35%, transparent);
-            color: var(--priority-high-text);
-        }
+    &.status-new {
+        background-color: rgba(108, 117, 125, 0.12);
+        border-color: rgba(108, 117, 125, 0.35);
+        color: var(--text-secondary);
+    }
+    &.status-inProgress {
+        background-color: rgba(13, 110, 253, 0.12);
+        border-color: rgba(13, 110, 253, 0.35);
+        color: #0d6efd;
+    }
+    &.status-paused {
+        background-color: rgba(253, 126, 20, 0.12);
+        border-color: rgba(253, 126, 20, 0.35);
+        color: #fd7e14;
+    }
+    &.status-done {
+        background-color: color-mix(in srgb, var(--success-color) 15%, transparent);
+        border-color: color-mix(in srgb, var(--success-color) 40%, transparent);
+        color: var(--success-color);
     }
 
-    &.assigned-select {
-        background-color: rgba(139, 92, 246, 0.08);
-        border-color: rgba(139, 92, 246, 0.25);
-        color: var(--primary-color);
-        min-width: 10rem;
-
-        &:hover {
-            background-color: rgba(139, 92, 246, 0.12);
-            border-color: rgba(139, 92, 246, 0.4);
-        }
-
-        option {
-            background: var(--card-color-solid, #fff);
-            color: var(--text-primary);
-        }
+    &.priority-low {
+        background-color: var(--priority-low-bg);
+        border-color: color-mix(in srgb, var(--priority-low-text) 35%, transparent);
+        color: var(--priority-low-text);
     }
+    &.priority-medium {
+        background-color: var(--priority-medium-bg);
+        border-color: color-mix(in srgb, var(--priority-medium-text) 35%, transparent);
+        color: var(--priority-medium-text);
+    }
+    &.priority-high {
+        background-color: var(--priority-high-bg);
+        border-color: color-mix(in srgb, var(--priority-high-text) 35%, transparent);
+        color: var(--priority-high-text);
+    }
+}
+
+.custom-dropdown-popup {
+    @include custom-dropdown-popup;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 12rem;
+    animation: dropdownSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-dropdown-option {
+    @include custom-dropdown-option;
 }
 
 .due-date-view-badge {

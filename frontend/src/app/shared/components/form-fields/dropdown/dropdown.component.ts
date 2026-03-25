@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges } from "@angular/core";
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, HostListener, ElementRef } from "@angular/core";
 import { FormGroup, ReactiveFormsModule, AbstractControl } from "@angular/forms";
 import { ICustomStyle, IFieldControl } from "../../../interfaces";
 import { InputTypes } from "../../../enums";
@@ -27,12 +27,21 @@ export class DropdownFormComponent implements OnInit, OnDestroy, OnChanges {
     @Input() showErrors: boolean = false;
     
     errorMessage: string | null = null;
+    isOpen: boolean = false;
     private readonly subscriptions: Subscription[] = [];
     trackById = trackById;
     
     constructor(
-        private readonly formService: ReactiveFormService
+        private readonly formService: ReactiveFormService,
+        private readonly el: ElementRef
     ) {}
+
+    @HostListener('document:click', ['$event'])
+    onDocumentClick(event: MouseEvent): void {
+        if (!this.el.nativeElement.contains(event.target)) {
+            this.isOpen = false;
+        }
+    }
 
     ngOnInit() {
         this.setupValidation();
@@ -49,7 +58,7 @@ export class DropdownFormComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     private setupValidation(): void {
-        const control = this.formGroup.get(this.name);
+        const control = this.control;
         if (!control) return;
 
         const valueSub = control.valueChanges.subscribe(() => {
@@ -72,9 +81,27 @@ export class DropdownFormComponent implements OnInit, OnDestroy, OnChanges {
         return !!(control && control.invalid && (this.showErrors || (control.touched && control.dirty)));
     }
 
+    toggleDropdown(): void {
+        this.isOpen = !this.isOpen;
+    }
+
+    selectOption(key: any): void {
+        this.control?.setValue(key);
+        this.control?.markAsDirty();
+        this.control?.markAsTouched();
+        this.isOpen = false;
+    }
+
+    getSelectedLabel(): string {
+        const val = this.control?.value;
+        const option = this.field?.options?.find(opt => opt.key == val);
+        return option ? option.value : (this.placeholder || 'Select option');
+    }
+
     getInputClasses(): { [key: string]: boolean } {
         const classes: { [key: string]: boolean } = {
-            'input-error': this.isInvalid
+            'input-error': this.isInvalid,
+            'active': this.isOpen
         };
         
         if (this.customInputClass) {

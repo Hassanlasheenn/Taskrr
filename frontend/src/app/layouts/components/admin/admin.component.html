@@ -14,11 +14,33 @@
                 >
             </div>
             <div class="role-filter-wrapper">
-                <select class="admin-role-filter" [(ngModel)]="selectedRole" aria-label="Filter by role">
-                    <option value="all">All Roles</option>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                </select>
+                <div class="custom-dropdown" (click)="toggleRoleDropdown()" [class.active]="isRoleDropdownOpen">
+                    <div class="custom-dropdown-value">
+                        {{ getSelectedRoleLabel() }}
+                    </div>
+                    <i class="bi bi-chevron-down dropdown-arrow" [class.rotated]="isRoleDropdownOpen"></i>
+                    
+                    <ul *ngIf="isRoleDropdownOpen" class="custom-dropdown-popup">
+                        <li (click)="selectRole('all'); $event.stopPropagation()" 
+                            class="custom-dropdown-option" 
+                            [class.selected]="selectedRole === 'all'">
+                            All Roles
+                            <i *ngIf="selectedRole === 'all'" class="bi bi-check"></i>
+                        </li>
+                        <li (click)="selectRole('user'); $event.stopPropagation()" 
+                            class="custom-dropdown-option" 
+                            [class.selected]="selectedRole === 'user'">
+                            User
+                            <i *ngIf="selectedRole === 'user'" class="bi bi-check"></i>
+                        </li>
+                        <li (click)="selectRole('admin'); $event.stopPropagation()" 
+                            class="custom-dropdown-option" 
+                            [class.selected]="selectedRole === 'admin'">
+                            Admin
+                            <i *ngIf="selectedRole === 'admin'" class="bi bi-check"></i>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
 
