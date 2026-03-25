@@ -26,7 +26,7 @@
 
             <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.USER_MANAGEMENT && activeSection !== DashboardSections.ADMIN_PANEL" class="todo-list-wrapper">
                 <!-- Status Columns Dashboard View -->
-                <div *ngIf="activeSection === DashboardSections.DASHBOARD" class="status-grid-wrapper">
+                <div *ngIf="activeSection === DashboardSections.DASHBOARD" class="status-grid-wrapper" cdkDropListGroup>
                     <div class="status-grid">
                         <!-- Pending Column (Admin Only) -->
                         <div *ngIf="isAdmin" class="status-col pending" [class.collapsed]="isSectionCollapsed('pending')">
@@ -36,9 +36,13 @@
                                 <span class="count">{{ unassignedCount }}</span>
                                 <i class="bi bi-chevron-down toggle-arrow"></i>
                             </div>
-                            <div class="todos-scroll-container">
+                            <div class="todos-scroll-container"
+                                cdkDropList
+                                cdkDropListAutoScrollStep="15"
+                                [cdkDropListData]="unassignedTodos"
+                                (cdkDropListDropped)="onTodoDrop($event, 'pending')">
                                 <div class="todos-list">
-                                    <div *ngFor="let todo of unassignedTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)">
+                                    <div *ngFor="let todo of unassignedTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)" cdkDrag [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
                                         <div class="todo-card-top">
                                             <div class="badge-group">
                                                 <span class="priority-mini-badge" [ngClass]="getPriorityClass(todo.priority)">
@@ -79,9 +83,13 @@
                                 <span class="count">{{ newTodos.length }}</span>
                                 <i class="bi bi-chevron-down toggle-arrow"></i>
                             </div>
-                            <div class="todos-scroll-container">
+                            <div class="todos-scroll-container"
+                                cdkDropList
+                                cdkDropListAutoScrollStep="15"
+                                [cdkDropListData]="newTodos"
+                                (cdkDropListDropped)="onTodoDrop($event, 'new-tasks')">
                                 <div class="todos-list">
-                                    <div *ngFor="let todo of newTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)">
+                                    <div *ngFor="let todo of newTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)" cdkDrag [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
                                         <div class="todo-card-top">
                                             <div class="badge-group">
                                                 <span class="priority-mini-badge" [ngClass]="getPriorityClass(todo.priority)">
@@ -122,9 +130,13 @@
                                 <span class="count">{{ inProgressTodos.length }}</span>
                                 <i class="bi bi-chevron-down toggle-arrow"></i>
                             </div>
-                            <div class="todos-scroll-container">
+                            <div class="todos-scroll-container"
+                                cdkDropList
+                                cdkDropListAutoScrollStep="15"
+                                [cdkDropListData]="inProgressTodos"
+                                (cdkDropListDropped)="onTodoDrop($event, 'in-progress')">
                                 <div class="todos-list">
-                                    <div *ngFor="let todo of inProgressTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)">
+                                    <div *ngFor="let todo of inProgressTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)" cdkDrag [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
                                         <div class="todo-card-top">
                                             <div class="badge-group">
                                                 <span class="priority-mini-badge" [ngClass]="getPriorityClass(todo.priority)">
@@ -165,9 +177,13 @@
                                 <span class="count">{{ pausedTodos.length }}</span>
                                 <i class="bi bi-chevron-down toggle-arrow"></i>
                             </div>
-                            <div class="todos-scroll-container">
+                            <div class="todos-scroll-container"
+                                cdkDropList
+                                cdkDropListAutoScrollStep="15"
+                                [cdkDropListData]="pausedTodos"
+                                (cdkDropListDropped)="onTodoDrop($event, 'paused')">
                                 <div class="todos-list">
-                                    <div *ngFor="let todo of pausedTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)">
+                                    <div *ngFor="let todo of pausedTodos; trackBy: trackById" class="todo-mini-card" [ngClass]="getPriorityClass(todo.priority)" cdkDrag [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
                                         <div class="todo-card-top">
                                             <div class="badge-group">
                                                 <span class="priority-mini-badge" [ngClass]="getPriorityClass(todo.priority)">
@@ -208,9 +224,13 @@
                                 <span class="count">{{ completedTodos.length }}</span>
                                 <i class="bi bi-chevron-down toggle-arrow"></i>
                             </div>
-                            <div class="todos-scroll-container">
+                            <div class="todos-scroll-container"
+                                cdkDropList
+                                cdkDropListAutoScrollStep="15"
+                                [cdkDropListData]="completedTodos"
+                                (cdkDropListDropped)="onTodoDrop($event, 'completed-dashboard')">
                                 <div class="todos-list">
-                                    <div *ngFor="let todo of completedTodos; trackBy: trackById" class="todo-mini-card done">
+                                    <div *ngFor="let todo of completedTodos; trackBy: trackById" class="todo-mini-card done" cdkDrag [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
                                         <div class="todo-card-top">
                                             <div class="badge-group">
                                                 <span class="priority-mini-badge priority-done">

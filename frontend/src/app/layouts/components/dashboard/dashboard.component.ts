@@ -22,6 +22,7 @@ import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-form/todo-form.component";
 import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
 import { PosthogService } from "../../../core/services";
+import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from "@angular/cdk/drag-drop";
 
 @Component({
     selector: 'app-dashboard',
@@ -36,7 +37,8 @@ import { PosthogService } from "../../../core/services";
         CalendarComponent, 
         AdminPanelComponent,
         AdminComponent,
-        TodoFormComponent
+        TodoFormComponent,
+        DragDropModule
     ],
 })
 export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeactivate {
@@ -272,6 +274,45 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 this._loaderService.hide();
             }
         });
+    }
+
+    onTodoDrop(event: CdkDragDrop<ITodo[]>, newStatus: string): void {
+        if (event.previousContainer === event.container) {
+            moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+        } else {
+            const todo = event.previousContainer.data[event.previousIndex];
+            const userId = this._authService.getCurrentUserId();
+            if (!userId) return;
+
+            // Map UI status names to API status values if necessary
+            let apiStatus = newStatus;
+            if (newStatus === 'new-tasks') apiStatus = 'new';
+            if (newStatus === 'in-progress') apiStatus = 'inProgress';
+            if (newStatus === 'completed-dashboard') apiStatus = 'done';
+
+            this._todoService.updateTodo(userId, todo.id, { status: apiStatus as ITodo['status'] }).subscribe({
+                next: (updatedTodo) => {
+                    // Update local state
+                    const index = this.todos.findIndex(t => t.id === todo.id);
+                    if (index !== -1) {
+                        this.todos[index] = { ...this.todos[index], ...updatedTodo } as ITodo;
+                        this.todos = [...this.todos];
+                    }
+                    this._toastService.success(`Status updated to ${apiStatus}`);
+                },
+                error: (error) => {
+                    this._toastService.error('Failed to update status');
+                    this.loadTodos(false); // Reload on error to sync state
+                }
+            });
+
+            transferArrayItem(
+                event.previousContainer.data,
+                event.container.data,
+                event.previousIndex,
+                event.currentIndex
+            );
+        }
     }
 
     toggleSection(section: string): void {

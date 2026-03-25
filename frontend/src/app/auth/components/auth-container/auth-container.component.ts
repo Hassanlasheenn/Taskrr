@@ -29,7 +29,7 @@ type AuthMode = 'login' | 'register';
 export class AuthContainerComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
     
-    currentMode: AuthMode = 'register';
+    currentMode: AuthMode = 'login';
     registrationSuccess: boolean = false;
     registeredEmail: string = '';
     isResending: boolean = false;

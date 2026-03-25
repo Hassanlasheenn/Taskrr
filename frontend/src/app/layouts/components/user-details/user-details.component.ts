@@ -12,13 +12,14 @@ import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { NavigationService } from "../../../core/services/navigation.service";
+import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from "@angular/cdk/drag-drop";
 
 @Component({
     selector: 'app-user-details',
     templateUrl: './user-details.component.html',
     styleUrls: ['./user-details.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterLink]
+    imports: [CommonModule, RouterLink, DragDropModule]
 })
 export class UserDetailsComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
@@ -96,6 +97,47 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
     isSectionCollapsed(section: string): boolean {
         return this.collapsedSections.has(section);
+    }
+
+    onTodoDrop(event: CdkDragDrop<ITodoResponse[]>, newStatus: string): void {
+        if (event.previousContainer === event.container) {
+            moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+        } else {
+            const todo = event.previousContainer.data[event.previousIndex];
+            const userId = this._authService.getCurrentUserId();
+            if (!userId) return;
+
+            // Map UI status names to API status values
+            let apiStatus = newStatus;
+            if (newStatus === 'new-tasks') apiStatus = 'new';
+            if (newStatus === 'in-progress') apiStatus = 'inProgress';
+            if (newStatus === 'completed-dashboard') apiStatus = 'done';
+
+            this._todoService.updateTodo(userId, todo.id, { status: apiStatus as ITodo['status'] }).subscribe({
+                next: (updatedTodo) => {
+                    // Update local state in userData.todos
+                    if (this.userData) {
+                        const index = this.userData.todos.findIndex(t => t.id === todo.id);
+                        if (index !== -1) {
+                            this.userData.todos[index] = { ...this.userData.todos[index], ...updatedTodo };
+                            this.userData.todos = [...this.userData.todos];
+                        }
+                    }
+                    this._toastService.success(`Status updated to ${apiStatus}`);
+                },
+                error: (error) => {
+                    this._toastService.error('Failed to update status');
+                    this.loadUserData(); // Reload on error
+                }
+            });
+
+            transferArrayItem(
+                event.previousContainer.data,
+                event.container.data,
+                event.previousIndex,
+                event.currentIndex
+            );
+        }
     }
 
     getTodosByStatus(status: string): ITodoResponse[] {
