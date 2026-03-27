@@ -169,6 +169,75 @@ def login(
     }
 
 
+@router.post("/refresh", response_model=schemas.LoginResponse)
+def refresh_token(
+    request: Request,
+    response: Response,
+    db: Session = Depends(database.get_db)
+):
+    token = request.cookies.get("access_token")
+    auth_header = request.headers.get("Authorization")
+    if not token and auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split("Bearer ")[1]
+
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token provided")
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False})
+        email: Optional[str] = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        # Allow refresh up to 6 days after the token originally expired
+        exp = payload.get("exp")
+        if exp:
+            token_expiry = datetime.fromtimestamp(exp, tz=timezone.utc)
+            refresh_deadline = token_expiry + timedelta(days=6)
+            if datetime.now(timezone.utc) > refresh_deadline:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Session fully expired. Please log in again."
+                )
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+    user_role = getattr(user, 'role', 'user')
+    access_token = create_access_token(data={"sub": user.email, "role": user_role})
+
+    max_age = 7 * 24 * 60 * 60
+    is_production = os.getenv("ENVIRONMENT", "development") == "production"
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=max_age,
+        httponly=True,
+        secure=is_production,
+        samesite="lax",
+        path="/"
+    )
+
+    user_dict = {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "photo": get_photo_url(request, getattr(user, 'profile_pic', None)),
+        "role": user_role,
+        "is_verified": user.is_verified
+    }
+
+    return {
+        "token_type": "bearer",
+        "access_token": access_token,
+        "data": schemas.UserResponse(**user_dict)
+    }
+
+
 @router.post("/logout")
 def logout(response: Response = Response()):
     response.delete_cookie(

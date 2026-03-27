@@ -5,6 +5,7 @@ import { HeaderComponent } from './layouts/components/header/header.component';
 import { LoaderComponent } from './shared/components/loader/loader.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConfirmationDialogComponent } from './shared/components/confirmation-dialog/confirmation-dialog.component';
+import { SessionExpiryDialogComponent } from './shared/components/session-expiry-dialog/session-expiry-dialog.component';
 import { PosthogService, NavigationService } from './core/services';
 import { SeoService } from './core/services/seo.service';
 import { AuthService } from './auth/services';
@@ -24,6 +25,7 @@ import { filter, Subject, takeUntil } from 'rxjs';
     LoaderComponent, 
     ToastComponent, 
     ConfirmationDialogComponent,
+    SessionExpiryDialogComponent,
     DashboardSideNavComponent,
     SidebarComponent
   ],

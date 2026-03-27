@@ -7,6 +7,7 @@ export const API_URLS = {
         register: `${API_BASE_URL}/register`,
         login: `${API_BASE_URL}/login`,
         logout: `${API_BASE_URL}/logout`,
+        refresh: `${API_BASE_URL}/refresh`,
         resendVerification: `${API_BASE_URL}/resend-verification`,
     },
            user: {

@@ -1,0 +1,155 @@
+.dialog-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease;
+
+    body.dark-theme & {
+        background-color: rgba(0, 0, 0, 0.75);
+    }
+}
+
+.dialog-container {
+    background: var(--card-background, var(--bg-tertiary));
+    border: 1px solid var(--card-border-color);
+    border-radius: 16px;
+    box-shadow: var(--card-shadow-hover, 0 12px 40px rgba(0, 0, 0, 0.4));
+    max-width: 460px;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+
+    body.dark-theme & {
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+}
+
+.dialog-header {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--card-border-color);
+
+    .dialog-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+
+        i {
+            color: #f59e0b;
+        }
+    }
+}
+
+.dialog-body {
+    padding: 1.5rem;
+
+    .dialog-message {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.6;
+
+        body.dark-theme & {
+            color: var(--text-secondary, #a1a1aa);
+        }
+    }
+}
+
+.dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border-top: 1px solid var(--card-border-color);
+
+    .dialog-button {
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        min-width: 100px;
+
+        &.dialog-button-cancel {
+            background: var(--btn-secondary-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--card-border-color);
+
+            &:hover {
+                background: var(--btn-secondary-hover-bg, var(--hover-background));
+                color: var(--text-primary);
+            }
+
+            body.dark-theme & {
+                background: var(--btn-secondary-bg, rgba(255, 255, 255, 0.05));
+                color: var(--text-secondary, #a1a1aa);
+                border-color: var(--card-border-color, rgba(255, 255, 255, 0.1));
+
+                &:hover {
+                    background: var(--btn-secondary-hover-bg, rgba(255, 255, 255, 0.1));
+                    color: var(--text-primary, #e4e4e7);
+                }
+            }
+        }
+
+        &.dialog-button-primary {
+            background: linear-gradient(135deg, #4f8ef7 0%, #3b6fd4 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(79, 142, 247, 0.3);
+
+            &:hover {
+                background: linear-gradient(135deg, #3b7de8 0%, #2a5ec4 100%);
+                box-shadow: 0 4px 12px rgba(79, 142, 247, 0.5);
+                transform: translateY(-1px);
+            }
+
+            &:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 6px rgba(79, 142, 247, 0.4);
+            }
+
+            body.dark-theme & {
+                box-shadow: 0 2px 12px rgba(79, 142, 247, 0.5), 0 0 0 1px rgba(79, 142, 247, 0.2);
+
+                &:hover {
+                    box-shadow: 0 4px 16px rgba(79, 142, 247, 0.6), 0 0 0 1px rgba(79, 142, 247, 0.3);
+                }
+            }
+        }
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
