@@ -30,6 +30,10 @@ from migrations.update_profile_pic_to_text import run_migration as migration10
 from migrations.add_status_column import run_migration as migration11
 from migrations.add_todo_comments_table import run_migration as migration12
 from migrations.add_due_date_column import run_migration as migration13
+from migrations.add_is_deleted_column import run_migration as migration17
+from migrations.add_todo_comment_history_table import run_migration as migration18
+from migrations.add_todo_field_history_table import run_migration as migration19
+from migrations.remove_completed_column import run_migration as migration20
 from migrations.add_reminder_sent_at_column import migrate as migration14
 from migrations.add_verification_fields import run_migration as migration15
 from migrations.add_comment_attachments import migrate as migration16
@@ -59,6 +63,10 @@ def run_all_migrations():
         ("Add status column", migration11),
         ("Add todo_comments table", migration12),
         ("Add due_date column", migration13),
+        ("Add is_deleted column", migration17),
+        ("Add todo_comment_history table", migration18),
+        ("Add todo_field_history table", migration19),
+        ("Remove completed column", migration20),
         ("Add reminder_sent_at column", migration14),
         ("Add email verification fields", migration15),
         ("Add comment attachments", migration16),
