@@ -25,8 +25,12 @@ def get_photo_url(request: Request, photo_path: Optional[str]) -> Optional[str]:
         proto = request.headers.get("x-forwarded-proto") or request.url.scheme
         host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
         
+        # 1. If it is an S3 URL, return it directly
+        if "s3.amazonaws.com" in photo_path:
+            return photo_path
+
         # Avoid using internal upstream names
-        if host and "backend_servers" in host.lower():
+        if host and ("backend_servers" in host.lower() or "backend" in host.lower()):
             # If we're behind Nginx and it didn't pass the host correctly, 
             # we can't reliably build a full URL here. 
             # Returning just the relative path might be better than a broken internal URL.

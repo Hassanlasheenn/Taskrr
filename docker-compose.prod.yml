@@ -10,6 +10,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
+      - backend_static_prod:/usr/share/nginx/html/static:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
@@ -30,6 +31,8 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
       - INSTANCE_ID=prod_node_1
+    volumes:
+      - backend_static_prod:/app/static
     depends_on:
       redis:
         condition: service_healthy
@@ -85,6 +88,7 @@ services:
 volumes:
   postgres_data_prod:
   redis_data_prod:
+  backend_static_prod:
 
 networks:
   todo_app_network:
