@@ -11,7 +11,13 @@
         <button type="button" class="btn-cancel order-2 order-sm-1" (click)="onCancel()">
             Cancel
         </button>
-        <button type="button" class="btn-submit flex-grow-1 order-1 order-sm-2" [disabled]="form.invalid" (click)="onSubmit()">
+        <button 
+            type="button" 
+            class="btn-submit flex-grow-1 order-1 order-sm-2" 
+            [disabled]="form.invalid" 
+            appClickThrottle
+            (throttledClick)="onSubmit()"
+        >
             {{ isEditMode ? 'Save' : 'Create' }}
         </button>
     </div>

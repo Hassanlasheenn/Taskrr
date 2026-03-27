@@ -7,7 +7,6 @@ import { TodoService } from "../../../core/services/todo.service";
 import { NotificationService } from "../../../core/services/notification.service";
 import { ITodo, ITodoCreate, ITodoUpdate } from "../../../core/interfaces/todo.interface";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
-import { LoaderService } from "../../../core/services/loader.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
 import { NavigationService } from "../../../core/services/navigation.service";
@@ -68,7 +67,6 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         public readonly _authService: AuthService,
         private readonly _todoService: TodoService,
         private readonly _notificationService: NotificationService,
-        private readonly _loaderService: LoaderService,
         private readonly _toastService: ToastService,
         private readonly _confirmationDialog: ConfirmationDialogService,
         private readonly _router: Router,
@@ -101,32 +99,22 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             )
             .subscribe((notification) => {
                 if (notification.todo_id) {
-                    this.loadTodos(false);
+                    this.loadTodos();
                 }
             });
     }
 
-    loadTodos(showLoader: boolean = true): void {
+    loadTodos(): void {
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
 
-        if (showLoader) {
-            this._loaderService.show();
-        }
-        
         this._todoService.getTodos(userId).subscribe({
             next: (response) => {
                 this.todos = [...(response.todos as ITodo[])];
                 this.totalTodos = response.total;
-                if (showLoader) {
-                    this._loaderService.hide();
-                }
             },
             error: (error) => {
                 this._toastService.error(error?.error?.detail || 'Failed to load todos');
-                if (showLoader) {
-                    this._loaderService.hide();
-                }
             }
         });
     }
@@ -166,27 +154,26 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
 
-        this._loaderService.show();
-        this._todoService.createTodo(userId, todoData).subscribe({
-            next: (newTodo) => {
-                this.todos = [newTodo as ITodo, ...this.todos];
-                this.totalTodos++;
-                this.isSidebarOpen = false;
-                if (this.todoFormComponent) {
-                    this.todoFormComponent.resetForm();
+        this._todoService.createTodo(userId, todoData)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe({
+                next: (newTodo) => {
+                    this.todos = [newTodo as ITodo, ...this.todos];
+                    this.totalTodos++;
+                    this.isSidebarOpen = false;
+                    if (this.todoFormComponent) {
+                        this.todoFormComponent.resetForm();
+                    }
+                    this._toastService.success('Todo created successfully');
+                    this._posthogService.capture('todo_created', { 
+                        category: newTodo.category,
+                        priority: newTodo.priority
+                    });
+                },
+                error: (error) => {
+                    this._toastService.error(error?.error?.detail || 'Failed to create todo');
                 }
-                this._loaderService.hide();
-                this._toastService.success('Todo created successfully');
-                this._posthogService.capture('todo_created', { 
-                    category: newTodo.category,
-                    priority: newTodo.priority
-                });
-            },
-            error: (error) => {
-                this._toastService.error(error?.error?.detail || 'Failed to create todo');
-                this._loaderService.hide();
-            }
-        });
+            });
     }
 
     onToggleTodo(todo: ITodo): void {
@@ -215,7 +202,6 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         .pipe(takeUntil(this._destroy$))
         .subscribe(result => {
             if (result.confirmed) {
-                this._loaderService.show();
                 this._todoService.deleteTodo(userId, todo.id).subscribe({
                     next: (response) => {
                         const index = this.todos.findIndex(t => t.id === todo.id);
@@ -223,13 +209,11 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                             this.todos[index] = { ...this.todos[index], is_deleted: true };
                             this.todos = [...this.todos];
                         }
-                        this._loaderService.hide();
                         this._toastService.success(response?.message || 'Todo deleted successfully');
                         this._posthogService.capture('todo_deleted', { todo_id: todo.id });
                     },
                     error: (error) => {
                         this._toastService.error(error?.error?.detail || 'Failed to delete todo');
-                        this._loaderService.hide();
                     }
                 });
             }
@@ -257,32 +241,31 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
 
-        this._loaderService.show();
-        this._todoService.updateTodo(userId, event.id, event.data).subscribe({
-            next: (response: any) => {
-                const index = this.todos.findIndex(t => t.id === event.id);
-                if (index !== -1) {
-                    this.todos[index] = { ...this.todos[index], ...response } as ITodo;
-                    this.todos = [...this.todos];
+        this._todoService.updateTodo(userId, event.id, event.data)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe({
+                next: (response: any) => {
+                    const index = this.todos.findIndex(t => t.id === event.id);
+                    if (index !== -1) {
+                        this.todos[index] = { ...this.todos[index], ...response } as ITodo;
+                        this.todos = [...this.todos];
+                    }
+                    this.isSidebarOpen = false;
+                    this.editingTodo = null;
+                    if (this.todoFormComponent) {
+                        this.todoFormComponent.resetForm();
+                    }
+                    this._toastService.success('Todo updated successfully');
+                    this._posthogService.capture('todo_updated', { 
+                        todo_id: event.id,
+                        status: event.data.status,
+                        priority: event.data.priority
+                    });
+                },
+                error: (error: any) => {
+                    this._toastService.error(error?.error?.detail || 'Failed to update todo');
                 }
-                this.isSidebarOpen = false;
-                this.editingTodo = null;
-                if (this.todoFormComponent) {
-                    this.todoFormComponent.resetForm();
-                }
-                this._loaderService.hide();
-                this._toastService.success('Todo updated successfully');
-                this._posthogService.capture('todo_updated', { 
-                    todo_id: event.id,
-                    status: event.data.status,
-                    priority: event.data.priority
-                });
-            },
-            error: (error: any) => {
-                this._toastService.error(error?.error?.detail || 'Failed to update todo');
-                this._loaderService.hide();
-            }
-        });
+            });
     }
 
     onTodoDrop(event: CdkDragDrop<ITodo[]>, newStatus: string): void {
@@ -311,7 +294,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 },
                 error: (error) => {
                     this._toastService.error('Failed to update status');
-                    this.loadTodos(false); // Reload on error to sync state
+                    this.loadTodos(); // Reload on error to sync state
                 }
             });
 

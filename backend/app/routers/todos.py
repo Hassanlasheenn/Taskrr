@@ -20,11 +20,13 @@ from ..cache import (
 from ..config import CACHE_TTL_TODO_LIST, CACHE_TTL_TODO_DETAIL, CACHE_TTL_TODO_COMMENTS
 from ..utils import get_photo_url
 from ..services.storage_service import S3StorageService
+from ..services.rate_limiter import RateLimiter
 
 router = APIRouter(prefix="/todos", tags=["todos"])
 
 email_service = EmailService()
 storage_service = S3StorageService()
+todo_limiter = RateLimiter(requests_limit=10, window_seconds=60)
 
 
 @router.get("", response_model=schemas.TodoListResponse)
@@ -98,7 +100,8 @@ async def create_todo(
     todo: schemas.TodoCreate,
     user_id: int,
     # Removed background_tasks
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db),
+    _ = Depends(todo_limiter)
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
@@ -738,7 +741,8 @@ async def update_todo(
     todo: schemas.TodoUpdate,
     user_id: int,
     # Removed background_tasks
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db),
+    _ = Depends(todo_limiter)
 ):
     """Update a todo by ID"""
     todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
@@ -1057,7 +1061,8 @@ async def update_todo(
 async def delete_todo(
     todo_id: int,
     user_id: int,
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db),
+    _ = Depends(todo_limiter)
 ):
     todo = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
     if not todo:

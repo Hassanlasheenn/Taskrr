@@ -49,6 +49,7 @@ def get_current_user(request: Request, db: Session = Depends(database.get_db)) -
             detail="User not found"
         )
     
+    request.state.user_id = user.id
     return user
 
 

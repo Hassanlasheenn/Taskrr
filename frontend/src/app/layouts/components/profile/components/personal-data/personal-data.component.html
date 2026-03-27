@@ -18,8 +18,8 @@
     </div>
 
     <div class="mt-4 text-center">
-        <button type="button" class="card-button" [disabled]="form.invalid" (click)="onSubmit()">
-            Save Changes
+        <button type="button" class="card-button" [disabled]="form.invalid || (loaderService.isLoading$ | async)" (click)="onSubmit()">
+            {{ (loaderService.isLoading$ | async) ? 'Saving...' : 'Save Changes' }}
         </button>
     </div>
 </app-card>

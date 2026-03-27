@@ -7,6 +7,7 @@ import { IFieldControl } from "../../../../../shared/interfaces/IFieldControl.in
 import { CardComponent } from "../../../../../shared/components/card/card.component";
 import { DynamicFormComponent } from "../../../../../shared/components/dynamic-form/dynamic-form.component";
 import { PersonalDataFieldsService } from "../../services/personal-data-fields.service";
+import { LoaderService } from "../../../../../core/services/loader.service";
 
 @Component({
     selector: 'app-personal-data',
@@ -31,7 +32,8 @@ export class PersonalDataComponent implements OnInit {
 
     constructor(
         private readonly _formService: ReactiveFormService,
-        private readonly _fieldsService: PersonalDataFieldsService
+        private readonly _fieldsService: PersonalDataFieldsService,
+        readonly loaderService: LoaderService
     ) {}
 
     ngOnInit(): void {
@@ -73,8 +75,8 @@ export class PersonalDataComponent implements OnInit {
 
         this.isSubmitted = false;
         this.errorSummary = null;
-        this.formSubmit.emit({ 
-            form: this.form, 
+        this.formSubmit.emit({
+            form: this.form,
             photoRemoved: this.photoRemoved,
             updateCallback: (updatedUser: IUserResponse) => {
                 this.fields = this._fieldsService.updateFieldPhotoUrl(this.fields, updatedUser.photo || null);

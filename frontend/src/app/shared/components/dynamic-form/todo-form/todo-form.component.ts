@@ -13,12 +13,14 @@ import { Subject, takeUntil } from "rxjs";
 import { AuthService } from "../../../../auth/services/auth.service";
 import { trackById } from "../../../helpers/trackByFn.helper";
 
+import { ClickThrottleDirective } from "../../../directives/click-throttle.directive";
+
 @Component({
     selector: 'app-todo-form',
     templateUrl: './todo-form.component.html',
     styleUrls: ['./todo-form.component.scss'],
     standalone: true,
-    imports: [CommonModule, FormsModule, DynamicFormComponent],
+    imports: [CommonModule, FormsModule, DynamicFormComponent, ClickThrottleDirective],
 })
 export class TodoFormComponent implements OnInit, OnDestroy {
     @Input() editingTodo: ITodo | null = null;
