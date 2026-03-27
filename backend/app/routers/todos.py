@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, and_
 from typing import List, Optional
 from .. import database, models, schemas
 from ..routers.notifications import create_notification
@@ -42,15 +42,21 @@ def get_todos(
             total=cached["total"],
         )
     todos = db.query(models.Todo).filter(
-        or_(
-            models.Todo.user_id == user_id,
-            models.Todo.assigned_to_user_id == user_id
+        and_(
+            or_(
+                models.Todo.user_id == user_id,
+                models.Todo.assigned_to_user_id == user_id
+            ),
+            models.Todo.is_deleted == False
         )
     ).distinct().order_by(models.Todo.order_index.asc()).offset(skip).limit(limit).all()
     total = db.query(models.Todo).filter(
-        or_(
-            models.Todo.user_id == user_id,
-            models.Todo.assigned_to_user_id == user_id
+        and_(
+            or_(
+                models.Todo.user_id == user_id,
+                models.Todo.assigned_to_user_id == user_id
+            ),
+            models.Todo.is_deleted == False
         )
     ).count()
     todo_responses = []

@@ -171,23 +171,60 @@
             }
         }
 
+        .empty-row-cell {
+            padding: 0 !important;
+            border: none !important;
+            
+            &:hover {
+                background: transparent !important;
+            }
+
+            @media (max-width: 1490px) {
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+
+                &::before {
+                    display: none !important;
+                }
+
+                > .empty-table-msg {
+                    max-width: 100% !important;
+                }
+            }
+        }
+
         .empty-table-msg {
-            padding: 4rem 2rem;
+            width: 100%;
+            padding: 8rem 2rem;
             text-align: center;
             color: var(--text-secondary);
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 500;
-            letter-spacing: 0.02em;
-            opacity: 0.7;
+            letter-spacing: 0.01em;
+            background: rgba(139, 92, 246, 0.01);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
 
             &::before {
-                content: '\F404';
+                content: '\F441'; // inbox icon
                 font-family: 'bootstrap-icons' !important;
-                display: block;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 64px;
+                height: 64px;
                 font-size: 2.5rem;
-                margin-bottom: 0.75rem;
-                opacity: 0.4;
-                color: var(--text-secondary);
+                background: var(--card-color);
+                border: 1px solid var(--card-border-color);
+                border-radius: 16px;
+                color: var(--primary-gradient-start);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+                margin-bottom: 0.5rem;
+                opacity: 0.8;
             }
         }
     }

@@ -43,6 +43,11 @@
                             </div>
                         </td>
                     </tr>
+                    <tr *ngIf="users.length === 0">
+                        <td colspan="6" class="empty-row-cell">
+                            <div class="empty-table-msg">{{ emptyMessage }}</div>
+                        </td>
+                    </tr>
                 </tbody>
             </ng-container>
 
@@ -153,9 +158,13 @@
                             </div>
                         </td>
                     </tr>
+                    <tr *ngIf="todos.length === 0">
+                        <td colspan="6" class="empty-row-cell">
+                            <div class="empty-table-msg">{{ emptyMessage }}</div>
+                        </td>
+                    </tr>
                 </tbody>
             </ng-template>
         </table>
-        <div *ngIf="displayData.length === 0" class="empty-table-msg">{{ emptyMessage }}</div>
     </div>
 </div>
