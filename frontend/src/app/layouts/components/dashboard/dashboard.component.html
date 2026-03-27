@@ -6,10 +6,32 @@
                     <span class="time-greeting">{{ timeBasedGreeting }},</span>
                     <h1 class="user-name">{{ (userData?.username | titlecase) }}</h1>
                 </div>
-                <button type="button" class="add-task-btn" (click)="onAddTodo()">
-                    <i class="bi bi-plus-lg"></i>
-                    <span>Add</span>
-                </button>
+                <div class="dashboard-actions d-flex align-items-center gap-2">
+                    <div class="view-toggle d-flex" *ngIf="activeSection === DashboardSections.DASHBOARD">
+                        <button 
+                            type="button" 
+                            class="view-toggle-btn"
+                            [class.active]="viewMode === 'grid'"
+                            (click)="setViewMode('grid')"
+                            title="Kanban View"
+                        >
+                            <i class="bi bi-grid-3x3-gap"></i>
+                        </button>
+                        <button 
+                            type="button" 
+                            class="view-toggle-btn"
+                            [class.active]="viewMode === 'table'"
+                            (click)="setViewMode('table')"
+                            title="Table View"
+                        >
+                            <i class="bi bi-table"></i>
+                        </button>
+                    </div>
+                    <button type="button" class="add-task-btn" (click)="onAddTodo()">
+                        <i class="bi bi-plus-lg"></i>
+                        <span>Add</span>
+                    </button>
+                </div>
             </div>
             
             <app-calendar
@@ -26,7 +48,7 @@
 
             <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.USER_MANAGEMENT && activeSection !== DashboardSections.ADMIN_PANEL" class="todo-list-wrapper">
                 <!-- Status Columns Dashboard View -->
-                <div *ngIf="activeSection === DashboardSections.DASHBOARD" class="status-grid-wrapper" cdkDropListGroup>
+                <div *ngIf="activeSection === DashboardSections.DASHBOARD && viewMode === 'grid'" class="status-grid-wrapper" cdkDropListGroup>
                     <div class="status-grid">
                         <!-- Pending Column (Admin Only) -->
                         <div *ngIf="isAdmin" class="status-col pending" [class.collapsed]="isSectionCollapsed('pending')">
@@ -262,6 +284,16 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Table View for Dashboard Section -->
+                <div *ngIf="activeSection === DashboardSections.DASHBOARD && viewMode === 'table'" class="table-view-container">
+                    <app-shared-table
+                        [todos]="filteredTodos"
+                        [isAdmin]="isAdmin"
+                        (update)="onTodoUpdate($event)"
+                        (delete)="onDeleteTodo($event)"
+                    />
                 </div>
 
                 <!-- Legacy List View for Completed Section -->

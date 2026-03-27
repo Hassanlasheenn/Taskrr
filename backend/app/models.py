@@ -49,6 +49,7 @@ class Todo(Base):
     category = Column(String(100), nullable=True)
     due_date = Column(DateTime(timezone=True), nullable=True)
     reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
+    is_deleted = Column(Boolean, default=False, nullable=False)
     order_index = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())  

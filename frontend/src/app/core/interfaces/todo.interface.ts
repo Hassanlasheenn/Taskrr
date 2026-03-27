@@ -24,10 +24,11 @@ export interface ITodoResponse {
     id: number;
     title: string;
     description?: string;
-    status: string;
-    priority: string;
+    status: TodoStatus;
+    priority: 'low' | 'medium' | 'high';
     category?: string;
     due_date?: string;
+    is_deleted: boolean;
     order_index: number;
     created_at?: string;
     updated_at?: string;
@@ -49,6 +50,7 @@ export interface ITodo {
     priority: 'low' | 'medium' | 'high';
     category?: string;
     due_date?: string;
+    is_deleted: boolean;
     order_index: number;
     created_at?: string;
     updated_at?: string;

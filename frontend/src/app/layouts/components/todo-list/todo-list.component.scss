@@ -325,8 +325,22 @@
     .filters-group {
         flex: 1;
         min-width: 0;
-    }
+        overflow: visible !important; /* Allow dropdowns to be visible */
+        position: relative; /* Create stacking context */
+        z-index: 5; /* Ensure filters group is above other elements if needed */
 
+        ::ng-deep .dropdown-form__popup {
+            z-index: 10000 !important; /* Ensure dropdown popup is always on top */
+        }
+
+        ::ng-deep .dropdown-form__container {
+            min-width: 170px !important; /* Increased width for filter dropdowns */
+        }
+
+        ::ng-deep .dropdown-form__field {
+            padding-right: 0.5rem !important; /* Revert to component's dynamic padding with gap */
+        }
+    }
     @media (max-width: 576px) {
         margin-bottom: 1rem;
         
@@ -370,8 +384,16 @@
 .todo-grid {
     width: 100%;
     max-width: 100%;
-    overflow: visible;
     box-sizing: border-box;
+
+    @media (min-width: 1491px) {
+        overflow-x: auto; /* Enable horizontal scrolling for wider screens */
+        overflow-y: hidden;
+    }
+
+    @media (max-width: 1490px) {
+        overflow: visible; /* Ensure content expands for stacked view */
+    }
 
     .todo-section-title {
         font-size: 1.25rem;
@@ -722,8 +744,8 @@
 .category-tag {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
     padding: 0.25rem 0.625rem;
+    border-radius: 8px;
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--primary-gradient-start);
@@ -991,8 +1013,8 @@
         &.todo-action-btn--delete {
             &:hover {
                 background: var(--danger-color);
-                border-color: var(--danger-color);
-                color: var(--text-white);
+                border-color: rgba(220, 53, 69, 0.3);
+                color: var(--danger-color);
             }
         }
     }

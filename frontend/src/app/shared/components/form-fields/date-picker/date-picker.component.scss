@@ -5,6 +5,63 @@
     gap: 0.5rem;
     margin-top: 1.5rem;
 
+    &--filter {
+        margin-top: 0;
+    }
+
+    &--badge {
+        margin-top: 0;
+        width: auto;
+        display: inline-flex;
+        min-width: 0;
+
+        .date-picker__input-wrapper {
+            padding: 0 0.5rem;
+            height: auto;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: none;
+            background: rgba(139, 92, 246, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.1);
+            overflow: hidden;
+            min-width: 0;
+
+            &:hover {
+                background: rgba(139, 92, 246, 0.08);
+                border-color: rgba(139, 92, 246, 0.2);
+            }
+        }
+
+        .date-picker__field {
+            height: 34px;
+            padding: 0 1.75rem 0 2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .date-picker__icon-wrapper {
+            position: absolute;
+            left: 0.5rem;
+            font-size: 0.75rem;
+            z-index: 1;
+        }
+
+        .date-picker__arrow-wrapper {
+            position: absolute;
+            right: 0.5rem;
+            font-size: 0.65rem;
+        }
+
+        .date-picker__container {
+            min-width: 130px;
+        }
+    }
+
     &__label-wrapper {
         display: flex;
         justify-content: space-between;

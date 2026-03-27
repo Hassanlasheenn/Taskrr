@@ -1,0 +1,19 @@
+<section class="textarea-form">
+    <div class="textarea-form__label-wrapper">
+        <label class="textarea-form__label" for="textarea-{{ name }}">{{ label }}</label>
+        <div class="textarea-form__error" *ngIf="isInvalid && errorMessage">
+            {{ errorMessage }}
+        </div>
+    </div>
+    
+    <div class="textarea-form__input" [formGroup]="formGroup">
+        <textarea
+            [id]="'textarea-' + name"
+            [formControlName]="name"
+            [placeholder]="placeholder || ''"
+            [ngClass]="getInputClasses()"
+            [ngStyle]="customInputStyle"
+            [rows]="rows"
+        ></textarea>
+    </div>
+</section>

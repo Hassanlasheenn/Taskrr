@@ -84,6 +84,7 @@ class TodoResponse(BaseModel):
     category: Optional[str] = None
     due_date: Optional[datetime] = None
     reminder_sent_at: Optional[datetime] = None
+    is_deleted: bool = False
     order_index: int = 0
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

@@ -1,8 +1,6 @@
 @mixin custom-dropdown-popup {
-    background: var(--card-color-solid, #ffffff);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--card-border-color);
+    background: var(--dropdown-bg, #ffffff);
+    border: 1px solid var(--dropdown-border);
     border-radius: 20px;
     padding: 0.5rem;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
@@ -18,8 +16,9 @@
     cursor: pointer;
     border-radius: 12px;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start; /* Align content to the start */
     align-items: center;
+    gap: 0.5rem; /* Add spacing between items */
     transition: all 0.2s ease;
 
     &:hover {

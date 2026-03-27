@@ -7,15 +7,14 @@ import { ReactiveFormService } from "../../../services/reactive-form.service";
 import { Subscription } from "rxjs";
 
 @Component({
-    selector: 'app-input-form',
-    templateUrl: './input.component.html',
-    styleUrls: ['./input.component.scss'],
+    selector: 'app-textarea-form',
+    templateUrl: './textarea.component.html',
+    styleUrls: ['./textarea.component.scss'],
     standalone: true,
     imports: [CommonModule, ReactiveFormsModule]
 })
-export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
+export class TextareaFormComponent implements OnInit, OnDestroy, OnChanges {
     @Input() label: string = '';
-    @Input() type: InputTypes = InputTypes.TEXT;
     @Input() placeholder?: string;
     @Input() value: string = '';
     @Input() name: string = '';
@@ -24,10 +23,9 @@ export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
     @Input() customInputClass?: string;
     @Input() field?: IFieldControl;
     @Input() showErrors: boolean = false;
-    @Input() isFilter: boolean = false;
+    @Input() rows: number = 3;
     
     errorMessage: string | null = null;
-    showPassword: boolean = false;
     private readonly subscriptions: Subscription[] = [];
     
     constructor(
@@ -69,7 +67,6 @@ export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
 
     get isInvalid(): boolean {
         const control = this.control;
-        // Check if either it was submitted or if the user touched it and modified it (dirty)
         return !!(control && control.invalid && (this.showErrors || (control.touched && control.dirty)));
     }
 
@@ -89,22 +86,5 @@ export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
         if (this.field) {
             this.errorMessage = this.formService.getValidationError(this.control, this.field, this.showErrors);
         }
-    }
-
-    get isPasswordField(): boolean {
-        return this.type === InputTypes.PASSWORD;
-    }
-
-    get isCheckbox(): boolean {
-        return this.type === InputTypes.CHECKBOX;
-    }
-
-    get inputType(): string {
-        if (this.isCheckbox) return 'checkbox';
-        return this.isPasswordField && this.showPassword ? 'text' : this.type;
-    }
-
-    togglePasswordVisibility(): void {
-        this.showPassword = !this.showPassword;
     }
 }

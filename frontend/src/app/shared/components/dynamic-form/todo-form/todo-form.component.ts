@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit, Input, OnDestroy, HostListener, ElementRef } from "@angular/core";
+import { Component, Output, EventEmitter, OnInit, Input, OnDestroy, ElementRef } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule, FormGroup } from "@angular/forms";
 import { DynamicFormComponent } from "../dynamic-form.component";
@@ -12,8 +12,6 @@ import { IUserListResponse } from "../../../../auth/interfaces";
 import { Subject, takeUntil } from "rxjs";
 import { AuthService } from "../../../../auth/services/auth.service";
 import { trackById } from "../../../helpers/trackByFn.helper";
-
-type PriorityLevel = 'low' | 'medium' | 'high';
 
 @Component({
     selector: 'app-todo-form',
@@ -34,10 +32,10 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     errorSummary: string | null = null;
     isEditMode: boolean = false;
     users: IUserListResponse[] = [];
-    selectedUserId: number | null = null;
     isAdmin: boolean = false;
     trackById = trackById;
-    isStatusOpen: boolean = false;
+
+    availableCategories: string[] = ['Work', 'Personal', 'Shopping', 'Health', 'Learning', 'Other'];
 
     fields: IFieldControl[] = [
         {
@@ -62,6 +60,32 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             validations: [],
         },
         {
+            label: 'Category',
+            type: InputTypes.DROPDOWN,
+            formControlName: 'category',
+            placeholder: 'Select category',
+            value: '',
+            required: false,
+            options: this.availableCategories.map(cat => ({ key: cat, value: cat })),
+            validations: [],
+        },
+        {
+            label: 'Priority',
+            type: InputTypes.DROPDOWN,
+            formControlName: 'priority',
+            placeholder: 'Select priority',
+            value: 'medium',
+            required: true,
+            options: [
+                { key: 'low', value: 'Low' },
+                { key: 'medium', value: 'Medium' },
+                { key: 'high', value: 'High' }
+            ],
+            validations: [
+                { type: ValidatorTypes.REQUIRED, message: 'Priority is required' }
+            ],
+        },
+        {
             label: 'Due Date',
             type: InputTypes.DATE,
             formControlName: 'due_date',
@@ -84,62 +108,58 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         },
     ];
 
-    priorities: { value: PriorityLevel; label: string; icon: string; color: string }[] = [
-        { value: 'low', label: 'Low', icon: 'bi-arrow-down', color: '#28a745' },
-        { value: 'medium', label: 'Medium', icon: 'bi-dash', color: '#ffc107' },
-        { value: 'high', label: 'High', icon: 'bi-arrow-up', color: '#dc3545' },
-    ];
-
-    statuses: { value: TodoStatus; label: string }[] = [
-        { value: 'new', label: 'New' },
-        { value: 'inProgress', label: 'In Progress' },
-        { value: 'paused', label: 'Paused' },
-        { value: 'done', label: 'Done' }
-    ];
-
-    selectedPriority: PriorityLevel | null = null;
-    selectedStatus: TodoStatus = 'new';
-    selectedCategory: string = '';
-    customCategory: string = '';
-    isOtherCategory: boolean = false;
-    availableCategories: string[] = ['Work', 'Personal', 'Shopping', 'Health', 'Learning', 'Other'];
-
     constructor(
         private readonly _formService: ReactiveFormService,
         private readonly _userService: UserService,
-        private readonly _authService: AuthService,
-        private readonly _el: ElementRef
+        private readonly _authService: AuthService
     ) {}
-
-    @HostListener('document:click', ['$event'])
-    onDocumentClick(event: MouseEvent): void {
-        if (!this._el.nativeElement.contains(event.target)) {
-            this.isStatusOpen = false;
-        }
-    }
-
-    toggleStatusDropdown(): void {
-        this.isStatusOpen = !this.isStatusOpen;
-    }
-
-    selectStatus(status: TodoStatus): void {
-        this.selectedStatus = status;
-        this.isStatusOpen = false;
-    }
-
-    getSelectedStatusLabel(): string {
-        const status = this.statuses.find(s => s.value === this.selectedStatus);
-        return status ? status.label : 'Select Status';
-    }
 
     ngOnInit(): void {
         this.isAdmin = this._authService.isAdmin();
-        this._updateFieldsForRole();
+        this._updateFieldsForMode();
         this.form = this._formService.initializeForm(this.fields);
         this.loadUsers();
+        this._watchCategoryChanges();
     }
 
-    private _updateFieldsForRole(): void {
+    private _watchCategoryChanges(): void {
+        this.form.get('category')?.valueChanges
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(value => {
+                this.toggleCustomCategoryField(value === 'Other');
+            });
+    }
+
+    private toggleCustomCategoryField(show: boolean): void {
+        const customCategoryIndex = this.fields.findIndex(f => f.formControlName === 'custom_category');
+        
+        if (show && customCategoryIndex === -1) {
+            // Find category field index to insert below it
+            const categoryIndex = this.fields.findIndex(f => f.formControlName === 'category');
+            const insertIndex = categoryIndex !== -1 ? categoryIndex + 1 : 3;
+            
+            const customField: IFieldControl = {
+                label: 'Custom Category',
+                type: InputTypes.TEXT,
+                formControlName: 'custom_category',
+                placeholder: 'Enter your custom category...',
+                value: '',
+                required: true,
+                validations: [
+                    { type: ValidatorTypes.REQUIRED, message: 'Custom category is required' }
+                ],
+            };
+            
+            this.fields.splice(insertIndex, 0, customField);
+            this.form.addControl('custom_category', this._formService.createControl(customField));
+        } else if (!show && customCategoryIndex !== -1) {
+            this.fields.splice(customCategoryIndex, 1);
+            this.form.removeControl('custom_category');
+        }
+    }
+
+    private _updateFieldsForMode(): void {
+        // Find fields to update based on admin status and edit mode
         const userFieldIndex = this.fields.findIndex(f => f.formControlName === 'assigned_to_user_id');
         if (userFieldIndex !== -1) {
             if (this.isAdmin) {
@@ -151,6 +171,36 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                     { type: ValidatorTypes.REQUIRED, message: 'Assignee is required' }
                 ];
             }
+        }
+
+        // Add status field if in edit mode
+        const statusFieldIndex = this.fields.findIndex(f => f.formControlName === 'status');
+        if (this.isEditMode && statusFieldIndex === -1) {
+            this.fields.push({
+                label: 'Status',
+                type: InputTypes.DROPDOWN,
+                formControlName: 'status',
+                placeholder: 'Select status',
+                value: 'new',
+                required: true,
+                options: [
+                    { value: 'New', key: 'new' },
+                    { value: 'In Progress', key: 'inProgress' },
+                    { value: 'Paused', key: 'paused' },
+                    { value: 'Done', key: 'done' }
+                ],
+                validations: [
+                    { type: ValidatorTypes.REQUIRED, message: 'Status is required' }
+                ],
+            });
+        } else if (!this.isEditMode && statusFieldIndex !== -1) {
+            this.fields.splice(statusFieldIndex, 1);
+        }
+
+        // Non-admins cannot change priority in edit mode
+        const priorityFieldIndex = this.fields.findIndex(f => f.formControlName === 'priority');
+        if (priorityFieldIndex !== -1) {
+            this.fields[priorityFieldIndex].disabled = this.isEditMode && !this.isAdmin;
         }
     }
 
@@ -186,89 +236,36 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         if (userFieldIndex !== -1) {
             const userOptions = this.users.map(user => ({ key: user.id, value: user.username }));
             
-            // Always add the current user to the list if not already present
             const currentUser = this._authService.getCurrentUserData();
             if (currentUser && !this.users.some(u => u.id === currentUser.id)) {
                 userOptions.unshift({ key: currentUser.id, value: `${currentUser.username} (Me)` });
             }
             
             if (this.isAdmin) {
-                // Admins get the Unassigned option
                 this.fields[userFieldIndex].options = [{ key: null, value: 'Unassigned' }, ...userOptions];
             } else {
-                // Non-admins must choose a user
                 this.fields[userFieldIndex].options = userOptions;
             }
-        }
-    }
-
-    selectPriority(priority: PriorityLevel): void {
-        // Non-admin users cannot change priority when editing
-        if (this.isEditMode && !this.isAdmin) {
-            return;
-        }
-        // Toggle: if same priority is clicked, deselect it
-        this.selectedPriority = this.selectedPriority === priority ? null : priority;
-    }
-
-    selectCategory(category: string): void {
-        if (category === 'Other') {
-            if (this.selectedCategory === 'Other') {
-                this.isOtherCategory = false;
-                this.selectedCategory = '';
-                this.customCategory = '';
-            } else {
-                this.isOtherCategory = true;
-                this.selectedCategory = 'Other';
-                this.customCategory = '';
-            }
-        } else {
-            this.isOtherCategory = false;
-            this.selectedCategory = this.selectedCategory === category ? '' : category;
-            this.customCategory = '';
         }
     }
 
     onSubmit(): void {
         if (this.form.invalid) {
             this.isSubmitted = true;
+            this.form.markAllAsTouched();
             return;
         }
 
-        if (this.isOtherCategory && !this.customCategory.trim()) {
-            this.errorSummary = 'Please enter a custom category name';
-            this.isSubmitted = true;
-            return;
-        }
-
-        let categoryToUse: string | undefined = undefined;
-        if (this.isOtherCategory && this.customCategory.trim()) {
-            categoryToUse = this.customCategory.trim();
-        } else if (this.selectedCategory && this.selectedCategory !== 'Other') {
-            categoryToUse = this.selectedCategory;
-        } else if (this.selectedCategory === 'Other' && !this.isOtherCategory) {
-            categoryToUse = 'Other';
-        }
-
-        const assignedUserIdValue = this.form.get('assigned_to_user_id')?.value;
-        let assignedUserId: number | null = null;
-        
-        if (assignedUserIdValue === null || assignedUserIdValue === undefined || 
-            assignedUserIdValue === 0 || assignedUserIdValue === "0" || 
-            String(assignedUserIdValue).trim() === "0") {
-            assignedUserId = null;
-        } else {
-            const numValue = Number(assignedUserIdValue);
-            assignedUserId = isNaN(numValue) ? null : numValue;
-        }
+        const formValue = this.form.value;
+        const finalCategory = formValue.category === 'Other' ? formValue.custom_category : formValue.category;
         
         const todoData: ITodoCreate = {
-            title: this.form.get('title')?.value,
-            description: this.form.get('description')?.value || undefined,
-            due_date: this.form.get('due_date')?.value || undefined,
-            priority: this.selectedPriority || 'medium',
-            category: categoryToUse,
-            assigned_to_user_id: assignedUserId
+            title: formValue.title,
+            description: formValue.description || undefined,
+            due_date: formValue.due_date || undefined,
+            priority: formValue.priority || 'medium',
+            category: finalCategory || undefined,
+            assigned_to_user_id: formValue.assigned_to_user_id === "null" ? null : formValue.assigned_to_user_id
         };
 
         if (this.isEditMode && this.editingTodo) {
@@ -277,13 +274,12 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 description: todoData.description,
                 due_date: todoData.due_date || null,
                 category: todoData.category,
-                status: this.selectedStatus,
-                assigned_to_user_id: assignedUserId
+                status: formValue.status || 'new',
+                assigned_to_user_id: todoData.assigned_to_user_id
             };
             
-            // Only include priority if user is admin (non-admin users cannot change priority)
             if (this.isAdmin) {
-                updateData.priority = this.selectedPriority || undefined;
+                updateData.priority = todoData.priority;
             }
             
             this.updateTodo.emit({ 
@@ -302,222 +298,72 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     resetForm(): void {
         this.isEditMode = false;
         this.editingTodo = null;
-        
-        // Reset fields to original state
-        const baseFields = [
-            {
-                label: 'Title',
-                type: InputTypes.TEXT,
-                formControlName: 'title',
-                placeholder: 'Enter todo title',
-                value: '',
-                required: true,
-                validations: [
-                    { type: ValidatorTypes.REQUIRED, message: 'Title is required' },
-                    { type: ValidatorTypes.MINLENGTH, message: 'Title must be at least 3 characters', value: 3 }
-                ],
-            },
-            {
-                label: 'Description',
-                type: InputTypes.TEXT,
-                formControlName: 'description',
-                placeholder: 'Enter description (optional)',
-                value: '',
-                required: false,
-                validations: [],
-            },
-            {
-                label: 'Due Date',
-                type: InputTypes.DATE,
-                formControlName: 'due_date',
-                placeholder: 'Select due date',
-                value: '',
-                required: false,
-                validations: [],
-            },
-            {
-                label: 'Assign To',
-                type: InputTypes.DROPDOWN,
-                formControlName: 'assigned_to_user_id',
-                placeholder: 'Select user',
-                value: null,
-                required: true,
-                validations: [
-                    { type: ValidatorTypes.REQUIRED, message: 'Assignee is required' }
-                ],
-                options: [],
-            },
-        ];
-        
-        this.fields = baseFields;
-        this._updateFieldsForRole();
+        this._updateFieldsForMode();
         this.form = this._formService.initializeForm(this.fields);
         this.updateUserDropdownField();
-        
-        if (this.form.get('due_date')) {
-            this.form.get('due_date')?.setValue('');
-        }
-        this.selectedPriority = null;
-        this.selectedStatus = 'new';
-        this.selectedCategory = '';
-        this.customCategory = '';
-        this.isOtherCategory = false;
         this.isSubmitted = false;
         this.errorSummary = null;
-        this.selectedUserId = null;
     }
 
     populateForm(todo: ITodo): void {
         this.isEditMode = true;
         this.editingTodo = todo;
-        this.selectedUserId = todo.assigned_to_user_id || null;
-        
-        // Restore all fields
-        const baseFields = [
-            {
-                label: 'Title',
-                type: InputTypes.TEXT,
-                formControlName: 'title',
-                placeholder: 'Enter todo title',
-                value: '',
-                required: true,
-                validations: [
-                    { type: ValidatorTypes.REQUIRED, message: 'Title is required' },
-                    { type: ValidatorTypes.MINLENGTH, message: 'Title must be at least 3 characters', value: 3 }
-                ],
-            },
-            {
-                label: 'Description',
-                type: InputTypes.TEXT,
-                formControlName: 'description',
-                placeholder: 'Enter description (optional)',
-                value: '',
-                required: false,
-                validations: [],
-            },
-            {
-                label: 'Due Date',
-                type: InputTypes.DATE,
-                formControlName: 'due_date',
-                placeholder: 'Select due date',
-                value: '',
-                required: false,
-                validations: [],
-            },
-            {
-                label: 'Assign To',
-                type: InputTypes.DROPDOWN,
-                formControlName: 'assigned_to_user_id',
-                placeholder: 'Select user',
-                value: null,
-                required: true,
-                validations: [
-                    { type: ValidatorTypes.REQUIRED, message: 'Assignee is required' }
-                ],
-                options: [],
-            },
-        ];
-        
-        this.fields = baseFields;
-        this._updateFieldsForRole();
+        this._updateFieldsForMode();
         this.form = this._formService.initializeForm(this.fields);
+        this._watchCategoryChanges();
         this.updateUserDropdownField();
-        
+
+        // If the todo's category is not in the predefined list, it's a custom one
+        const isCustomCategory = todo.category && !this.availableCategories.includes(todo.category);
+        if (isCustomCategory) {
+            this.toggleCustomCategoryField(true);
+        }
+
         if (this.users.length === 0) {
             this.loadUsers();
             return;
         }
-        
+
         this.populateFormData(todo);
     }
 
     private populateFormData(todo: ITodo): void {
-        if (this.isAdmin && !this.form.get('assigned_to_user_id')) {
-            this.form = this._formService.initializeForm(this.fields);
-        }
-        
-        if (this.isAdmin) {
-            this.updateUserDropdownField();
-        }
-        
-        this.selectedPriority = (todo.priority || null) as PriorityLevel | null;
-        this.selectedStatus = (todo.status || 'new') as TodoStatus;
-        
-        if (todo.category) {
-            if (this.availableCategories.includes(todo.category)) {
-                this.selectedCategory = todo.category;
-                this.isOtherCategory = false;
-                this.customCategory = '';
-            } else {
-                this.selectedCategory = 'Other';
-                this.isOtherCategory = true;
-                this.customCategory = todo.category;
-            }
-        } else {
-            this.selectedCategory = '';
-            this.isOtherCategory = false;
-            this.customCategory = '';
-        }
-        
+        const isCustomCategory = todo.category && !this.availableCategories.includes(todo.category);
+
         const formValue: any = {
             title: todo.title || '',
             description: todo.description || '',
-            due_date: todo.due_date ? todo.due_date.split('T')[0] : ''
+            due_date: todo.due_date ? todo.due_date.split('T')[0] : '',
+            priority: todo.priority || 'medium',
+            category: isCustomCategory ? 'Other' : (todo.category || ''),
+            status: todo.status || 'new',
+            assigned_to_user_id: todo.assigned_to_user_id || null,
+            custom_category: isCustomCategory ? todo.category : ''
         };
-        
-        // Handle assignee dropdown value
-        const assignedUserId = todo.assigned_to_user_id;
-        if (assignedUserId && assignedUserId !== null && assignedUserId !== 0) {
-            const userField = this.fields.find(f => f.formControlName === 'assigned_to_user_id');
-            const userExists = userField?.options?.some(opt => opt.key === assignedUserId);
-            formValue.assigned_to_user_id = userExists ? assignedUserId : 0;
-        } else {
-            formValue.assigned_to_user_id = 0;
-        }
         
         setTimeout(() => {
             if (this.form) {
                 this.form.patchValue(formValue, { emitEvent: false });
-                
-                if (this.form.get('title')?.value !== formValue.title) {
-                    this.form.get('title')?.setValue(formValue.title, { emitEvent: false });
-                }
-                if (this.form.get('description')?.value !== formValue.description) {
-                    this.form.get('description')?.setValue(formValue.description, { emitEvent: false });
-                }
-                if (this.form.get('assigned_to_user_id')) {
-                    const currentValue = this.form.get('assigned_to_user_id')?.value;
-                    if (currentValue !== formValue.assigned_to_user_id) {
-                        this.form.get('assigned_to_user_id')?.setValue(formValue.assigned_to_user_id, { emitEvent: false });
-                    }
-                }
-                // Reset dirty state after population
                 this.form.markAsPristine();
             }
         }, 100);
     }
 
     hasChanges(): boolean {
-        // If form is dirty, or priority/status/category was changed manually
         if (this.form.dirty) return true;
         
         if (this.isEditMode && this.editingTodo) {
-            const priorityChanged = this.selectedPriority !== (this.editingTodo.priority || null);
-            const statusChanged = this.selectedStatus !== (this.editingTodo.status || 'new');
+            const formValue = this.form.value;
+            const finalCategory = formValue.category === 'Other' ? formValue.custom_category : formValue.category;
             
-            let currentCategory = '';
-            if (this.isOtherCategory) {
-                currentCategory = this.customCategory;
-            } else if (this.selectedCategory && this.selectedCategory !== 'Other') {
-                currentCategory = this.selectedCategory;
-            }
-            const categoryChanged = currentCategory !== (this.editingTodo.category || '');
+            const priorityChanged = formValue.priority !== (this.editingTodo.priority || 'medium');
+            const statusChanged = formValue.status !== (this.editingTodo.status || 'new');
+            const categoryChanged = finalCategory !== (this.editingTodo.category || '');
+            const titleChanged = formValue.title !== this.editingTodo.title;
+            const descriptionChanged = formValue.description !== (this.editingTodo.description || '');
             
-            return priorityChanged || statusChanged || categoryChanged;
-        } else {
-            // In create mode, check if any selections were made
-            return !!(this.selectedPriority || this.selectedCategory || this.form.get('title')?.value || this.form.get('description')?.value);
+            return priorityChanged || statusChanged || categoryChanged || titleChanged || descriptionChanged;
         }
+        return this.form.dirty;
     }
-
 }

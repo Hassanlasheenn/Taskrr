@@ -8,34 +8,59 @@ import { LoaderService } from "../../../core/services/loader.service";
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
 import { IUserListResponse } from "../../../auth/interfaces";
 import { CardComponent } from "../../../shared/components/card/card.component";
-import { trackById } from "../../../shared/helpers/trackByFn.helper";
 import { PosthogService } from "../../../core/services";
 import { Router } from "@angular/router";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { NavigationService } from "../../../core/services/navigation.service";
-import { FormsModule } from "@angular/forms";
+import { FormsModule, FormGroup, ReactiveFormsModule } from "@angular/forms";
+import { DynamicFormComponent } from "../../../shared/components/dynamic-form/dynamic-form.component";
+import { IFieldControl } from "../../../shared/interfaces";
+import { InputTypes } from "../../../shared/enums";
+import { ReactiveFormService } from "../../../shared/services/reactive-form.service";
+import { SharedTableComponent } from "../../../shared/components/shared-table/shared-table.component";
 
 @Component({
     selector: 'app-admin',
     templateUrl: './admin.component.html',
     styleUrls: ['./admin.component.scss'],
     standalone: true,
-    imports: [CommonModule, CardComponent, FormsModule]
+    imports: [CommonModule, CardComponent, FormsModule, ReactiveFormsModule, DynamicFormComponent, SharedTableComponent]
 })
 export class AdminComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
     users: IUserListResponse[] = [];
     currentUserId: number | null = null;
-    trackById = trackById;
     isAdmin: boolean = false;
     private isDeleting: boolean = false;
     private hasLoadedUsers: boolean = false;
     
     // Filter properties
-    searchQuery: string = '';
-    selectedRole: string = 'all';
-    isRoleDropdownOpen: boolean = false;
+    filterForm: FormGroup = new FormGroup({});
+    filterFields: IFieldControl[] = [
+        {
+            label: 'Search',
+            type: InputTypes.TEXT,
+            formControlName: 'search',
+            placeholder: 'Search by ID, username or email...',
+            value: '',
+            icon: 'bi-search',
+            validations: []
+        },
+        {
+            label: 'Role',
+            type: InputTypes.DROPDOWN,
+            formControlName: 'role',
+            placeholder: 'All Roles',
+            value: 'all',
+            options: [
+                { key: 'all', value: 'All Roles' },
+                { key: 'user', value: 'User' },
+                { key: 'admin', value: 'Admin' }
+            ],
+            validations: []
+        }
+    ];
     
     readonly DashboardSections = DashboardSections;
 
@@ -48,36 +73,20 @@ export class AdminComponent implements OnInit, OnDestroy {
         private readonly _posthogService: PosthogService,
         private readonly _router: Router,
         private readonly _navService: NavigationService,
-        private readonly _el: ElementRef
+        private readonly _el: ElementRef,
+        private readonly _formService: ReactiveFormService
     ) {}
 
     @HostListener('document:click', ['$event'])
     onDocumentClick(event: MouseEvent): void {
-        if (!this._el.nativeElement.contains(event.target)) {
-            this.isRoleDropdownOpen = false;
-        }
-    }
-
-    toggleRoleDropdown(): void {
-        this.isRoleDropdownOpen = !this.isRoleDropdownOpen;
-    }
-
-    selectRole(role: string): void {
-        this.selectedRole = role;
-        this.isRoleDropdownOpen = false;
-    }
-
-    getSelectedRoleLabel(): string {
-        switch(this.selectedRole) {
-            case 'admin': return 'Admin';
-            case 'user': return 'User';
-            default: return 'All Roles';
-        }
+        // Dropdown handled by DynamicForm child components
     }
 
     ngOnInit(): void {
         this.isAdmin = this._authService.isAdmin();
         this.currentUserId = this._authService.getCurrentUserId();
+
+        this.filterForm = this._formService.initializeForm(this.filterFields);
 
         // Wait for user data to be loaded before verifying admin status
         this._authService.currentUserData$
@@ -118,15 +127,17 @@ export class AdminComponent implements OnInit, OnDestroy {
 
     get filteredUsers(): IUserListResponse[] {
         let filtered = this.users;
+        const search = this.filterForm.get('search')?.value;
+        const role = this.filterForm.get('role')?.value;
 
         // Apply Role Filter
-        if (this.selectedRole !== 'all') {
-            filtered = filtered.filter(user => user.role === this.selectedRole);
+        if (role && role !== 'all') {
+            filtered = filtered.filter(user => user.role === role);
         }
 
         // Apply Search Filter (ID, Username, Email)
-        if (this.searchQuery.trim()) {
-            const query = this.searchQuery.toLowerCase().trim();
+        if (search && search.trim()) {
+            const query = search.toLowerCase().trim();
             filtered = filtered.filter(user => 
                 user.id.toString() === query ||
                 user.username.toLowerCase().includes(query) ||
@@ -134,7 +145,11 @@ export class AdminComponent implements OnInit, OnDestroy {
             );
         }
 
-        return filtered;
+        return filtered.sort((a, b) => {
+            if (a.role === 'admin' && b.role !== 'admin') return -1;
+            if (a.role !== 'admin' && b.role === 'admin') return 1;
+            return 0;
+        });
     }
 
     onDeleteUser(userId: number): void {
@@ -172,14 +187,14 @@ export class AdminComponent implements OnInit, OnDestroy {
         });
     }
 
-    onRoleChange(userId: number, newRole: "user" | "admin"): void {
+    onRoleChange(event: { userId: number; role: 'user' | 'admin' }): void {
         this._loaderService.show();
-        this._adminService.updateUserRole(userId, newRole)
+        this._adminService.updateUserRole(event.userId, event.role)
             .pipe(takeUntil(this._destroy$))
             .subscribe({
                 next: () => {
                     this._loaderService.hide();
-                    this._toastService.success(`User role updated to ${newRole}`);
+                    this._toastService.success(`User role updated to ${event.role}`);
                     this.loadUsers();
                 },
                 error: (error) => {
@@ -187,10 +202,6 @@ export class AdminComponent implements OnInit, OnDestroy {
                     this._toastService.error(error?.error?.detail || 'Failed to update user role');
                 }
             });
-    }
-
-    isCurrentUser(userId: number): boolean {
-        return userId === this.currentUserId;
     }
 
     onSectionChange(section: DashboardSections): void {

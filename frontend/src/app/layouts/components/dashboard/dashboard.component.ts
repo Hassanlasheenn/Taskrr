@@ -20,6 +20,7 @@ import { AdminComponent } from "../admin/admin.component";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-form/todo-form.component";
+import { SharedTableComponent } from "../../../shared/components/shared-table/shared-table.component";
 import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
 import { PosthogService } from "../../../core/services";
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from "@angular/cdk/drag-drop";
@@ -38,6 +39,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from 
         AdminPanelComponent,
         AdminComponent,
         TodoFormComponent,
+        SharedTableComponent,
         DragDropModule
     ],
 })
@@ -60,6 +62,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     readonly LayoutPaths = LayoutPaths;
     collapsedSections: Set<string> = new Set();
     isAdmin: boolean = false;
+    viewMode: 'grid' | 'table' = 'grid';
 
     constructor(
         public readonly _authService: AuthService,
@@ -74,6 +77,11 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     ) {}
 
     ngOnInit(): void {
+        const savedViewMode = localStorage.getItem('dashboardViewMode');
+        if (savedViewMode === 'grid' || savedViewMode === 'table') {
+            this.viewMode = savedViewMode;
+        }
+
         this.isAdmin = this._authService.isAdmin();
         this.userData = this._authService.getCurrentUserData();
         this.loadTodos();
@@ -210,10 +218,11 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 this._loaderService.show();
                 this._todoService.deleteTodo(userId, todo.id).subscribe({
                     next: (response) => {
-                        this.todos = this.todos
-                            .filter(t => t.id !== todo.id)
-                            .map((t, idx) => ({ ...t, order_index: idx + 1 }));
-                        this.totalTodos = Math.max(0, this.totalTodos - 1);
+                        const index = this.todos.findIndex(t => t.id === todo.id);
+                        if (index !== -1) {
+                            this.todos[index] = { ...this.todos[index], is_deleted: true };
+                            this.todos = [...this.todos];
+                        }
                         this._loaderService.hide();
                         this._toastService.success(response?.message || 'Todo deleted successfully');
                         this._posthogService.capture('todo_deleted', { todo_id: todo.id });
@@ -323,6 +332,12 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         }
     }
 
+    setViewMode(mode: 'grid' | 'table'): void {
+        this.viewMode = mode;
+        localStorage.setItem('dashboardViewMode', mode);
+        this._posthogService.capture('dashboard_view_mode_changed', { mode });
+    }
+
     isSectionCollapsed(section: string): boolean {
         return this.collapsedSections.has(section);
     }
@@ -426,6 +441,20 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         }
     }
 
+    getStatusLabel(status: string): string {
+        const statusMap: { [key: string]: string } = {
+            'new': 'New',
+            'inProgress': 'In Progress',
+            'paused': 'Paused',
+            'done': 'Done'
+        };
+        return statusMap[status] || status;
+    }
+
+    getStatusClass(status: string): string {
+        return `status-${status}`;
+    }
+
     onSearchChange(query: string): void {
         this.searchQuery = query.toLowerCase().trim();
     }
@@ -478,18 +507,29 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             filtered = filtered.filter(todo => todo.category === this.selectedCategory);
         }
 
+        const statusOrder: { [key: string]: number } = {
+            'inProgress': 0,
+            'new': 1,
+            'paused': 2,
+            'done': 3
+        };
+
         return filtered.sort((a, b) => {
+            // Deleted todos always go to the end
+            if (a.is_deleted !== b.is_deleted) {
+                return a.is_deleted ? 1 : -1;
+            }
+
+            const statusA = statusOrder[a.status] ?? 1;
+            const statusB = statusOrder[b.status] ?? 1;
+            if (statusA !== statusB) {
+                return statusA - statusB;
+            }
+
             const categoryA = a.category || '\uffff';
             const categoryB = b.category || '\uffff';
             if (categoryA !== categoryB) {
                 return categoryA.localeCompare(categoryB);
-            }
-
-            if (a.status === 'done' && b.status !== 'done') {
-                return 1;
-            }
-            if (a.status !== 'done' && b.status === 'done') {
-                return -1;
             }
 
             return (a.order_index || 0) - (b.order_index || 0);

@@ -1,0 +1,161 @@
+<div class="table-view-container">
+    <div class="custom-table-wrapper">
+        <table class="custom-table">
+            <!-- ========== Users Mode ========== -->
+            <ng-container *ngIf="isUsersMode; else todoMode">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th class="actions-col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let user of users; let i = index; trackBy: trackById"
+                        [ngClass]="{ 'current-user': isCurrentUser(user.id), 'role-admin': user.role === 'admin' }">
+                        <td data-label="#">{{ i + 1 }}</td>
+                        <td data-label="ID">{{ user.id }}</td>
+                        <td data-label="Username">{{ user.username | titlecase }}</td>
+                        <td data-label="Email">{{ user.email }}</td>
+                        <td data-label="Role">
+                            <app-dropdown-form
+                                class="table-dropdown"
+                                [field]="getRoleField(user)"
+                                [ngModel]="user.role"
+                                (ngModelChange)="onRoleChange(user.id, $event)"
+                                [isBadge]="true"
+                                [customInputClass]="'role-dropdown'"
+                            />
+                        </td>
+                        <td class="actions-cell" data-label="Actions">
+                            <div class="table-actions">
+                                <button
+                                    class="table-action-btn delete"
+                                    [disabled]="isCurrentUser(user.id)"
+                                    (click)="onDeleteUser(user.id)"
+                                    title="Delete user"
+                                >
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </ng-container>
+
+            <!-- ========== Todo Mode ========== -->
+            <ng-template #todoMode>
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Category</th>
+                        <th>Due Date</th>
+                        <th class="actions-col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let todo of todos; trackBy: trackById"
+                        [class.status-done]="todo.status === 'done'"
+                        [class.status-inProgress]="todo.status === 'inProgress'"
+                        [class.marked-deleted]="todo.is_deleted">
+                        <td class="title-cell" data-label="Title">
+                            <div class="title-wrapper" *ngIf="editingTitleId !== todo.id; else editTitleTpl">
+                                <a [routerLink]="['/', LayoutPaths.TODO_VIEW, todo.id]" class="todo-link">{{ todo.title }}</a>
+                                <button
+                                    *ngIf="!todo.is_deleted"
+                                    class="title-edit-btn"
+                                    (click)="startEditTitle(todo); $event.preventDefault()"
+                                    title="Edit title"
+                                >
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
+                            </div>
+                            <ng-template #editTitleTpl>
+                                <div class="title-edit-wrapper">
+                                    <input
+                                        class="title-edit-input"
+                                        type="text"
+                                        [(ngModel)]="editingTitleValue"
+                                        (keydown)="onTitleKeydown($event, todo)"
+                                        (blur)="saveTitleEdit(todo)"
+                                        #titleInput
+                                    />
+                                </div>
+                            </ng-template>
+                        </td>
+                        <td data-label="Status">
+                            <app-dropdown-form
+                                class="table-dropdown"
+                                [field]="getStatusField(todo)"
+                                [ngModel]="todo.status"
+                                (ngModelChange)="onFieldChange(todo, 'status', $event)"
+                                [isBadge]="true"
+                                [customInputClass]="getStatusClass($any(todo).status)"
+                                [class.disabled-field]="todo.is_deleted"
+                            />
+                        </td>
+                        <td data-label="Priority">
+                            <app-dropdown-form
+                                class="table-dropdown"
+                                [field]="getPriorityField(todo)"
+                                [ngModel]="todo.priority"
+                                (ngModelChange)="onFieldChange(todo, 'priority', $event)"
+                                [isBadge]="true"
+                                [customInputClass]="getPriorityClass($any(todo).priority)"
+                                [class.disabled-field]="todo.is_deleted"
+                            />
+                        </td>
+                        <td data-label="Category">
+                            <app-dropdown-form
+                                *ngIf="customCategoryTodoId !== todo.id"
+                                class="table-dropdown"
+                                [field]="getCategoryField(todo)"
+                                [ngModel]="getCategoryField(todo).value"
+                                (ngModelChange)="onCategoryChange(todo, $event)"
+                                [isBadge]="true"
+                                customInputClass="inline-category-dropdown"
+                                [class.disabled-field]="todo.is_deleted"
+                            />
+                            <div *ngIf="customCategoryTodoId === todo.id" class="custom-category-inline">
+                                <input
+                                    type="text"
+                                    class="custom-category-input"
+                                    [(ngModel)]="customCategoryValue"
+                                    (keydown)="onCustomCategoryKeydown($event, todo)"
+                                    (blur)="saveCustomCategory(todo)"
+                                    placeholder="Type category..."
+                                    #customCatInput
+                                />
+                            </div>
+                        </td>
+                        <td data-label="Due Date">
+                            <app-date-picker
+                                class="table-date-picker"
+                                [field]="getDateField(todo)"
+                                [ngModel]="todo.due_date"
+                                (ngModelChange)="onFieldChange(todo, 'due_date', $event)"
+                                [isBadge]="true"
+                                [customInputClass]="getDueDateUrgencyClass(todo.due_date)"
+                                [class.disabled-field]="todo.is_deleted"
+                            />
+                        </td>
+                        <td class="actions-cell" data-label="Actions">
+                            <div class="table-actions">
+                                <button (click)="onDelete(todo)" class="table-action-btn delete" title="Delete"
+                                    [disabled]="todo.is_deleted">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </ng-template>
+        </table>
+        <div *ngIf="displayData.length === 0" class="empty-table-msg">{{ emptyMessage }}</div>
+    </div>
+</div>

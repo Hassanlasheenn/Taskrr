@@ -12,12 +12,13 @@ export interface IFieldControl {
     options?: IDropdownOptions[];
     validations: IValidations[];
     customInputClass?: string;
+    icon?: string;
     photoUrl?: string | null;
     onPhotoSelected?: (file: File) => void;
 }
 
 export interface IDropdownOptions {
-    key: number | null;
+    key: string | number | null;
     value: string;
 }
 

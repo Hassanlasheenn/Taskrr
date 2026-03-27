@@ -3,6 +3,7 @@ import { InputFormComponent } from "../form-fields/input/input.component";
 import { DropdownFormComponent } from "../form-fields/dropdown/dropdown.component";
 import { UploadPhotoComponent } from "../form-fields/upload-photo/upload-photo.component";
 import { DatePickerComponent } from "../form-fields/date-picker/date-picker.component";
+import { TextareaFormComponent } from "../form-fields/textarea/textarea.component";
 import { CommonModule } from "@angular/common";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { trackById } from "../../helpers";
@@ -19,6 +20,7 @@ import { InputTypes } from "../../enums";
         DropdownFormComponent, 
         UploadPhotoComponent, 
         DatePickerComponent,
+        TextareaFormComponent,
         CommonModule, 
         ReactiveFormsModule
     ]
@@ -29,6 +31,9 @@ export class DynamicFormComponent implements OnChanges {
     @Input() customInputStyle: ICustomStyle = {};
     @Input() isSubmitted: boolean = false;
     @Input() errorSummary: string | null = null;
+    @Input() layout: 'vertical' | 'horizontal' | 'inline' = 'vertical';
+    @Input() isFilter: boolean = false;
+    @Input() isBadge: boolean = false;
     @Output() photoSelected = new EventEmitter<{ fieldName: string; file: File }>();
     @Output() errorSummaryChange = new EventEmitter<string | null>();
     @Output() photoRemoved = new EventEmitter<string>();

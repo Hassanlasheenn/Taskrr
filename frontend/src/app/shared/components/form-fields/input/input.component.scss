@@ -1,6 +1,10 @@
 .input-form {
     margin-top: 1.5rem;
     
+    &--filter {
+        margin-top: 0;
+    }
+
     &__label {
         font-size: 0.875rem;
         font-weight: 500;
@@ -30,9 +34,14 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            height: 52px;
 
             &.input-with-icon {
                 padding-right: 3rem;
+            }
+
+            &.input-with-left-icon {
+                padding-left: 2.75rem;
             }
 
             &::placeholder {
@@ -79,6 +88,17 @@
                                 0 4px 16px rgba(107, 207, 209, 0.2);
                 }
             }
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            pointer-events: none;
+            font-size: 1rem;
+            z-index: 5;
         }
 
         .input-form__toggle-password {

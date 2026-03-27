@@ -1,97 +1,23 @@
 <div class="admin-content flex-grow-1 d-flex flex-column">
     <app-card [card]="{ title: 'All Users' }" class="admin-card">
         <p class="section-description">Manage users, assign roles, and delete accounts.</p>
-        
+
         <div *ngIf="users.length > 0" class="admin-filters-section mb-4">
-            <div class="search-wrapper">
-                <i class="bi bi-search search-icon"></i>
-                <input 
-                    type="text" 
-                    class="admin-search-input" 
-                    [(ngModel)]="searchQuery" 
-                    placeholder="Search by ID, username or email..."
-                    aria-label="Search users"
-                >
-            </div>
-            <div class="role-filter-wrapper">
-                <div class="custom-dropdown" (click)="toggleRoleDropdown()" [class.active]="isRoleDropdownOpen">
-                    <div class="custom-dropdown-value">
-                        {{ getSelectedRoleLabel() }}
-                    </div>
-                    <i class="bi bi-chevron-down dropdown-arrow" [class.rotated]="isRoleDropdownOpen"></i>
-                    
-                    <ul *ngIf="isRoleDropdownOpen" class="custom-dropdown-popup">
-                        <li (click)="selectRole('all'); $event.stopPropagation()" 
-                            class="custom-dropdown-option" 
-                            [class.selected]="selectedRole === 'all'">
-                            All Roles
-                            <i *ngIf="selectedRole === 'all'" class="bi bi-check"></i>
-                        </li>
-                        <li (click)="selectRole('user'); $event.stopPropagation()" 
-                            class="custom-dropdown-option" 
-                            [class.selected]="selectedRole === 'user'">
-                            User
-                            <i *ngIf="selectedRole === 'user'" class="bi bi-check"></i>
-                        </li>
-                        <li (click)="selectRole('admin'); $event.stopPropagation()" 
-                            class="custom-dropdown-option" 
-                            [class.selected]="selectedRole === 'admin'">
-                            Admin
-                            <i *ngIf="selectedRole === 'admin'" class="bi bi-check"></i>
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            <app-dynamic-form
+                [fields]="filterFields"
+                [form]="filterForm"
+                [layout]="'inline'"
+                [isFilter]="true"
+                class="w-100"
+            />
         </div>
 
-        <div class="users-table-wrapper">
-            <table class="users-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let user of filteredUsers; let i = index; trackBy: trackById" [class.current-user]="isCurrentUser(user.id)">
-                        <td>{{ i + 1 }}</td>
-                        <td>{{ user.id }}</td>
-                        <td>{{ user.username | titlecase }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>
-                            <select 
-                                class="role-select"
-                                [value]="user.role"
-                                [disabled]="isCurrentUser(user.id)"
-                                (change)="onRoleChange(user.id, $any($event.target).value)"
-                            >
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </td>
-                        <td>
-                            <button 
-                                class="btn-delete"
-                                [disabled]="isCurrentUser(user.id)"
-                                (click)="onDeleteUser(user.id)"
-                                title="Delete user"
-                            >
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr *ngIf="filteredUsers.length === 0">
-                        <td colspan="6" class="no-users">
-                            <i class="bi bi-person-x mb-2 d-block fs-2"></i>
-                            No users found matching your criteria
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <app-shared-table
+            [users]="filteredUsers"
+            [currentUserId]="currentUserId"
+            (roleChange)="onRoleChange($event)"
+            (deleteUser)="onDeleteUser($event)"
+            emptyMessage="No users found matching your criteria"
+        />
     </app-card>
 </div>
