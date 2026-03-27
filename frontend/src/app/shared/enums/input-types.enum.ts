@@ -9,4 +9,5 @@ export enum InputTypes {
     UPLOAD_PHOTO = 'upload-photo',
     CHECKBOX = 'checkbox',
     DROPDOWN = 'dropdown',
+    TEXTAREA = 'textarea',
 }

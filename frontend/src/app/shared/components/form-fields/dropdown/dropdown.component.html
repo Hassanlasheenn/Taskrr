@@ -1,5 +1,5 @@
-<section class="dropdown-form">
-    <div class="dropdown-form__label-wrapper">
+<section class="dropdown-form" [class.dropdown-form--filter]="isFilter" [class.dropdown-form--badge]="isBadge">
+    <div *ngIf="!isFilter && !isBadge" class="dropdown-form__label-wrapper">
         <label class="dropdown-form__label" for="dropdown-{{ name }}">{{ label }}</label>
         <div class="dropdown-form__error" *ngIf="isInvalid && errorMessage">
             {{ errorMessage }}
@@ -26,19 +26,21 @@
             <li 
                 *ngFor="let option of field?.options; trackBy: trackById"
                 (click)="selectOption(option.key)"
-                [class.selected]="control?.value == option.key"
+                [class.selected]="(control ? control.value : innerValue) == option.key"
                 class="dropdown-form__option"
             >
                 {{ option.value }}
-                <i *ngIf="control?.value == option.key" class="bi bi-check"></i>
+                <i *ngIf="(control ? control.value : innerValue) == option.key" class="bi bi-check"></i>
             </li>
         </ul>
     </div>
 
     <!-- Hidden native select for form accessibility/compatibility -->
-    <select [formControlName]="formGroup.get(name) ? name : ''" [style.display]="'none'">
-        <option *ngFor="let option of field?.options" [value]="option.key">
-            {{ option.value }}
-        </option>
-    </select>
+    <div *ngIf="formGroup" [formGroup]="formGroup">
+        <select [formControlName]="name" [style.display]="'none'">
+            <option *ngFor="let option of field?.options" [value]="option.key">
+                {{ option.value }}
+            </option>
+        </select>
+    </div>
 </section>

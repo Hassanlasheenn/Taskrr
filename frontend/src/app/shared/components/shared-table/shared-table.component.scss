@@ -1,0 +1,298 @@
+@use '../../../assets/components/table-base' as table-base;
+
+.table-view-container {
+    width: 100%;
+    animation: fadeIn 0.3s ease;
+}
+
+// Inherit base table styles
+@include table-base.table-base-styles;
+
+.custom-table {
+    // Only enforce min-width on desktop where table layout is used
+    @media (min-width: 1491px) {
+        min-width: 800px;
+    }
+
+    :host ::ng-deep {
+        // Status Overrides - specific to todo-table
+        .dropdown-form__input-wrapper.status-new {
+            background-color: rgba(139, 92, 246, 0.15) !important;
+            .dropdown-form__field { color: #8b5cf6 !important; }
+        }
+        .dropdown-form__input-wrapper.status-inProgress {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+            .dropdown-form__field { color: #3b82f6 !important; }
+        }
+        .dropdown-form__input-wrapper.status-paused {
+            background-color: rgba(245, 158, 11, 0.15) !important;
+            .dropdown-form__field { color: #f59e0b !important; }
+        }
+        .dropdown-form__input-wrapper.status-done {
+            background-color: rgba(16, 185, 129, 0.15) !important;
+            .dropdown-form__field { color: #10b981 !important; }
+        }
+
+        // Priority Overrides - specific to todo-table
+        .dropdown-form__input-wrapper.priority-high {
+            background-color: rgba(239, 68, 68, 0.12) !important;
+            .dropdown-form__field { color: #ef4444 !important; }
+        }
+        .dropdown-form__input-wrapper.priority-medium {
+            background-color: rgba(245, 158, 11, 0.12) !important;
+            .dropdown-form__field { color: #f59e0b !important; }
+        }
+        .dropdown-form__input-wrapper.priority-low {
+            background-color: rgba(16, 185, 129, 0.12) !important;
+            .dropdown-form__field { color: #10b981 !important; }
+        }
+
+        // Category Styles Overrides - specific to todo-table
+        .table-dropdown .inline-category-dropdown.dropdown-form__input-wrapper {
+            background-color: rgba(107, 207, 209, 0.08) !important;
+            border: 1px solid rgba(107, 207, 209, 0.2) !important;
+            .dropdown-form__field {
+                color: var(--primary-gradient-start) !important;
+                text-transform: none !important;
+            }
+        }
+
+        // Date Urgency Overrides - specific to todo-table
+        .table-date-picker .urgency-high.date-picker__input-wrapper {
+            color: #dc3545 !important;
+            background-color: rgba(220, 53, 69, 0.1) !important;
+        }
+        .table-date-picker .urgency-medium.date-picker__input-wrapper {
+            color: #f59e0b !important;
+            background-color: rgba(245, 158, 11, 0.1) !important;
+        }
+        .table-date-picker .urgency-low.date-picker__input-wrapper {
+            color: #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.1) !important;
+        }
+    }
+
+    .title-cell {
+        font-weight: 600;
+        padding-left: 1.5rem !important;
+
+        .title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .todo-link {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            position: relative;
+            padding-bottom: 2px;
+
+            &::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 0;
+                height: 2px;
+                background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+                transition: width 0.3s ease;
+            }
+
+            &:hover {
+                color: var(--primary-gradient-start);
+
+                &::after {
+                    width: 100%;
+                }
+            }
+        }
+
+        .title-edit-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            opacity: 0;
+            transform: translateX(-6px) scale(0.8);
+            transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s ease, color 0.2s ease;
+            flex-shrink: 0;
+
+            i {
+                font-size: 0.7rem;
+            }
+
+            &:hover {
+                color: var(--primary-gradient-start);
+                transform: translateX(0) scale(1.05);
+            }
+        }
+
+        .title-wrapper:hover .title-edit-btn {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+        }
+
+        .title-edit-wrapper {
+            width: 100%;
+        }
+
+        .title-edit-input {
+            width: 100%;
+            padding: 0.35rem 0.6rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: var(--card-bg);
+            border: 2px solid var(--primary-gradient-start);
+            border-radius: 8px;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(107, 207, 209, 0.15);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            animation: titleEditFadeIn 0.2s ease;
+
+            &:focus {
+                border-color: var(--primary-gradient-end);
+                box-shadow: 0 0 0 4px rgba(107, 207, 209, 0.2);
+            }
+        }
+
+        @keyframes titleEditFadeIn {
+            from {
+                opacity: 0;
+                transform: scaleX(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scaleX(1);
+            }
+        }
+    }
+
+    // Custom category inline input
+    .custom-category-inline {
+        .custom-category-input {
+            width: 100%;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            background: var(--card-bg);
+            border: 2px solid var(--primary-gradient-start);
+            border-radius: 8px;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(107, 207, 209, 0.15);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            animation: titleEditFadeIn 0.2s ease;
+
+            &:focus {
+                border-color: var(--primary-gradient-end);
+                box-shadow: 0 0 0 4px rgba(107, 207, 209, 0.2);
+            }
+
+            &::placeholder {
+                color: var(--text-secondary);
+                opacity: 0.6;
+            }
+        }
+    }
+
+    // Action button styling
+    .table-actions {
+        .table-action-btn.delete:hover {
+            color: #ef4444;
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .table-action-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+            pointer-events: none;
+        }
+    }
+
+    // Todo mode: in-progress status row highlight
+    tbody tr.status-inProgress {
+        background-color: rgba(59, 130, 246, 0.08) !important;
+        border-left: 3px solid #3b82f6;
+    }
+
+    // Todo mode: done status row highlight
+    tbody tr.status-done {
+        background-color: rgba(16, 185, 129, 0.08) !important;
+        border-left: 3px solid #10b981;
+    }
+
+    // Todo mode: marked for deletion row
+    tbody tr.marked-deleted {
+        background-color: rgba(239, 68, 68, 0.08) !important;
+        border-left: 3px solid #ef4444;
+
+        td {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .table-actions {
+            text-decoration: none;
+        }
+    }
+
+    :host ::ng-deep .disabled-field {
+        pointer-events: none;
+        opacity: 0.4;
+    }
+
+    // Users mode: current user row highlight
+    tbody tr.current-user {
+        background-color: rgba(139, 92, 246, 0.05);
+    }
+
+    // Users mode: admin role row highlight
+    tbody tr.role-admin {
+        background-color: rgba(239, 68, 68, 0.06) !important;
+        border-left: 3px solid #ef4444;
+    }
+
+    // Users mode: role dropdown styling
+    :host ::ng-deep {
+        .role-dropdown.dropdown-form__input-wrapper {
+            background: transparent;
+            border: 1px solid transparent;
+            box-shadow: none;
+            transition: all 0.2s ease;
+            border-radius: 20px;
+
+            &:hover {
+                border-color: var(--card-border-color);
+                background: rgba(107, 207, 209, 0.05);
+            }
+
+            .dropdown-form__field {
+                padding: 5px 0 5px 12px !important;
+                height: 34px !important;
+                font-size: 0.8rem !important;
+                font-weight: 600 !important;
+                white-space: nowrap !important;
+            }
+
+            .dropdown-form__arrow-wrapper {
+                right: auto;
+                padding-right: 8px !important;
+            }
+        }
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

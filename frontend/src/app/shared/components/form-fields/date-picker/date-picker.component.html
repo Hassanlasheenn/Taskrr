@@ -1,5 +1,5 @@
-<section class="date-picker">
-    <div class="date-picker__label-wrapper">
+<section class="date-picker" [class.date-picker--filter]="isFilter" [class.date-picker--badge]="isBadge">
+    <div *ngIf="!isFilter && !isBadge" class="date-picker__label-wrapper">
         <label class="date-picker__label" for="date-{{ name }}">{{ label }}</label>
         <div class="date-picker__error" *ngIf="isInvalid && errorMessage">
             {{ errorMessage }}
@@ -30,7 +30,7 @@
         </div>
 
         <!-- Calendar Popup -->
-        <div class="date-picker__popup" *ngIf="showPicker" (click)="$event.stopPropagation()">
+        <div class="date-picker__popup" *ngIf="showPicker" [ngStyle]="popupStyle" (click)="$event.stopPropagation()">
             <div class="calendar-header">
                 <button type="button" class="calendar-nav-btn" (click)="prevMonth($event)">
                     <i class="bi bi-chevron-left"></i>

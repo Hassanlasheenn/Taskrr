@@ -1,3 +1,19 @@
+.dynamic-form-wrapper {
+    width: 100%;
+}
+
+.dynamic-form--inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+
+    .field-container {
+        flex: 1;
+        min-width: 200px;
+    }
+}
+
 .error-summary-box {
     border: 1px solid var(--error-summary-border-color);
     border-radius: 12px;
@@ -22,4 +38,3 @@
         line-height: 1.5;
     }
 }
-

@@ -1,11 +1,12 @@
-<section class="input-form" [class.input-form--checkbox]="isCheckbox">
-    <div *ngIf="!isCheckbox" class="input-form__label-wrapper">
+<section class="input-form" [class.input-form--checkbox]="isCheckbox" [class.input-form--filter]="isFilter">
+    <div *ngIf="!isCheckbox && !isFilter" class="input-form__label-wrapper">
         <label class="input-form__label" for="input-{{ name }}">{{ label }}</label>
         <div class="input-form__error" *ngIf="isInvalid && errorMessage">
             {{ errorMessage }}
         </div>
     </div>
     <div class="input-form__input" [formGroup]="formGroup" [class.input-form__input--checkbox]="isCheckbox">
+        <i *ngIf="field?.icon" [class]="'bi ' + field?.icon + ' input-icon'"></i>
         <input
             *ngIf="!isCheckbox"
             id="input-{{ name }}"
@@ -14,7 +15,8 @@
             [formControlName]="name"
             [ngStyle]="customInputStyle"
             [ngClass]="getInputClasses()"
-            [class.input-with-icon]="isPasswordField"
+            [class.input-with-icon]="isPasswordField || field?.icon"
+            [class.input-with-left-icon]="field?.icon"
         />
         <div *ngIf="isCheckbox" class="checkbox-wrapper">
             <input

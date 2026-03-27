@@ -4,9 +4,9 @@
         <p class="error-summary-message">{{ errorSummary }}</p>
     </div>
 
-    <form [formGroup]="form">
+    <form [formGroup]="form" [class.dynamic-form--inline]="layout === 'inline'">
         <ng-container *ngFor="let field of fields; trackBy: trackById">
-            <div *ngIf="field.type === InputTypes.UPLOAD_PHOTO || field.type === InputTypes.FILE" [formGroup]="form">
+            <div *ngIf="field.type === InputTypes.UPLOAD_PHOTO || field.type === InputTypes.FILE" [formGroup]="form" class="field-container">
                 <app-upload-photo
                     [label]="field.label"
                     [formControlName]="field.formControlName"
@@ -17,43 +17,64 @@
                 />
             </div>
 
-            <app-dropdown-form
-                *ngIf="field.type === InputTypes.DROPDOWN"
-                [label]="field.label"
-                [type]="field.type"
-                [formGroup]="form"
-                [placeholder]="field.placeholder"
-                [name]="field.formControlName"
-                [customInputStyle]="customInputStyle"
-                [customInputClass]="field.customInputClass"
-                [field]="field"
-                [showErrors]="isSubmitted"
-            />
+            <div *ngIf="field.type === InputTypes.DROPDOWN" class="field-container">
+                <app-dropdown-form
+                    [label]="field.label"
+                    [type]="field.type"
+                    [formGroup]="form"
+                    [placeholder]="field.placeholder"
+                    [name]="field.formControlName"
+                    [customInputStyle]="customInputStyle"
+                    [customInputClass]="field.customInputClass"
+                    [field]="field"
+                    [showErrors]="isSubmitted"
+                    [isFilter]="isFilter"
+                    [isBadge]="isBadge"
+                />
+            </div>
 
-            <app-date-picker
-                *ngIf="field.type === InputTypes.DATE"
-                [label]="field.label"
-                [formGroup]="form"
-                [placeholder]="field.placeholder || ''"
-                [name]="field.formControlName"
-                [customInputStyle]="customInputStyle"
-                [customInputClass]="field.customInputClass"
-                [field]="field"
-                [showErrors]="isSubmitted"
-            />
+            <div *ngIf="field.type === InputTypes.DATE" class="field-container">
+                <app-date-picker
+                    [label]="field.label"
+                    [formGroup]="form"
+                    [placeholder]="field.placeholder || ''"
+                    [name]="field.formControlName"
+                    [customInputStyle]="customInputStyle"
+                    [customInputClass]="field.customInputClass"
+                    [field]="field"
+                    [showErrors]="isSubmitted"
+                    [isFilter]="isFilter"
+                    [isBadge]="isBadge"
+                />
+            </div>
 
-            <app-input-form
-                *ngIf="field.type === InputTypes.TEXT || field.type === InputTypes.EMAIL || field.type === InputTypes.PASSWORD || field.type === InputTypes.NUMBER || field.type === InputTypes.TIME || field.type === InputTypes.CHECKBOX"
-                [label]="field.label"
-                [type]="field.type"
-                [formGroup]="form"
-                [placeholder]="field.placeholder || ''"
-                [name]="field.formControlName"
-                [customInputStyle]="customInputStyle"
-                [customInputClass]="field.customInputClass"
-                [field]="field"
-                [showErrors]="isSubmitted"
-            />
+            <div *ngIf="field.type === InputTypes.TEXTAREA" class="field-container">
+                <app-textarea-form
+                    [label]="field.label"
+                    [formGroup]="form"
+                    [placeholder]="field.placeholder || ''"
+                    [name]="field.formControlName"
+                    [customInputStyle]="customInputStyle"
+                    [customInputClass]="field.customInputClass"
+                    [field]="field"
+                    [showErrors]="isSubmitted"
+                />
+            </div>
+
+            <div *ngIf="field.type === InputTypes.TEXT || field.type === InputTypes.EMAIL || field.type === InputTypes.PASSWORD || field.type === InputTypes.NUMBER || field.type === InputTypes.TIME || field.type === InputTypes.CHECKBOX" class="field-container">
+                <app-input-form
+                    [label]="field.label"
+                    [type]="field.type"
+                    [formGroup]="form"
+                    [placeholder]="field.placeholder || ''"
+                    [name]="field.formControlName"
+                    [customInputStyle]="customInputStyle"
+                    [customInputClass]="field.customInputClass"
+                    [field]="field"
+                    [showErrors]="isSubmitted"
+                    [isFilter]="isFilter"
+                />
+            </div>
         </ng-container>
     </form>
 </section>

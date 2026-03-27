@@ -14,23 +14,25 @@ export class ReactiveFormService {
     initializeForm(fields: IFieldControl[]): FormGroup {
         const controls: { [key: string]: any } = {};
         fields.forEach((field: IFieldControl) => {
-            const validators = this.buildValidators(field, fields);
-            // Handle checkbox type differently - use boolean value
-            // Handle dropdown type - use null or the value
-            let defaultValue: any = '';
-            if (field.type === InputTypes.CHECKBOX) {
-                defaultValue = field?.value === true || field?.value === 'true';
-            } else if (field.type === InputTypes.DROPDOWN) {
-                defaultValue = field?.value !== undefined && field?.value !== null ? field.value : null;
-            } else {
-                defaultValue = field?.value || '';
-            }
-            controls[field.formControlName] = [
-                { value: defaultValue, disabled: field?.disabled || false },
-                validators
-            ];
+            controls[field.formControlName] = this.createControl(field, fields);
         });
         return this.fb.group(controls);
+    }
+
+    createControl(field: IFieldControl, allFields: IFieldControl[] = []): AbstractControl {
+        const validators = this.buildValidators(field, allFields);
+        let defaultValue: any = '';
+        if (field.type === InputTypes.CHECKBOX) {
+            defaultValue = field?.value === true || field?.value === 'true';
+        } else if (field.type === InputTypes.DROPDOWN) {
+            defaultValue = field?.value !== undefined && field?.value !== null ? field.value : null;
+        } else {
+            defaultValue = field?.value || '';
+        }
+        return this.fb.control(
+            { value: defaultValue, disabled: field?.disabled || false },
+            validators
+        );
     }
 
     private buildValidators(field: IFieldControl, allFields: IFieldControl[]): ValidatorFn[] {

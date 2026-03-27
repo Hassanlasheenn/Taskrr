@@ -1069,7 +1069,6 @@ async def delete_todo(
     deleter_username = deleter.username if deleter else "Admin"
     
     todo_title = todo.title
-    deleted_index = todo.order_index
     
     if todo.assigned_to_user_id:
         assigned_user = db.query(models.User).filter(
@@ -1085,15 +1084,11 @@ async def delete_todo(
             db.add(notification)
             db.flush()
             db.refresh(notification)
-            
-            # Set todo_id to NULL before deleting the todo to avoid foreign key constraint
-            notification.todo_id = None
-            db.flush()
-            
+
             notification_data = {
                 "id": notification.id,
                 "user_id": notification.user_id,
-                "todo_id": None,
+                "todo_id": notification.todo_id,
                 "message": notification.message,
                 "is_read": notification.is_read,
                 "created_at": notification.created_at.isoformat() if notification.created_at else None
@@ -1112,13 +1107,8 @@ async def delete_todo(
                     )
                 )
 
-    db.delete(todo)
-    
-    db.query(models.Todo).filter(
-        models.Todo.user_id == user_id,
-        models.Todo.order_index > deleted_index
-    ).update({models.Todo.order_index: models.Todo.order_index - 1})
-    
+    todo.is_deleted = True
+
     db.commit()
     invalidate_todo_detail(todo_id)
     invalidate_todo_list_for_user(todo.user_id)

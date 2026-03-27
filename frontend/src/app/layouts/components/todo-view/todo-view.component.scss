@@ -119,7 +119,8 @@
 .todo-view-delete-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center; /* Center content */
+    width: 100px; /* Set fixed width */
     padding: 0.5rem 1rem;
     border-radius: 10px;
     border: 1px solid #fee2e2;
@@ -131,10 +132,8 @@
     transition: all 0.2s ease;
     flex-shrink: 0;
 
-    i { font-size: 1rem; }
-
     &:hover {
-        background: #fee2e2;
+        background: #fee2e2; /* Keep the same color on hover after icon removal */
         transform: translateY(-1px);
     }
 }
@@ -142,10 +141,11 @@
 .todo-view-save-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center; /* Center content */
+    width: 100px; /* Set fixed width */
     padding: 0.5rem 1rem;
-    border-radius: 10px;
     border: none;
+    border-radius: 10px;
     background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
     color: var(--text-white);
     font-size: 0.875rem;
@@ -169,13 +169,82 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem; /* Increased gap */
 }
 
 .todo-view-dropdown-wrap {
     display: flex;
+    flex-direction: column;
     width: fit-content;
     position: relative;
+
+    /* Use ::ng-deep to override component internal styles */
+    :host ::ng-deep {
+        .dropdown-form--badge {
+            width: auto;
+            
+            .dropdown-form__container {
+                min-width: 155px; /* Consistent with table view */
+            }
+
+            .dropdown-form__input-wrapper {
+                background: rgba(107, 207, 209, 0.05);
+                border: 1px solid var(--card-border-color);
+                border-radius: 12px;
+                transition: all 0.2s ease;
+
+                &:hover {
+                    background: rgba(107, 207, 209, 0.1);
+                    border-color: var(--primary-gradient-start);
+                }
+
+                // Status Colors
+                &.status-new {
+                    background-color: rgba(139, 92, 246, 0.1) !important;
+                    .dropdown-form__field { color: #8b5cf6 !important; }
+                }
+                &.status-inProgress {
+                    background-color: rgba(59, 130, 246, 0.1) !important;
+                    .dropdown-form__field { color: #3b82f6 !important; }
+                }
+                &.status-paused {
+                    background-color: rgba(245, 158, 11, 0.1) !important;
+                    .dropdown-form__field { color: #f59e0b !important; }
+                }
+                &.status-done {
+                    background-color: rgba(16, 185, 129, 0.1) !important;
+                    .dropdown-form__field { color: #10b981 !important; }
+                }
+
+                // Priority Colors
+                &.priority-high {
+                    background-color: rgba(239, 68, 68, 0.08) !important;
+                    .dropdown-form__field { color: #ef4444 !important; }
+                }
+                &.priority-medium {
+                    background-color: rgba(245, 158, 11, 0.08) !important;
+                    .dropdown-form__field { color: #f59e0b !important; }
+                }
+                &.priority-low {
+                    background-color: rgba(16, 185, 129, 0.08) !important;
+                    .dropdown-form__field { color: #10b981 !important; }
+                }
+            }
+
+            .dropdown-form__field {
+                padding: 0.5rem 0.75rem 0.5rem 0.75rem !important; /* Revert padding, now handled in component with gap */
+                height: 38px !important;
+                font-size: 0.875rem !important;
+                font-weight: 600 !important;
+                /* Removed display: flex, align-items: center as it's handled by input-wrapper now */
+            }
+
+            .dropdown-form__arrow-wrapper {
+                right: auto !important; /* Remove right positioning */
+                padding-right: 0.75rem !important; /* Custom padding for view arrow */
+            }
+        }
+    }
 }
 
 .custom-dropdown {

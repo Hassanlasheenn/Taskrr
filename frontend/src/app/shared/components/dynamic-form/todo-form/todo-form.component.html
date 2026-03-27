@@ -6,87 +6,8 @@
         [errorSummary]="errorSummary"
     />
 
-    <!-- Category Selection -->
-    <fieldset class="category-section">
-        <legend class="category-label">Category</legend>
-        <div class="d-flex flex-wrap gap-2">
-            <button
-                *ngFor="let category of availableCategories; trackBy: trackById"
-                type="button"
-                class="category-btn"
-                [class.selected]="selectedCategory === category"
-                (click)="selectCategory(category)"
-            >
-                {{ category }}
-            </button>
-        </div>
-        <!-- Custom Category Input - Show when "Other" is selected -->
-        <div *ngIf="isOtherCategory" class="custom-category-input mt-3">
-            <label class="custom-category-label">Enter custom category</label>
-            <input
-                type="text"
-                class="custom-category-field"
-                [(ngModel)]="customCategory"
-                placeholder="Type your custom category name..."
-                maxlength="100"
-            />
-        </div>
-    </fieldset>
-
-    <!-- Priority Selection (Admin can always edit, User can only set on creation) -->
-    <fieldset *ngIf="isAdmin || !isEditMode" class="priority-section" [class.readonly]="isEditMode && !isAdmin">
-        <legend class="priority-label">Priority</legend>
-        <div class="d-flex flex-column flex-sm-row gap-2">
-            <button
-                *ngFor="let priority of priorities; trackBy: trackById"
-                type="button"
-                class="priority-btn flex-grow-1"
-                [class.selected]="selectedPriority === priority.value"
-                [class.disabled]="isEditMode && !isAdmin"
-                [style.--priority-color]="priority.color"
-                [disabled]="isEditMode && !isAdmin"
-                (click)="selectPriority(priority.value)"
-            >
-                <i [class]="'bi ' + priority.icon"></i>
-                <span>{{ priority.label }}</span>
-            </button>
-        </div>
-    </fieldset>
-
-    <!-- Status Selection - Only in Edit Mode -->
-    <fieldset *ngIf="isEditMode" class="status-section">
-        <legend class="status-label">Status</legend>
-        <div class="status-select-wrapper">
-            <div 
-                class="status-custom-select" 
-                [class.active]="isStatusOpen"
-                (click)="toggleStatusDropdown()"
-            >
-                <div class="status-selected-value">
-                    {{ getSelectedStatusLabel() }}
-                </div>
-                <span class="select-arrow">
-                    <i class="bi bi-chevron-down" [class.rotated]="isStatusOpen"></i>
-                </span>
-            </div>
-            
-            <!-- Custom Status Popup -->
-            <ul *ngIf="isStatusOpen" class="status-popup">
-                <li 
-                    *ngFor="let status of statuses; trackBy: trackById"
-                    (click)="selectStatus(status.value)"
-                    [class.selected]="selectedStatus === status.value"
-                    class="status-option"
-                >
-                    {{ status.label }}
-                    <i *ngIf="selectedStatus === status.value" class="bi bi-check"></i>
-                </li>
-            </ul>
-        </div>
-    </fieldset>
-
     <!-- Form Actions -->
-    <div class="form-actions d-flex flex-column flex-sm-row gap-2">
+    <div class="form-actions d-flex flex-column flex-sm-row gap-2 mt-4">
         <button type="button" class="btn-cancel order-2 order-sm-1" (click)="onCancel()">
             Cancel
         </button>

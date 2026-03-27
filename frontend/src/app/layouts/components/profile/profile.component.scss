@@ -42,45 +42,6 @@
     overflow: visible;
 }
 
-.profile-header {
-    background: var(--card-color);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-radius: 16px;
-    border: 1px solid var(--card-border-color);
-    box-shadow: var(--card-shadow);
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-
-    &::before {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 40%;
-        background: linear-gradient(to top, 
-            rgba(107, 207, 209, 0.15) 0%, 
-            rgba(74, 144, 226, 0.1) 50%,
-            transparent 100%);
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    h1 {
-        position: relative;
-        z-index: 1;
-        font-size: clamp(1.75rem, 4vw, 2.5rem);
-        font-weight: 700;
-        margin: 0;
-        background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-}
-
 .profile-main-content {
     width: 100%;
     min-width: 0;

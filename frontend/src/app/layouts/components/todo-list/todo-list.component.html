@@ -39,13 +39,11 @@
 
             <div class="todo-header-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div *ngIf="showStatusFilter && (totalCount > 0 || activeStatus !== 'all' || activePriority !== 'all')" class="filters-group d-flex align-items-center gap-2 flex-wrap">
-                    <app-status-filter
-                        [activeStatus]="activeStatus"
-                        (statusChange)="statusChange.emit($event)"
-                    />
-                    <app-priority-filter
-                        [activePriority]="activePriority"
-                        (priorityChange)="priorityChange.emit($event)"
+                    <app-dynamic-form
+                        [fields]="filterFields"
+                        [form]="filterForm"
+                        [layout]="'inline'"
+                        [isFilter]="true"
                     />
                     <button 
                         *ngIf="activeStatus !== 'all' || activePriority !== 'all'"

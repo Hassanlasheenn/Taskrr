@@ -5,143 +5,103 @@
                 <p>Loading...</p>
             </div>
 
-            <article *ngIf="todo" class="todo-view-card" [ngClass]="'priority-' + todo.priority">
-                <header class="todo-view-header">
-                    <div class="todo-view-title-row">
-                        <h1 class="todo-view-title">{{ todo.title }}</h1>
-                        <span *ngIf="todo.category" class="todo-view-category-tag">
-                            <i class="bi bi-tag-fill"></i>
-                            <span class="todo-view-category-tag-text">{{ todo.category }}</span>
-                        </span>
-                        <!-- Due Date Badge next to Category -->
-                        <div *ngIf="todo.due_date" 
-                             class="due-date-view-badge" 
-                             [ngClass]="getDueDateUrgencyClass(todo.due_date)">
-                            <i class="bi bi-alarm-fill"></i>
-                            <span class="due-label">Due Date:</span>
-                            <span class="due-value">{{ formatDate(todo.due_date)?.date }}</span>
+            <article *ngIf="todo" class="todo-view-card" [ngClass]="'priority-' + todoForm.get('priority')?.value">
+                <form [formGroup]="todoForm" (ngSubmit)="onSave()">
+                    <header class="todo-view-header">
+                        <div class="todo-view-title-row">
+                            <h1 class="todo-view-title">{{ todo.title }}</h1>
+                            <span *ngIf="todo.category" class="todo-view-category-tag">
+                                <i class="bi bi-tag-fill"></i>
+                                <span class="todo-view-category-tag-text">{{ todo.category }}</span>
+                            </span>
+                            <!-- Due Date -->
+                            <div *ngIf="todoForm.get('due_date')?.value" class="due-date-view-container">
+                                <app-dynamic-form
+                                    [form]="todoForm"
+                                    [fields]="[dueDateField]"
+                                    [isFilter]="false"
+                                    [isBadge]="true"
+                                />
+                            </div>
+                        </div>
+                        <div class="todo-view-meta">
+                            <ng-container *ngIf="formatDate(todo.created_at) as created">
+                                <span class="todo-view-meta-item"><i class="bi bi-calendar3"></i> {{ created.date }} {{ created.time }}</span>
+                            </ng-container>
+                        </div>
+                        <div class="todo-view-header-actions">
+                            <div class="todo-view-badges">
+                                <!-- Assignee Dropdown -->
+                                <app-dropdown-form
+                                    [formGroup]="todoForm"
+                                    [name]="'assigned_to_user_id'"
+                                    [label]="'Assignee'"
+                                    [field]="assigneeField"
+                                    [isBadge]="true"
+                                    class="todo-view-dropdown-wrap"
+                                />
+
+                                <!-- Status Dropdown -->
+                                <app-dropdown-form
+                                    [formGroup]="todoForm"
+                                    [name]="'status'"
+                                    [label]="'Status'"
+                                    [field]="statusField"
+                                    [isBadge]="true"
+                                    [customInputClass]="'status-' + todoForm.get('status')?.value"
+                                    class="todo-view-dropdown-wrap"
+                                />
+
+                                <!-- Priority Dropdown -->
+                                <app-dropdown-form
+                                    *ngIf="isAdmin; else priorityBadge"
+                                    [formGroup]="todoForm"
+                                    [name]="'priority'"
+                                    [label]="'Priority'"
+                                    [field]="priorityField"
+                                    [isBadge]="true"
+                                    [customInputClass]="'priority-' + todoForm.get('priority')?.value"
+                                    class="todo-view-dropdown-wrap"
+                                />
+                                <ng-template #priorityBadge>
+                                    <span class="priority-badge" [ngClass]="'priority-' + todoForm.get('priority')?.value">
+                                        <i [class]="'bi ' + getPriorityIcon(todoForm.get('priority')?.value)"></i>
+                                        <span>{{ todoForm.get('priority')?.value | titlecase }}</span>
+                                    </span>
+                                </ng-template>
+                            </div>
+                            <div class="todo-view-header-buttons">
+                                <button
+                                    type="button"
+                                    class="todo-view-delete-btn"
+                                    (click)="onDeleteTodo()"
+                                    aria-label="Delete todo"
+                                >
+                                    Delete
+                                </button>
+                                <button
+                                    type="submit"
+                                    class="todo-view-save-btn"
+                                    [disabled]="!hasChanges || saving"
+                                    aria-label="Save changes"
+                                >
+                                    {{ saving ? 'Saving...' : 'Save' }}
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="todo-view-body">
+                        <div class="todo-view-description-field">
+                            <app-dynamic-form
+                                [form]="todoForm"
+                                [fields]="[descriptionField]"
+                            />
                         </div>
                     </div>
-                    <div class="todo-view-meta">
-                        <ng-container *ngIf="formatDate(todo.created_at) as created">
-                            <span class="todo-view-meta-item"><i class="bi bi-calendar3"></i> {{ created.date }} {{ created.time }}</span>
-                        </ng-container>
-                    </div>
-                    <div class="todo-view-header-actions">
-                        <div class="todo-view-badges">
-                            <!-- Assignee Dropdown -->
-                            <div class="todo-view-dropdown-wrap">
-                                <div class="custom-dropdown" (click)="toggleDropdown('assignee')" [class.active]="openDropdown === 'assignee'">
-                                    <div class="custom-dropdown-value">
-                                        <i class="bi bi-person"></i>
-                                        <span>{{ getSelectedAssigneeLabel() }}</span>
-                                    </div>
-                                    <i class="bi bi-chevron-down dropdown-arrow" [class.rotated]="openDropdown === 'assignee'"></i>
-                                    
-                                    <ul *ngIf="openDropdown === 'assignee'" class="custom-dropdown-popup">
-                                        <li (click)="selectAssignee(null); $event.stopPropagation()" class="custom-dropdown-option" [class.selected]="!todo.assigned_to_user_id">
-                                            Unassigned
-                                            <i *ngIf="!todo.assigned_to_user_id" class="bi bi-check"></i>
-                                        </li>
-                                        <li *ngIf="todo.assigned_to_user_id && !assigneeInList(todo.assigned_to_user_id)" 
-                                            (click)="selectAssignee(todo.assigned_to_user_id); $event.stopPropagation()" 
-                                            class="custom-dropdown-option selected">
-                                            {{ todo.assigned_to_username || ('User #' + todo.assigned_to_user_id) }}
-                                            <i class="bi bi-check"></i>
-                                        </li>
-                                        <li *ngFor="let u of mentionableUsers; trackBy: trackById" 
-                                            (click)="selectAssignee(u.id); $event.stopPropagation()" 
-                                            class="custom-dropdown-option"
-                                            [class.selected]="todo.assigned_to_user_id === u.id">
-                                            {{ u.username }}
-                                            <i *ngIf="todo.assigned_to_user_id === u.id" class="bi bi-check"></i>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
+                </form>
 
-                            <!-- Status Dropdown -->
-                            <div class="todo-view-dropdown-wrap">
-                                <div class="custom-dropdown" (click)="toggleDropdown('status')" [class.active]="openDropdown === 'status'" [ngClass]="'status-' + todo.status">
-                                    <div class="custom-dropdown-value">
-                                        <span>{{ getSelectedStatusLabel() }}</span>
-                                    </div>
-                                    <i class="bi bi-chevron-down dropdown-arrow" [class.rotated]="openDropdown === 'status'"></i>
-
-                                    <ul *ngIf="openDropdown === 'status'" class="custom-dropdown-popup">
-                                        <li *ngFor="let opt of statusOptions; trackBy: trackById" 
-                                            (click)="selectStatus(opt.value); $event.stopPropagation()" 
-                                            class="custom-dropdown-option"
-                                            [class.selected]="todo.status === opt.value">
-                                            {{ opt.label }}
-                                            <i *ngIf="todo.status === opt.value" class="bi bi-check"></i>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <!-- Priority Dropdown -->
-                            <div class="todo-view-dropdown-wrap" *ngIf="isAdmin; else priorityBadge">
-                                <div class="custom-dropdown" (click)="toggleDropdown('priority')" [class.active]="openDropdown === 'priority'" [ngClass]="'priority-' + todo.priority">
-                                    <div class="custom-dropdown-value">
-                                        <span>{{ getSelectedPriorityLabel() }}</span>
-                                    </div>
-                                    <i class="bi bi-chevron-down dropdown-arrow" [class.rotated]="openDropdown === 'priority'"></i>
-
-                                    <ul *ngIf="openDropdown === 'priority'" class="custom-dropdown-popup">
-                                        <li *ngFor="let opt of priorityOptions; trackBy: trackById" 
-                                            (click)="selectPriority(opt.value); $event.stopPropagation()" 
-                                            class="custom-dropdown-option"
-                                            [class.selected]="todo.priority === opt.value">
-                                            {{ opt.label }}
-                                            <i *ngIf="todo.priority === opt.value" class="bi bi-check"></i>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <ng-template #priorityBadge>
-                                <span class="priority-badge" [ngClass]="'priority-' + todo.priority">
-                                    <i [class]="'bi ' + getPriorityIcon(todo.priority)"></i>
-                                    <span>{{ todo.priority | titlecase }}</span>
-                                </span>
-                            </ng-template>
-                        </div>
-                        <div class="todo-view-header-buttons">
-                            <button
-                                type="button"
-                                class="todo-view-delete-btn"
-                                (click)="onDeleteTodo()"
-                                aria-label="Delete todo"
-                            >
-                                <i class="bi bi-trash"></i>
-                                Delete
-                            </button>
-                            <button
-                                type="button"
-                                class="todo-view-save-btn"
-                                (click)="onSave()"
-                                [disabled]="!hasChanges || saving"
-                                aria-label="Save changes"
-                            >
-                                {{ saving ? 'Saving...' : 'Save' }}
-                            </button>
-                        </div>
-                    </div>
-                </header>
-
-                <div class="todo-view-body">
-                    <div class="todo-view-description-field">
-                        <label for="todo-description" class="todo-view-label">Description</label>
-                        <textarea
-                            id="todo-description"
-                            class="todo-view-description-input"
-                            [(ngModel)]="todo.description"
-                            placeholder="No description"
-                            rows="4"
-                            aria-label="Description"
-                        ></textarea>
-                    </div>
-
+                <div class="todo-view-body" style="padding-top: 0;">
                     <div class="todo-view-comments">
                         <app-tabs
                             [tabs]="commentHistoryTabs"

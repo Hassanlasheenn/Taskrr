@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, ViewChild, HostListener } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { FormsModule, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Observable, Subject } from "rxjs";
 import { map, takeUntil } from "rxjs/operators";
@@ -17,43 +17,96 @@ import { CanComponentDeactivate } from "../../../auth/guards";
 import { ParseMentionsPipe } from "../../../core/pipes/parse-mentions.pipe";
 import { TabsComponent, ITabItem } from "../../../shared/components/tabs";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
-import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { NavigationService } from "../../../core/services/navigation.service";
 import { PosthogService } from "../../../core/services/posthog.service";
+import { DropdownFormComponent } from "../../../shared/components/form-fields/dropdown/dropdown.component";
+import { DatePickerComponent } from "../../../shared/components/form-fields/date-picker/date-picker.component";
+import { InputFormComponent } from "../../../shared/components/form-fields/input/input.component";
+import { ReactiveFormService } from "../../../shared/services/reactive-form.service";
+import { IFieldControl } from "../../../shared/interfaces";
+import { InputTypes } from "../../../shared/enums";
 
-type StatusOption = { value: TodoStatus; label: string };
-type PriorityOption = { value: 'low' | 'medium' | 'high'; label: string };
-
-const STATUS_OPTIONS: StatusOption[] = [
-    { value: 'new', label: 'New' },
-    { value: 'inProgress', label: 'In Progress' },
-    { value: 'paused', label: 'Paused' },
-    { value: 'done', label: 'Done' },
-];
-
-const PRIORITY_OPTIONS: PriorityOption[] = [
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-];
+import { DynamicFormComponent } from "../../../shared/components/dynamic-form/dynamic-form.component";
 
 @Component({
     selector: 'app-todo-view',
     templateUrl: './todo-view.component.html',
     styleUrls: ['./todo-view.component.scss'],
     standalone: true,
-    imports: [CommonModule, FormsModule, ParseMentionsPipe, TabsComponent],
+    imports: [
+        CommonModule, 
+        FormsModule, 
+        ReactiveFormsModule,
+        ParseMentionsPipe, 
+        TabsComponent,
+        DropdownFormComponent,
+        DynamicFormComponent
+    ],
 })
 export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactivate {
     private readonly _destroy$ = new Subject<void>();
     todo: ITodo | null = null;
     saving = false;
-    initialStatus: TodoStatus | null = null;
-    initialPriority: 'low' | 'medium' | 'high' | null = null;
-    initialDescription: string | null = null;
-    initialAssignedToUserId: number | null = null;
-    initialDueDate: string | null = null;
-    todoDueDate: string = '';
+    
+    todoForm: FormGroup = new FormGroup({});
+    
+    assigneeField: IFieldControl = {
+        label: 'Assignee',
+        type: InputTypes.DROPDOWN,
+        formControlName: 'assigned_to_user_id',
+        placeholder: 'Unassigned',
+        value: null,
+        options: [],
+        validations: []
+    };
+
+    statusField: IFieldControl = {
+        label: 'Status',
+        type: InputTypes.DROPDOWN,
+        formControlName: 'status',
+        placeholder: 'Select Status',
+        value: 'new',
+        options: [
+            { value: 'New', key: 'new' },
+            { value: 'In Progress', key: 'inProgress' },
+            { value: 'Paused', key: 'paused' },
+            { value: 'Done', key: 'done' }
+        ],
+        validations: []
+    };
+
+    priorityField: IFieldControl = {
+        label: 'Priority',
+        type: InputTypes.DROPDOWN,
+        formControlName: 'priority',
+        placeholder: 'Select Priority',
+        value: 'medium',
+        options: [
+            { value: 'Low', key: 'low' },
+            { value: 'Medium', key: 'medium' },
+            { value: 'High', key: 'high' }
+        ],
+        validations: []
+    };
+
+    descriptionField: IFieldControl = {
+        formControlName: 'description',
+        label: 'Description',
+        type: InputTypes.TEXTAREA,
+        value: '',
+        validations: []
+    };
+
+    dueDateField: IFieldControl = {
+        formControlName: 'due_date',
+        label: 'Due Date',
+        type: InputTypes.DATE,
+        value: '',
+        validations: []
+    };
+
+    initialFormValue: any = null;
+    
     mentionableUsers: IUserListResponse[] = [];
     comments: ITodoComment[] = [];
     newCommentText = '';
@@ -83,6 +136,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     isExtrasMenuOpen: boolean = false;
     showEmojiPicker: boolean = false;
     readonly commonEmojis = ['😊', '👍', '❤️', '🔥', '😂', '😮', '😢', '✅', '🚀', '✨', '🙏', '💯'];
+    InputTypes = InputTypes;
 
     readonly commentHistoryTabs: ITabItem[] = [
         { id: 'comments', label: 'Comments', icon: 'bi-chat-left-text' },
@@ -90,9 +144,6 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     ];
     LayoutPaths = LayoutPaths;
     @ViewChild('newCommentInput') newCommentInputRef?: ElementRef<HTMLTextAreaElement>;
-
-    readonly statusOptions = STATUS_OPTIONS;
-    readonly priorityOptions = PRIORITY_OPTIONS;
 
     get mentionableUsersFiltered(): IUserListResponse[] {
         const q = (this.mentionFilter || '').toLowerCase();
@@ -105,16 +156,10 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     }
 
     get hasChanges(): boolean {
-        if (!this.todo || this.initialStatus === null || this.initialPriority === null) return false;
-        const statusChanged = this.todo.status !== this.initialStatus;
-        const priorityChanged = this.todo.priority !== this.initialPriority;
-        const descriptionChanged = (this.todo.description ?? '') !== (this.initialDescription ?? '');
-        const assignedChanged = (this.todo.assigned_to_user_id ?? null) !== this.initialAssignedToUserId;
-        const dueDateChanged = (this.todoDueDate || null) !== this.initialDueDate;
-        return statusChanged || priorityChanged || descriptionChanged || assignedChanged || dueDateChanged;
+        if (!this.todo || !this.initialFormValue) return false;
+        const currentFormValue = this.todoForm.value;
+        return JSON.stringify(currentFormValue) !== JSON.stringify(this.initialFormValue);
     }
-
-    openDropdown: 'assignee' | 'status' | 'priority' | null = null;
 
     constructor(
         private readonly _route: ActivatedRoute,
@@ -128,54 +173,8 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         private readonly _cdr: ChangeDetectorRef,
         private readonly _navService: NavigationService,
         private readonly _posthogService: PosthogService,
-        private readonly _el: ElementRef
+        private readonly _formService: ReactiveFormService
     ) {}
-
-    @HostListener('document:click', ['$event'])
-    onDocumentClick(event: MouseEvent): void {
-        if (!this._el.nativeElement.contains(event.target)) {
-            this.openDropdown = null;
-        }
-    }
-
-    toggleDropdown(type: 'assignee' | 'status' | 'priority'): void {
-        this.openDropdown = this.openDropdown === type ? null : type;
-    }
-
-    selectStatus(value: TodoStatus): void {
-        if (this.todo) {
-            this.todo.status = value;
-        }
-        this.openDropdown = null;
-    }
-
-    selectPriority(value: 'low' | 'medium' | 'high'): void {
-        if (this.todo) {
-            this.todo.priority = value;
-        }
-        this.openDropdown = null;
-    }
-
-    selectAssignee(userId: number | null): void {
-        if (this.todo) {
-            this.todo.assigned_to_user_id = userId;
-        }
-        this.openDropdown = null;
-    }
-
-    getSelectedStatusLabel(): string {
-        return this.statusOptions.find(opt => opt.value === this.todo?.status)?.label || 'Select Status';
-    }
-
-    getSelectedPriorityLabel(): string {
-        return this.priorityOptions.find(opt => opt.value === this.todo?.priority)?.label || 'Select Priority';
-    }
-
-    getSelectedAssigneeLabel(): string {
-        if (!this.todo?.assigned_to_user_id) return 'Unassigned';
-        const user = this.mentionableUsers.find(u => u.id === this.todo?.assigned_to_user_id);
-        return user ? user.username : (this.todo.assigned_to_username || 'User #' + this.todo.assigned_to_user_id);
-    }
 
     canDeactivate(): boolean | Observable<boolean> {
         if (!this.hasChanges) return true;
@@ -202,20 +201,30 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
             return;
         }
 
+        this.todoForm = this._formService.initializeForm([
+            this.assigneeField,
+            this.statusField,
+            this.priorityField,
+            this.descriptionField,
+            this.dueDateField
+        ]);
+
         this._loaderService.show();
         this._todoService.getTodo(userId, todoId).subscribe({
             next: (response) => {
-                this.todo = {
-                    ...response,
-                    status: (response.status ?? 'new') as TodoStatus,
-                    priority: (response.priority ?? 'medium') as 'low' | 'medium' | 'high',
-                } as ITodo;
-                this.initialStatus = this.todo.status;
-                this.initialPriority = this.todo.priority;
-                this.initialDescription = this.todo.description ?? null;
-                this.initialAssignedToUserId = this.todo.assigned_to_user_id ?? null;
-                this.initialDueDate = this.todo.due_date ? this.todo.due_date.split('T')[0] : null;
-                this.todoDueDate = this.initialDueDate || '';
+                this.todo = response as ITodo;
+                
+                const formValue = {
+                    assigned_to_user_id: this.todo.assigned_to_user_id || null,
+                    status: this.todo.status || 'new',
+                    priority: this.todo.priority || 'medium',
+                    description: this.todo.description || '',
+                    due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : ''
+                };
+                
+                this.todoForm.patchValue(formValue);
+                this.initialFormValue = { ...formValue };
+                
                 this._loadMentionableUsers();
                 this._loadComments();
                 this._loaderService.hide();
@@ -274,7 +283,6 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         this._userService.getMentionableUsers().subscribe({
             next: (list) => { 
                 this.mentionableUsers = list; 
-                // Always add the current user to the list if not already present
                 const currentUser = this._authService.getCurrentUserData();
                 if (currentUser && !this.mentionableUsers.some(u => u.id === currentUser.id)) {
                     this.mentionableUsers.unshift({
@@ -286,13 +294,14 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                         is_verified: currentUser.is_verified
                     });
                 }
+                
+                this.assigneeField.options = [
+                    { key: null, value: 'Unassigned' },
+                    ...this.mentionableUsers.map(u => ({ key: u.id, value: u.username }))
+                ];
             },
             error: () => { this.mentionableUsers = []; },
         });
-    }
-
-    assigneeInList(userId: number): boolean {
-        return this.mentionableUsers.some((u) => u.id === userId);
     }
 
     private _loadComments(): void {
@@ -601,31 +610,34 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         if (!this.todo) return;
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
+        
+        const formValue = this.todoForm.value;
         this.saving = true;
+        
         this._todoService.updateTodo(userId, this.todo.id, {
-            status: this.todo.status,
-            priority: this.todo.priority,
-            description: this.todo.description ?? undefined,
-            assigned_to_user_id: this.todo.assigned_to_user_id ?? null,
-            due_date: this.todoDueDate || null,
+            status: formValue.status,
+            priority: formValue.priority,
+            description: formValue.description,
+            assigned_to_user_id: formValue.assigned_to_user_id,
+            due_date: formValue.due_date || null,
         }).subscribe({
             next: (updated) => {
                 this.todo = {
                     ...this.todo!,
-                    status: updated.status as TodoStatus,
-                    priority: updated.priority as 'low' | 'medium' | 'high',
-                    description: updated.description ?? this.todo!.description,
-                    assigned_to_user_id: updated.assigned_to_user_id ?? undefined,
-                    assigned_to_username: updated.assigned_to_username ?? this.todo!.assigned_to_username,
-                    due_date: updated.due_date,
-                    updated_at: updated.updated_at,
+                    ...updated
+                } as ITodo;
+                
+                const newFormValue = {
+                    assigned_to_user_id: this.todo.assigned_to_user_id || null,
+                    status: this.todo.status || 'new',
+                    priority: this.todo.priority || 'medium',
+                    description: this.todo.description || '',
+                    due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : ''
                 };
-                this.initialStatus = this.todo.status;
-                this.initialPriority = this.todo.priority;
-                this.initialDescription = this.todo.description ?? null;
-                this.initialAssignedToUserId = this.todo.assigned_to_user_id ?? null;
-                this.initialDueDate = this.todo.due_date ? this.todo.due_date.split('T')[0] : null;
-                this.todoDueDate = this.initialDueDate || '';
+                
+                this.initialFormValue = { ...newFormValue };
+                this.todoForm.reset(newFormValue);
+                
                 this.saving = false;
                 if (this.commentHistoryTab === 'history') this._loadCommentHistory();
                 this._toastService.success('Todo updated');
@@ -669,36 +681,6 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         });
     }
 
-    onDueDateChange(newDate: string): void {
-        this.todoDueDate = newDate;
-        this._cdr.markForCheck();
-    }
-
-    getStatusLabel(status: string): string {
-        const statusMap: { [key: string]: string } = {
-            'new': 'New',
-            'inProgress': 'In Progress',
-            'paused': 'Paused',
-            'done': 'Done'
-        };
-        return statusMap[status] || status;
-    }
-
-    getDueDateUrgencyClass(dateString?: string): string {
-        if (!dateString) return '';
-        
-        const dueDate = new Date(dateString);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const diffTime = dueDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays <= 3) return 'urgency-high';
-        if (diffDays <= 10) return 'urgency-medium';
-        return 'urgency-low';
-    }
-
     getPriorityIcon(priority: string): string {
         switch (priority) {
             case 'high': return 'bi-arrow-up';
@@ -722,5 +704,20 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         hours = hours % 12 || 12;
         const formattedTime = `${hours}:${minutes} ${ampm}`;
         return { date: formattedDate, time: formattedTime };
+    }
+
+    getDueDateUrgencyClass(dateString?: string): string {
+        if (!dateString) return '';
+        
+        const dueDate = new Date(dateString);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const diffTime = dueDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays <= 3) return 'urgency-high';
+        if (diffDays <= 10) return 'urgency-medium';
+        return 'urgency-low';
     }
 }

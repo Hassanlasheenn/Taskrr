@@ -1,19 +1,24 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectorRef, Component, EventEmitter, HostListener, Input, OnChanges, OnInit, Output, SimpleChanges } from "@angular/core";
+import { ChangeDetectorRef, Component, EventEmitter, HostListener, Input, OnChanges, OnInit, Output, SimpleChanges, OnDestroy } from "@angular/core";
 import { AuthService } from "../../../auth/services";
 import { ITodo } from "../../../core/interfaces/todo.interface";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
-import { StatusFilterComponent, TodoStatus as FilterStatus } from "../dashboard/components/status-filter/status-filter.component";
-import { PriorityFilterComponent } from "../dashboard/components/priority-filter/priority-filter.component";
+import { TodoStatus as FilterStatus } from "../dashboard/components/status-filter/status-filter.component";
+import { DynamicFormComponent } from "../../../shared/components/dynamic-form/dynamic-form.component";
+import { FormGroup } from "@angular/forms";
+import { IFieldControl } from "../../../shared/interfaces";
+import { InputTypes } from "../../../shared/enums";
+import { ReactiveFormService } from "../../../shared/services/reactive-form.service";
+import { Subject, takeUntil } from "rxjs";
 
 @Component({
     selector: 'app-todo-list',
     templateUrl: './todo-list.component.html',
     styleUrls: ['./todo-list.component.scss'],
     standalone: true,
-    imports: [CommonModule, StatusFilterComponent, PriorityFilterComponent],
+    imports: [CommonModule, DynamicFormComponent],
 })
-export class TodoListComponent implements OnInit, OnChanges {
+export class TodoListComponent implements OnInit, OnChanges, OnDestroy {
     @Input() todos: ITodo[] = [];
     @Input() totalCount: number = 0;
     @Input() showAddButton: boolean = true;
@@ -34,6 +39,40 @@ export class TodoListComponent implements OnInit, OnChanges {
     @Output() statusChange = new EventEmitter<FilterStatus>();
     @Output() priorityChange = new EventEmitter<string>();
 
+    private readonly _destroy$ = new Subject<void>();
+    filterForm: FormGroup = new FormGroup({});
+    filterFields: IFieldControl[] = [
+        {
+            label: 'Status',
+            type: InputTypes.DROPDOWN,
+            formControlName: 'status',
+            placeholder: 'All Statuses',
+            value: 'all',
+            options: [
+                { key: 'all', value: 'All Statuses' },
+                { key: 'new', value: 'New' },
+                { key: 'inProgress', value: 'In Progress' },
+                { key: 'paused', value: 'Paused' },
+                { key: 'done', value: 'Done' }
+            ],
+            validations: []
+        },
+        {
+            label: 'Priority',
+            type: InputTypes.DROPDOWN,
+            formControlName: 'priority',
+            placeholder: 'All Priorities',
+            value: 'all',
+            options: [
+                { key: 'all', value: 'All Priorities' },
+                { key: 'low', value: 'Low' },
+                { key: 'medium', value: 'Medium' },
+                { key: 'high', value: 'High' }
+            ],
+            validations: []
+        }
+    ];
+
     expandedCategories: { [key: string]: boolean } = {};
     viewMode: 'grid' | 'list' = 'grid';
     openActionsTodoId: number | null = null;
@@ -45,7 +84,8 @@ export class TodoListComponent implements OnInit, OnChanges {
 
     constructor(
         private readonly _authService: AuthService,
-        private readonly _cdr: ChangeDetectorRef
+        private readonly _cdr: ChangeDetectorRef,
+        private readonly _formService: ReactiveFormService
     ) {}
 
     get isAdmin(): boolean {
@@ -115,8 +155,7 @@ export class TodoListComponent implements OnInit, OnChanges {
     }
 
     onClearFilters(): void {
-        this.statusChange.emit('all');
-        this.priorityChange.emit('all');
+        this.filterForm.patchValue({ status: 'all', priority: 'all' }, { emitEvent: true });
     }
 
     trackById = trackById;
@@ -225,6 +264,19 @@ export class TodoListComponent implements OnInit, OnChanges {
 
     ngOnInit(): void {
         this.initializeExpandedCategories();
+        this.filterForm = this._formService.initializeForm(this.filterFields);
+        
+        this.filterForm.patchValue({
+            status: this.activeStatus,
+            priority: this.activePriority
+        }, { emitEvent: false });
+
+        this.filterForm.valueChanges
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(values => {
+                this.statusChange.emit(values.status);
+                this.priorityChange.emit(values.priority);
+            });
     }
 
     private initializeExpandedCategories(): void {
@@ -246,6 +298,14 @@ export class TodoListComponent implements OnInit, OnChanges {
     }
 
     ngOnChanges(changes: SimpleChanges): void {
+        if (this.filterForm) {
+            if (changes['activeStatus'] && !changes['activeStatus'].firstChange) {
+                this.filterForm.get('status')?.setValue(this.activeStatus, { emitEvent: false });
+            }
+            if (changes['activePriority'] && !changes['activePriority'].firstChange) {
+                this.filterForm.get('priority')?.setValue(this.activePriority, { emitEvent: false });
+            }
+        }
         if (changes['isCompletedSection']) {
             this.viewMode = this.isCompletedSection ? 'list' : 'grid';
         }
@@ -272,5 +332,9 @@ export class TodoListComponent implements OnInit, OnChanges {
             this.expandedCategories = {};
         }
     }
-}
 
+    ngOnDestroy(): void {
+        this._destroy$.next();
+        this._destroy$.complete();
+    }
+}

@@ -18,12 +18,34 @@
                         </div>
                         <p class="user-email"><i class="bi bi-envelope"></i> {{ userData.user.email }}</p>
                     </div>
+                    <div class="header-actions ms-auto d-flex align-items-center gap-2">
+                        <div class="view-toggle d-flex">
+                            <button 
+                                type="button" 
+                                class="view-toggle-btn"
+                                [class.active]="viewMode === 'grid'"
+                                (click)="setViewMode('grid')"
+                                title="Kanban View"
+                            >
+                                <i class="bi bi-grid-3x3-gap"></i>
+                            </button>
+                            <button 
+                                type="button" 
+                                class="view-toggle-btn"
+                                [class.active]="viewMode === 'table'"
+                                (click)="setViewMode('table')"
+                                title="Table View"
+                            >
+                                <i class="bi bi-table"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </header>
 
             <div class="todos-dashboard" *ngIf="userData">
                 <!-- Status Columns -->
-                <div class="status-grid" cdkDropListGroup>
+                <div class="status-grid" cdkDropListGroup *ngIf="viewMode === 'grid'">
                     <!-- Pending Column (Admin Viewer & Admin Target Only) -->
                     <div *ngIf="isAdmin && userData?.user?.role === 'admin'" class="status-col pending" [class.collapsed]="isSectionCollapsed('pending')">
                         <div class="col-header" (click)="toggleSection('pending')">
@@ -238,6 +260,16 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Table View -->
+                <div *ngIf="viewMode === 'table'" class="table-view-container">
+                    <app-shared-table
+                        [todos]="userTodos"
+                        [isAdmin]="isAdmin"
+                        (update)="onUpdateTodo($event)"
+                        (delete)="onDeleteTodo($event)"
+                    />
                 </div>
             </div>        </div>
     </div>

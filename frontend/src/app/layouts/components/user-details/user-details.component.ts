@@ -7,11 +7,13 @@ import { LoaderService } from "../../../core/services/loader.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { AuthService } from "../../../auth/services/auth.service";
 import { TodoService } from "../../../core/services/todo.service";
-import { ITodoResponse, ITodo } from "../../../core/interfaces/todo.interface";
+import { ITodoResponse, ITodo, ITodoUpdate } from "../../../core/interfaces/todo.interface";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
 import { DashboardSections } from "../../enums/dashboard-sections.enum";
 import { NavigationService } from "../../../core/services/navigation.service";
+import { SharedTableComponent } from "../../../shared/components/shared-table/shared-table.component";
+import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from "@angular/cdk/drag-drop";
 
 @Component({
@@ -19,7 +21,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from 
     templateUrl: './user-details.component.html',
     styleUrls: ['./user-details.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterLink, DragDropModule]
+    imports: [CommonModule, RouterLink, DragDropModule, SharedTableComponent]
 })
 export class UserDetailsComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
@@ -30,6 +32,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     trackById = trackById;
     collapsedSections: Set<string> = new Set();
     isAdmin: boolean = false;
+    viewMode: 'grid' | 'table' = 'grid';
 
     constructor(
         private readonly _route: ActivatedRoute,
@@ -39,10 +42,16 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         private readonly _router: Router,
         private readonly _navService: NavigationService,
         public readonly _authService: AuthService,
-        private readonly _todoService: TodoService
+        private readonly _todoService: TodoService,
+        private readonly _confirmationDialog: ConfirmationDialogService
     ) {}
 
     ngOnInit(): void {
+        const savedViewMode = localStorage.getItem('dashboardViewMode');
+        if (savedViewMode === 'grid' || savedViewMode === 'table') {
+            this.viewMode = savedViewMode;
+        }
+
         this.isAdmin = this._authService.isAdmin();
         const idParam = this._route.snapshot.paramMap.get('id');
         if (idParam) {
@@ -51,6 +60,72 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         } else {
             this._router.navigate(['/']);
         }
+    }
+
+    setViewMode(mode: 'grid' | 'table'): void {
+        this.viewMode = mode;
+        localStorage.setItem('dashboardViewMode', mode);
+    }
+
+    onEditTodo(todo: ITodo | ITodoResponse): void {
+        this._router.navigate([LayoutPaths.TODO_VIEW, todo.id]);
+    }
+
+    onUpdateTodo(event: { id: number; data: ITodoUpdate }): void {
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+
+        this._todoService.updateTodo(userId, event.id, event.data).subscribe({
+            next: (response: any) => {
+                if (this.userData) {
+                    const index = this.userData.todos.findIndex(t => t.id === event.id);
+                    if (index !== -1) {
+                        this.userData.todos[index] = { ...this.userData.todos[index], ...response };
+                        this.userData.todos = [...this.userData.todos];
+                    }
+                }
+                this._toastService.success('Todo updated successfully');
+            },
+            error: (error: any) => {
+                this._toastService.error(error?.error?.detail || 'Failed to update todo');
+                this.loadUserData();
+            }
+        });
+    }
+
+    onDeleteTodo(todo: ITodo | ITodoResponse): void {
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+
+        this._confirmationDialog.show({
+            title: 'Delete Todo',
+            message: `Are you sure you want to delete "${todo.title}"? This action cannot be undone.`,
+            confirmText: 'Delete',
+            cancelText: 'Cancel'
+        })
+        .pipe(takeUntil(this._destroy$))
+        .subscribe(result => {
+            if (result.confirmed) {
+                this._loaderService.show();
+                this._todoService.deleteTodo(userId, todo.id).subscribe({
+                    next: (response) => {
+                        if (this.userData) {
+                            const index = this.userData.todos.findIndex(t => t.id === todo.id);
+                            if (index !== -1) {
+                                this.userData.todos[index] = { ...this.userData.todos[index], is_deleted: true } as any;
+                                this.userData = { ...this.userData, todos: [...this.userData.todos] };
+                            }
+                        }
+                        this._loaderService.hide();
+                        this._toastService.success(response?.message || 'Todo deleted successfully');
+                    },
+                    error: (error) => {
+                        this._toastService.error(error?.error?.detail || 'Failed to delete todo');
+                        this._loaderService.hide();
+                    }
+                });
+            }
+        });
     }
 
     loadUserData(): void {
@@ -155,6 +230,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
     get unassignedCount(): number {
         return this.unassignedTodos.length;
+    }
+
+    get userTodos(): ITodo[] {
+        return (this.userData?.todos ?? []) as ITodo[];
     }
 
     get inProgressTodos(): ITodoResponse[] { return this.getTodosByStatus('inProgress'); }

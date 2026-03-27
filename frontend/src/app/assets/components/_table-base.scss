@@ -1,0 +1,412 @@
+@use '../variables/colors.scss' as colors; // Assuming variables are needed
+
+@mixin table-base-styles {
+    .custom-table-wrapper {
+        background: var(--card-color);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--card-border-color);
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+        width: 100%;
+        overflow-x: auto; /* Enable horizontal scrolling by default */
+        overflow-y: visible; /* Allow dropdowns to overflow vertically */
+        position: relative;
+        z-index: 1;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        
+        thead {
+            background: rgba(107, 207, 209, 0.05);
+            border-radius: 16px 16px 0 0;
+
+            th {
+                padding: 1rem 1.5rem;
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                border-bottom: 1px solid var(--card-border-color);
+                
+                &:first-child { border-top-left-radius: 16px; }
+                &:last-child { border-top-right-radius: 16px; }
+            }
+        }
+
+        tbody {
+            tr {
+                transition: all 0.2s ease;
+                border-bottom: 1px solid var(--card-border-color);
+                position: relative; 
+                z-index: 2;
+
+                &:last-child {
+                    border-bottom: none;
+                }
+
+                &:hover {
+                    background: rgba(107, 207, 209, 0.02);
+                    z-index: 10;
+                }
+
+                &:focus-within {
+                    z-index: 100;
+                }
+
+                // Elevate z-index when a dropdown or date-picker is open inside
+                &:has(.dropdown-form__popup),
+                &:has(.date-picker__popup) {
+                    z-index: 100 !important;
+                }
+            }
+
+            td {
+                padding: 0.625rem 1rem;
+                vertical-align: middle;
+                color: var(--text-primary);
+                font-size: 0.95rem;
+                white-space: nowrap;
+            }
+        }
+
+        .actions-cell {
+            padding-right: 1.5rem !important;
+        }
+
+        // Common Dropdown overrides - specific table context overrides will apply later
+        :host ::ng-deep {
+            .table-dropdown, .table-date-picker {
+                width: 100%;
+                display: inline-flex;
+                
+                .dropdown-form--badge, .date-picker--badge {
+                    width: 100%;
+                    margin: 0 !important;
+                    
+                    .dropdown-form__container, .date-picker__container {
+                        width: 100%;
+                        min-width: 155px !important;
+                    }
+
+                    .dropdown-form__input-wrapper {
+                        background: transparent;
+                        border: 1px solid transparent;
+                        transition: all 0.2s ease;
+                        width: 100%;
+                        border-radius: 20px;
+
+                        &:hover {
+                            border-color: var(--card-border-color);
+                            background: rgba(107, 207, 209, 0.05);
+                        }
+                    }
+
+                    .dropdown-form__field {
+                        padding: 5px 0 5px 12px !important;
+                        height: 34px !important;
+                        font-size: 0.8rem !important;
+                        font-weight: 600 !important;
+                        text-transform: capitalize;
+                        white-space: nowrap !important;
+                    }
+
+                    .date-picker__field {
+                        padding: 5px 1.5rem 5px 1.75rem !important;
+                        height: 34px !important;
+                        font-size: 0.8rem !important;
+                        font-weight: 600 !important;
+                        text-transform: capitalize;
+                        white-space: nowrap !important;
+                    }
+
+                    .dropdown-form__arrow-wrapper {
+                        right: auto;
+                        padding-right: 8px !important;
+                    }
+
+                    .dropdown-form__popup, .date-picker__popup {
+                        z-index: 10000;
+                        min-width: 130px;
+                    }
+
+                    .dropdown-form__option {
+                        padding: 0.5rem 0.75rem;
+                        font-size: 0.8125rem;
+                        white-space: nowrap;
+                    }
+                }
+            }
+        }
+
+        .table-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+
+            .table-action-btn {
+                width: 34px;
+                height: 34px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                border: 1px solid var(--card-border-color);
+                background: var(--card-color);
+                color: var(--text-secondary);
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                i { font-size: 1rem; }
+
+                &:hover {
+                    color: var(--primary-gradient-start);
+                    border-color: var(--primary-gradient-start);
+                    background: rgba(107, 207, 209, 0.05);
+                }
+            }
+        }
+
+        .empty-table-msg {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            opacity: 0.7;
+
+            &::before {
+                content: '\F404';
+                font-family: 'bootstrap-icons' !important;
+                display: block;
+                font-size: 2.5rem;
+                margin-bottom: 0.75rem;
+                opacity: 0.4;
+                color: var(--text-secondary);
+            }
+        }
+    }
+
+    // Media query for desktop - Allow overflow for dropdowns
+    @media (min-width: 1491px) {
+        .custom-table-wrapper {
+            overflow: visible !important;
+        }
+    }
+
+    @media (max-width: 1490px) {
+        .custom-table-wrapper {
+            overflow: visible !important;
+            min-width: unset;
+            width: 100%;
+        }
+
+        .custom-table {
+            display: block;
+            min-width: unset !important;
+            width: 100%;
+
+            thead {
+                display: none;
+            }
+
+            tbody {
+                display: block;
+                width: 100%;
+
+                tr {
+                    display: block;
+                    margin-bottom: 1.5rem;
+                    border: 1px solid var(--card-border-color);
+                    border-radius: 12px;
+                    background: var(--card-color);
+                    box-shadow: var(--card-shadow);
+                    position: relative;
+                    z-index: 1;
+                    width: 100%;
+
+                    &:hover {
+                        background: var(--card-color);
+                    }
+
+                    &:last-child {
+                        margin-bottom: 0;
+                    }
+                }
+
+                td {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    text-align: right;
+                    padding: 0.8rem 1.5rem;
+                    border-bottom: 1px solid var(--card-border-color);
+                    position: relative;
+                    white-space: normal;
+                    width: 100%;
+                    box-sizing: border-box;
+                    overflow: hidden;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                    font-size: 0.875rem;
+
+                    &:last-child { border-bottom: none; }
+
+                    &::before {
+                        content: attr(data-label);
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        font-size: 0.75rem;
+                        color: var(--text-secondary);
+                        margin-right: 1rem;
+                        flex-basis: 100px;
+                        text-align: left;
+                        flex-shrink: 0;
+                        word-break: normal;
+                    }
+
+                    > *:not(::before) {
+                        margin-left: auto;
+                        min-width: 0;
+                        max-width: calc(100% - 110px);
+                        overflow-wrap: break-word;
+                        word-break: break-word;
+                    }
+                }
+            }
+        }
+        // Ensure dropdown popup is visible inside stacked td cells
+        :host ::ng-deep {
+            .table-dropdown, .table-date-picker {
+                .dropdown-form__popup, .date-picker__popup {
+                    z-index: 10000;
+                    max-height: 40vh;
+                }
+            }
+        }
+
+        // Only allow overflow on td cells containing dropdown/date-picker
+        :host ::ng-deep .custom-table tbody td:has(.dropdown-form__container),
+        :host ::ng-deep .custom-table tbody td:has(.date-picker__container) {
+            overflow: visible !important;
+        }
+
+        // Elevate row z-index when a popup is open inside it
+        :host ::ng-deep .custom-table tbody tr:has(.dropdown-form__popup),
+        :host ::ng-deep .custom-table tbody tr:has(.date-picker__popup) {
+            z-index: 100;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .custom-table tbody td {
+            padding: 0.65rem 1.25rem;
+            font-size: 0.8125rem;
+
+            &::before {
+                font-size: 0.7rem;
+                flex-basis: 90px;
+            }
+
+            > *:not(::before) {
+                max-width: calc(100% - 100px);
+            }
+        }
+
+        :host ::ng-deep {
+            .table-dropdown, .table-date-picker {
+                .dropdown-form--badge, .date-picker--badge {
+                    .dropdown-form__container, .date-picker__container {
+                        min-width: 120px !important;
+                    }
+
+                    .dropdown-form__field, .date-picker__field {
+                        font-size: 0.75rem !important;
+                    }
+
+                    .dropdown-form__popup {
+                        min-width: 120px;
+                    }
+
+                    .dropdown-form__option {
+                        padding: 0.4rem 0.625rem;
+                        font-size: 0.75rem;
+                    }
+                }
+            }
+        }
+    }
+
+    @media (max-width: 576px) {
+        .custom-table tbody td {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+
+            &::before {
+                font-size: 0.65rem;
+                flex-basis: 75px;
+                margin-right: 0.5rem;
+            }
+
+            > *:not(::before) {
+                max-width: calc(100% - 85px);
+            }
+        }
+
+        .table-actions {
+            gap: 0.5rem;
+
+            .table-action-btn {
+                width: 30px;
+                height: 30px;
+
+                i { font-size: 0.875rem; }
+            }
+        }
+
+        :host ::ng-deep {
+            .table-dropdown, .table-date-picker {
+                .dropdown-form--badge, .date-picker--badge {
+                    .dropdown-form__container, .date-picker__container {
+                        min-width: 100px !important;
+                    }
+
+                    .dropdown-form__field {
+                        font-size: 0.7rem !important;
+                        padding: 4px 0 4px 8px !important;
+                        height: 30px !important;
+                    }
+
+                    .date-picker__field {
+                        font-size: 0.7rem !important;
+                        padding: 4px 1.25rem 4px 1.5rem !important;
+                        height: 30px !important;
+                    }
+
+                    .dropdown-form__arrow-wrapper {
+                        padding-right: 4px !important;
+                    }
+
+                    .dropdown-form__popup {
+                        min-width: 110px;
+                    }
+
+                    .dropdown-form__option {
+                        padding: 0.375rem 0.5rem;
+                        font-size: 0.7rem;
+                    }
+                }
+            }
+        }
+    }
+
+    /* Allow popup to escape overflow:hidden on td cells */
+    :host ::ng-deep .custom-table tbody td:has(.dropdown-form__container) {
+        overflow: visible;
+    }
+}
