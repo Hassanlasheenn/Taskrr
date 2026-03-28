@@ -35,4 +35,11 @@ class LinkService:
         return self.get_frontend_url(f"todo/{todo_id}")
 
 # Global instance for easy import
+
+    def get_password_reset_link(self, token: str) -> str:
+        """Specific helper for password reset links."""
+        return self.get_frontend_url("reset-password", {
+            "token": token
+        })
+
 link_service = LinkService()

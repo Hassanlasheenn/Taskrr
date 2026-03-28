@@ -9,6 +9,8 @@ export const API_URLS = {
         logout: `${API_BASE_URL}/logout`,
         refresh: `${API_BASE_URL}/refresh`,
         resendVerification: `${API_BASE_URL}/resend-verification`,
+        forgotPassword: `${API_BASE_URL}/users/forgot-password`,
+        resetPassword: `${API_BASE_URL}/users/reset-password`,
     },
            user: {
                getUserById: `${API_BASE_URL}/users`,

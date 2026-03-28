@@ -169,3 +169,64 @@ class EmailService:
         except Exception as e:
             logger.error(f"Error sending notification email: {e}")
             return False
+
+    async def send_password_reset_email(self, to_email: str, token: str) -> bool:
+        """Asynchronously send a branded password reset email."""
+        return await asyncio.to_thread(self._send_password_reset_email_sync, to_email, token)
+
+    def _send_password_reset_email_sync(self, to_email: str, token: str) -> bool:
+        if not self.smtp_username or not self.smtp_password:
+            return False
+
+        try:
+            reset_link = link_service.get_password_reset_link(token)
+            subject = "Password Reset Request - Taskrr"
+            
+            html_content = f"""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: {self.bg_light}; color: {self.text_primary};">
+                <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+                    <div style="background: linear-gradient(135deg, {self.primary_gradient_start} 0%, {self.primary_gradient_end} 100%); padding: 30px; text-align: center;">
+                        <h1 style="margin: 0; font-family: "Georgia", serif; font-size: 42px; font-weight: bold; color: #ffffff !important;">Taskrr</h1>
+                    </div>
+                    <div style="padding: 35px; color: {self.text_primary}; line-height: 1.6; text-align: center;">
+                        <h3 style="font-weight: 700; color: {self.text_primary};">Password Reset Request</h3>
+                        <p>We received a request to reset the password for your Taskrr account.</p>
+                        <p>Click the button below to set a new password. This link will expire in 1 hour.</p>
+                        <div style="margin: 30px 0;">
+                            <a href="{reset_link}" style="background-color: {self.primary_gradient_end}; color: #ffffff !important; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block;">Reset Password</a>
+                        </div>
+                        <p style="font-size: 13px; color: #94a3b8;">If you didn"t request this, you can safely ignore this email.</p>
+                    </div>
+                    <div style="background-color: #f9fafb; padding: 20px; text-align: center; color: #94a3b8; font-size: 12px;">
+                        <p>© 2026 Taskrr Application. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+
+            msg = MIMEMultipart("alternative")
+            msg["From"] = f"Taskrr <{self.from_email}>"
+            msg["To"] = to_email
+            msg["Subject"] = subject
+            
+            text_fallback = f"Please use the following link to reset your password: {reset_link}"
+            msg.attach(MIMEText(text_fallback, "plain"))
+            msg.attach(MIMEText(html_content, "html"))
+
+            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=self.timeout) as server:
+                if self.smtp_use_tls:
+                    server.starttls()
+                server.login(self.smtp_username, self.smtp_password)
+                server.send_message(msg)
+
+            return True
+        except Exception as e:
+            logger.error(f"Error sending password reset email: {e}")
+            return False

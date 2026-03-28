@@ -47,5 +47,17 @@ export class AuthHttpService {
         .post<void>(API_URLS.auth.logout, {}, { withCredentials: true })
         .pipe(take(1));
     }
+
+    forgotPassword(email: string): Observable<{ message: string }> {
+        return this._http
+        .post<{ message: string }>(API_URLS.auth.forgotPassword, { email })
+        .pipe(take(1));
+    }
+
+    resetPassword(payload: any): Observable<{ message: string }> {
+        return this._http
+        .post<{ message: string }>(API_URLS.auth.resetPassword, payload)
+        .pipe(take(1));
+    }
 }
 

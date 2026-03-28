@@ -10,6 +10,14 @@ import { LayoutPaths } from './layouts/enums';
 export const routes: Routes = [
     { path: AuthPaths.LOGIN, component: AuthContainerComponent },
     { 
+        path: AuthPaths.FORGOT_PASSWORD, 
+        loadComponent: () => import('./auth/components/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent) 
+    },
+    { 
+        path: AuthPaths.RESET_PASSWORD, 
+        loadComponent: () => import('./auth/components/reset-password/reset-password.component').then(m => m.ResetPasswordComponent) 
+    },
+    { 
         path: AuthPaths.VERIFY_EMAIL, 
         loadComponent: () => import('./auth/components/verify-email/verify-email.component').then(m => m.VerifyEmailComponent) 
     },

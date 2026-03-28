@@ -1,3 +1,7 @@
+from ..services.email_service import EmailService
+from ..auth import hash_password
+import secrets
+from datetime import datetime, timedelta
 import os
 import io
 import uuid
@@ -24,6 +28,7 @@ from ..utils import get_photo_url
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["users"])
 storage_service = S3StorageService()
+email_service = EmailService()
 
 # Local directory configuration (for fallback/legacy)
 STATIC_DIR = "static"
@@ -234,3 +239,48 @@ def get_users_with_role_user(
         })
     cache_set(cache_key, cache_data, CACHE_TTL_USER_LISTS)
     return result
+
+
+@router.post("/forgot-password")
+async def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depends(database.get_db)):
+
+    # Ensure password reset columns exist
+    try:
+        from sqlalchemy import text
+        db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_token VARCHAR(255)"))
+        db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_expires TIMESTAMP"))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.warning(f"Note: Migration check skipped or already applied: {e}")
+
+    user = db.query(models.User).filter(models.User.email == request.email).first()
+    if not user:
+        # We return success even if user not found for security reasons
+        return {"message": "If an account exists with this email, you will receive a reset link shortly."}
+    
+    token = secrets.token_urlsafe(32)
+    user.reset_password_token = token
+    user.reset_password_expires = datetime.now() + timedelta(hours=1)
+    db.commit()
+    
+    await email_service.send_password_reset_email(user.email, token)
+    
+    return {"message": "If an account exists with this email, you will receive a reset link shortly."}
+
+@router.post("/reset-password")
+async def reset_password(request: schemas.ResetPasswordRequest, db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(
+        models.User.reset_password_token == request.token,
+        models.User.reset_password_expires > datetime.now()
+    ).first()
+    
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+    
+    user.hashed_password = hash_password(request.new_password)
+    user.reset_password_token = None
+    user.reset_password_expires = None
+    db.commit()
+    
+    return {"message": "Password has been successfully reset. You can now login with your new password."}

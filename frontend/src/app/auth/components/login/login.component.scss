@@ -10,4 +10,17 @@
 
 .login-form {
     @include auth.auth-form;
+
+    .forgot-password-link {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &:hover {
+            color: var(--primary-gradient-start);
+            text-decoration: underline;
+        }
+    }
 }

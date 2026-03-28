@@ -13,6 +13,10 @@
             <button type="button" class="card-button" (click)="onSubmit()">Login</button>
         </div>
 
+        <div class="mt-3 text-center">
+            <a [routerLink]="['/auth', authPaths.FORGOT_PASSWORD]" class="forgot-password-link">Forgot Password?</a>
+        </div>
+
         <div class="mt-2 d-flex justify-content-center align-items-center gap-1">
             <span>New to Taskrr?</span>
             <button class="link-button" [routerLink]="['/']">Sign Up</button>

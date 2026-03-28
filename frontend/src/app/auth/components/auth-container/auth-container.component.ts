@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { HttpErrorResponse } from "@angular/common/http";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { Subject, takeUntil } from "rxjs";
 
 import { SharedModule } from "../../../shared/shared.module";
@@ -24,7 +24,7 @@ type AuthMode = 'login' | 'register';
     standalone: true,
     templateUrl: './auth-container.component.html',
     styleUrls: ['./auth-container.component.scss'],
-    imports: [CommonModule, SharedModule, ReactiveFormsModule]
+    imports: [CommonModule, SharedModule, ReactiveFormsModule, RouterLink]
 })
 export class AuthContainerComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();

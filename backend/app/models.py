@@ -34,6 +34,8 @@ class User(Base):
     role = Column(String(20), default=UserRole.USER.value, nullable=False, index=True)
     is_verified = Column(Boolean, default=False, nullable=False)
     verification_token = Column(String(255), nullable=True, index=True)
+    reset_password_token = Column(String(255), nullable=True, index=True)
+    reset_password_expires = Column(DateTime, nullable=True)
     
     todos = relationship("Todo", back_populates="user", foreign_keys="[Todo.user_id]", cascade="all, delete-orphan")
 

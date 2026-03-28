@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from "@angular/core";
+import { CommonModule } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
 import { SharedModule } from "../../../shared/shared.module";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
@@ -17,7 +18,7 @@ import { SeoService } from "../../../core/services/seo.service";
     selector: 'app-register',
     templateUrl: './register.component.html',
     standalone: true,
-    imports: [SharedModule, ReactiveFormsModule, RouterLink],
+    imports: [CommonModule, SharedModule, ReactiveFormsModule, RouterLink],
     styleUrls: ['./register.component.scss']
 })
 export class RegisterComponent implements OnInit, OnDestroy {

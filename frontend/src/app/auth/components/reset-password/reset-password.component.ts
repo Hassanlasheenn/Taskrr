@@ -7,47 +7,38 @@ import { IFieldControl } from "../../../shared/interfaces/IFieldControl.interfac
 import { InputTypes } from "../../../shared/enums/input-types.enum";
 import { ReactiveFormService } from "../../../shared/services/reactive-form.service";
 import { ToastService } from "../../../core/services/toast.service";
-import { Router, RouterLink } from "@angular/router";
+import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { ValidatorTypes } from "../../../shared/enums/validator-types.enum";
 import { RegexPatterns } from "../../../shared/enums/regex-patterns.enum";
-import { ILoginPayload, ILoginResponse } from "../../interfaces";
 import { AuthService } from "../../services";
 import { Subject, takeUntil } from "rxjs";
-import { LayoutPaths } from "../../../layouts/enums";
 import { AuthPaths } from "../../enums/auth-paths.enum";
 import { SeoService } from "../../../core/services/seo.service";
 
 @Component({
-    selector: 'app-login',
+    selector: 'app-reset-password',
     standalone: true,
-    templateUrl: './login.component.html',
-    styleUrls: ['./login.component.scss'],
+    templateUrl: './reset-password.component.html',
+    styleUrls: ['./reset-password.component.scss'],
     imports: [CommonModule, SharedModule, ReactiveFormsModule, RouterLink],
 })
-export class LoginComponent implements OnInit, OnDestroy {
-    readonly authPaths = AuthPaths;
+export class ResetPasswordComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();
     private readonly _seoService = inject(SeoService);
+    private readonly _route = inject(ActivatedRoute);
     form: FormGroup = new FormGroup({});
     isSubmitted: boolean = false;
+    isSuccess: boolean = false;
     errorSummary: string | null = null;
+    token: string | null = null;
+    readonly authPaths = AuthPaths;
+
     fields: IFieldControl[] = [
         {
-            label: 'Email or Username',
-            type: InputTypes.TEXT,
-            formControlName: 'username',
-            placeholder: 'Enter your email or username',
-            value: '',
-            required: true,
-            validations: [
-                { type: ValidatorTypes.REQUIRED, message: 'Email or username is required' }
-            ],
-        },
-        {
-            label: 'Password',
+            label: 'New Password',
             type: InputTypes.PASSWORD,
-            formControlName: 'password',
-            placeholder: 'Enter your password',
+            formControlName: 'new_password',
+            placeholder: 'Enter your new password',
             value: '',
             required: true,
             validations: [
@@ -55,7 +46,20 @@ export class LoginComponent implements OnInit, OnDestroy {
                 { type: ValidatorTypes.MINLENGTH, message: 'Password must be at least 8 characters', value: 8 }
             ],
         },
+        {
+            label: 'Confirm New Password',
+            type: InputTypes.PASSWORD,
+            formControlName: 'confirm_password',
+            placeholder: 'Confirm your new password',
+            value: '',
+            required: true,
+            validations: [
+                { type: ValidatorTypes.REQUIRED, message: 'Please confirm your password' },
+                { type: ValidatorTypes.PASSWORD_MATCH, message: 'Passwords do not match', value: 'new_password' }
+            ],
+        }
     ];
+
     constructor(
         private readonly _formService: ReactiveFormService,
         private readonly _authService: AuthService,
@@ -65,15 +69,18 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this._seoService.updateMetaTags({
-            title: 'Login',
-            description: 'Login to Taskrr to manage your tasks, collaborate with your team, and boost your productivity.',
-            keywords: 'login, taskrr, task management, login to taskrr'
+            title: 'Reset Password',
+            description: 'Create a new password for your Taskrr account.',
+            keywords: 'reset password, taskrr, new password'
         });
 
-        if (this._authService.isAuthenticated()) {
-            this._router.navigate([LayoutPaths.DASHBOARD]);
+        this.token = this._route.snapshot.queryParamMap.get('token');
+        if (!this.token) {
+            this._toastService.error('Invalid reset link');
+            this._router.navigate(['/', this.authPaths.LOGIN]);
             return;
         }
+
         this.initForm();
     }
 
@@ -84,39 +91,29 @@ export class LoginComponent implements OnInit, OnDestroy {
     onSubmit(): void {
         if(this.form?.invalid) {
             this.isSubmitted = true;
-        } else if(this.form?.valid) {
+        } else {
             this.isSubmitted = false;
-            this.onLogin();
+            this.onResetPassword();
         }
     }
 
-    onLogin(): void {
+    onResetPassword(): void {
         this.errorSummary = null;
-        this.isSubmitted = false;
-
-        const payload: ILoginPayload = {
-            username: this.form.get('username')?.value,
-            password: this.form.get('password')?.value,
+        const payload = {
+            token: this.token,
+            new_password: this.form.get('new_password')?.value
         };
 
         this._authService
-        .loginUser(payload)
+        .resetPassword(payload)
         .pipe(takeUntil(this._destroy$))
         .subscribe({
-            next: (res: ILoginResponse) => {
-                this.errorSummary = null;
-                if (res.access_token) {
-                    this._authService.setToken(res.access_token);
-                }
-                if (res.data?.id) {
-                    this._authService.setCurrentUserId(res.data.id);
-                    this._authService.setCurrentUserData(res.data);
-                }
-                this._router.navigate([LayoutPaths.DASHBOARD]);
+            next: (res) => {
+                this.isSuccess = true;
+                this._toastService.success(res.message);
             },
             error: (err: HttpErrorResponse) => {
-                this.isSubmitted = true;
-                const errorMessage = err?.error?.detail || err?.error?.message || err?.message || 'An error occurred during login. Please try again.';
+                const errorMessage = err?.error?.detail || 'An error occurred. Please try again.';
                 this.errorSummary = errorMessage;
                 this._toastService.error(errorMessage);
             }

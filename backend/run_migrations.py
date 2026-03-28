@@ -38,6 +38,7 @@ from migrations.add_reminder_sent_at_column import migrate as migration14
 from migrations.add_verification_fields import run_migration as migration15
 from migrations.add_comment_attachments import migrate as migration16
 from migrations.add_created_at_index import run_migration as migration21
+from migrations.add_password_reset_fields import run_migration as migration22
 
 from app.database import engine
 
@@ -72,6 +73,7 @@ def run_all_migrations():
         ("Add email verification fields", migration15),
         ("Add comment attachments", migration16),
         ("Add created_at index on todos", migration21),
+        ("Add password reset fields", migration22),
     ]
     
     # We don't open a session here because each migration opens its own
