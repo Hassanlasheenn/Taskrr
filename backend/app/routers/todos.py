@@ -218,33 +218,7 @@ async def create_todo(
         invalidate_todo_list_for_user(db_todo.assigned_to_user_id)
     invalidate_admin_users_with_todos()
 
-    # Urgency notification logic (immediate)
-    if db_todo.due_date and db_todo.status != models.TodoStatus.DONE.value:
-        from datetime import datetime, timedelta, timezone
-        # Ensure comparison works by using timezone-aware datetimes
-        now = datetime.now(timezone.utc)
-        threshold = now + timedelta(days=3)
-        
-        # Ensure db_todo.due_date is treated as UTC if it's naive, or convert if aware
-        due_date = db_todo.due_date
-        if due_date.tzinfo is None:
-            due_date = due_date.replace(tzinfo=timezone.utc)
-            
-        if due_date <= threshold:
-            user_to_notify_id = db_todo.assigned_to_user_id or db_todo.user_id
-            target_user = db.query(models.User).filter(models.User.id == user_to_notify_id).first()
-            
-            if target_user:
-                message = f"Urgent: New todo '{db_todo.title}' is due soon!"
-                if due_date < now:
-                    message = f"Alert: New todo '{db_todo.title}' is already OVERDUE!"
-                
-                await create_notification(
-                    db, user_to_notify_id, db_todo.id, message,
-                    creator_username, target_user.email, db_todo.title
-                )
-                db_todo.reminder_sent_at = now
-                db.commit()
+
 
     todo_dict = {
         "id": db_todo.id,
@@ -1058,33 +1032,7 @@ async def update_todo(
         invalidate_todo_list_for_user(original_assigned_user_id)
     invalidate_admin_users_with_todos()
 
-    # Urgency notification logic (immediate)
-    if todo_db.due_date and todo_db.status != models.TodoStatus.DONE.value:
-        from datetime import datetime, timedelta, timezone
-        # Ensure comparison works by using timezone-aware datetimes
-        now = datetime.now(timezone.utc)
-        threshold = now + timedelta(days=3)
-        
-        # Ensure todo_db.due_date is treated as UTC if it's naive, or convert if aware
-        due_date = todo_db.due_date
-        if due_date.tzinfo is None:
-            due_date = due_date.replace(tzinfo=timezone.utc)
-            
-        if due_date <= threshold:
-            user_to_notify_id = todo_db.assigned_to_user_id or todo_db.user_id
-            target_user = db.query(models.User).filter(models.User.id == user_to_notify_id).first()
-            
-            if target_user:
-                message = f"Urgent Reminder: '{todo_db.title}' is due soon!"
-                if due_date < now:
-                    message = f"Alert: '{todo_db.title}' is already OVERDUE!"
-                
-                await create_notification(
-                    db, user_to_notify_id, todo_db.id, message,
-                    updater_username, target_user.email, todo_db.title
-                )
-                todo_db.reminder_sent_at = now
-                db.commit()
+
 
     return _build_todo_response(todo_db, db)
 

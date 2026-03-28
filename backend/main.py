@@ -31,28 +31,26 @@ app = FastAPI(
 )
 
 # Mount static files directory for uploads
-# Make sure this happens BEFORE other routes if you want priority, or just anywhere
 static_dir = os.path.join(os.getcwd(), "static")
 if not os.path.exists(static_dir):
     os.makedirs(static_dir)
-    # Create profile_pics subfolder
     os.makedirs(os.path.join(static_dir, "profile_pics"), exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-def _process_due_date_reminders():
-    """Sync function to be run in a thread to check due dates"""
+async def _process_due_date_reminders():
     try:
-        db = next(database.get_db())
+        db = database.SessionLocal()
         try:
+            now = datetime.now()
             # 3 days threshold (matching "urgency-high" frontend logic)
-            threshold = datetime.now() + timedelta(days=3)
+            threshold = now + timedelta(days=3)
             
             # Find todos that:
             # 1. Are not done
             # 2. Have a due_date within 3 days (or overdue)
-            # 3. Haven't had a reminder sent in the last 12 hours
-            reminder_threshold = datetime.now() - timedelta(hours=12)
+            # 3. Haven't had a reminder sent in the last 24 hours
+            reminder_threshold = now - timedelta(hours=24)
             
             near_due_todos = db.query(models.Todo).filter(
                 models.Todo.status != models.TodoStatus.DONE.value,
@@ -66,66 +64,64 @@ def _process_due_date_reminders():
             if not near_due_todos:
                 return
 
-            # Note: We can't easily await inside this sync function, 
-            # so we'll just log and update the DB here. 
-            # Actual WebSocket notifications will happen when the app is running.
             for todo in near_due_todos:
-                # Update reminder timestamp to prevent spamming
-                todo.reminder_sent_at = datetime.now()
+                # Determine who to notify
+                user_to_notify_id = todo.assigned_to_user_id or todo.user_id
+                target_user = db.query(models.User).filter(models.User.id == user_to_notify_id).first()
+                
+                if target_user:
+                    due_date = todo.due_date
+                    message = f"Urgent Reminder: '{todo.title}' is due soon!"
+                    if due_date < now:
+                        message = f"Alert: '{todo.title}' is already OVERDUE!"
+                    
+                    # Create notification via the unified utility
+                    await create_notification(
+                        db, user_to_notify_id, todo.id, message,
+                        "System", target_user.email, todo.title
+                    )
+                    
+                    # Update reminder timestamp to prevent spamming
+                    todo.reminder_sent_at = now
+            
             db.commit()
-            logger.info(f"Background check: Processed {len(near_due_todos)} due date reminders")
+            logger.info(f"✅ Periodic check: Processed {len(near_due_todos)} due date reminders")
         finally:
             db.close()
     except Exception as e:
         logger.error(f"Error in _process_due_date_reminders: {e}")
 
 async def check_due_dates_loop():
-    """Background task to check for near-due todos every hour"""
+    await asyncio.sleep(60)
     while True:
-        # Offload the synchronous DB work to a thread pool
-        await asyncio.to_thread(_process_due_date_reminders)
+        await _process_due_date_reminders()
         # Run every 1 hour (3600 seconds)
         await asyncio.sleep(3600)
 
 @app.on_event("startup")
 async def startup_event():
-    # Run database initialization and migrations in a separate thread
+    # Run database initialization and migrations
     try:
         loop = asyncio.get_event_loop()
-        # Initialize tables
         await loop.run_in_executor(None, lambda: Base.metadata.create_all(bind=engine))
-        # Run migrations
         await loop.run_in_executor(None, run_all_migrations)
         logger.info("✅ Database initialization and migrations completed")
     except Exception as e:
         logger.error(f"Error during startup: {e}")
         
-    # Start the background task
+    # Start the periodic background task
     asyncio.create_task(check_due_dates_loop())
 
-# CORS configuration based on environment
+# CORS configuration
 environment = os.getenv("ENVIRONMENT", "development").lower()
-
 if environment == "production":
-    # Production: Only allow AWS production domains
-    # You can add multiple production domains separated by commas in ALLOWED_ORIGINS
     allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
     if allowed_origins_env:
-        # Split by comma and strip whitespace
         allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
     else:
-        # Default production origin
-        allowed_origins = [
-            "https://taskrr.app",
-            "https://www.taskrr.app",
-        ]
+        allowed_origins = ["https://taskrr.app", "https://www.taskrr.app"]
 else:
-    # Development: Only allow localhost
-    allowed_origins = [
-        "http://localhost",
-        "http://localhost:4200",
-        "http://localhost:4201",
-    ]
+    allowed_origins = ["http://localhost", "http://localhost:4200", "http://localhost:4201"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -135,9 +131,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register all routers
 register_routers(app)
-
 
 @app.middleware("http")
 async def log_request_time(request: Request, call_next):
@@ -153,7 +147,6 @@ async def add_instance_header(request: Request, call_next):
     response: Response = await call_next(request)
     response.headers["X-Served-By"] = INSTANCE_ID
     return response
-
 
 @app.get("/health")
 def health():
