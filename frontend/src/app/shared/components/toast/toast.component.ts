@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 import { ToastService, IToast } from '../../../core/services/toast.service';
@@ -16,13 +16,17 @@ export class ToastComponent implements OnInit, OnDestroy {
     private _destroy$ = new Subject<void>();
     trackById = trackById;
 
-    constructor(private toastService: ToastService) {}
+    constructor(
+        private toastService: ToastService,
+        private cdr: ChangeDetectorRef
+    ) {}
 
     ngOnInit(): void {
         this.toastService.toasts$
             .pipe(takeUntil(this._destroy$))
             .subscribe(toasts => {
                 this.toasts = toasts;
+                this.cdr.detectChanges();
             });
     }
 

@@ -37,7 +37,7 @@ export class ToastService {
     }
 
     success(message: string, duration?: number): void {
-        this.show(message, 'success', duration);
+        this.show(message, 'success', duration ?? 4000);
     }
 
     error(message: string, duration?: number): void {

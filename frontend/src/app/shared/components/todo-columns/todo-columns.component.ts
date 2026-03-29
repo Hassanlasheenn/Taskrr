@@ -9,6 +9,7 @@ import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
 import { TodoService } from '../../../core/services/todo.service';
 import { AuthService } from '../../../auth/services/auth.service';
 import { TodoDetailDialogService } from '../../../core/services/todo-detail-dialog.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 export interface ITodoStatusChange {
     todo: ITodo;
@@ -76,6 +77,7 @@ export class TodoColumnsComponent implements OnChanges {
         private readonly _todoService: TodoService,
         private readonly _authService: AuthService,
         private readonly _dialogService: TodoDetailDialogService,
+        private readonly _toastService: ToastService,
     ) {}
 
     onSubtaskClick(subtask: ITodo, event: MouseEvent): void {
@@ -85,12 +87,40 @@ export class TodoColumnsComponent implements OnChanges {
     }
 
     onTodoClick(todo: ITodo, event: MouseEvent): void {
-        // Only open if not clicking an action button
+        // Only open if not clicking an action button or status toggle
         const target = event.target as HTMLElement;
-        if (target.closest('.tc-item__btn') || target.closest('.tc-item__subtask-toggle') || target.closest('.tc-item__subtasks')) {
+        if (target.closest('.tc-item__btn') || target.closest('.tc-item__subtask-toggle') || target.closest('.tc-item__subtasks') || target.closest('.tc-item__subtask-status')) {
             return;
         }
         this._dialogService.open(todo);
+    }
+
+    onUpdateSubtaskStatus(subtask: ITodo, event: MouseEvent): void {
+        event.stopPropagation();
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+
+        const newStatus = subtask.status === 'done' ? 'new' : 'done';
+        this._todoService.updateTodo(userId, subtask.id, { status: newStatus as any }).subscribe({
+            next: (updated) => {
+                const parentId = subtask.parent_id;
+                if (parentId) {
+                    const subtasks = this._loadedSubtasks.get(parentId);
+                    if (subtasks) {
+                        const idx = subtasks.findIndex(s => s.id === subtask.id);
+                        if (idx !== -1) {
+                            subtasks[idx] = { ...updated } as ITodo;
+                            this._loadedSubtasks.set(parentId, [...subtasks]);
+                        }
+                    }
+                }
+                this._toastService.success(`Status updated to ${newStatus}`);
+                this._dialogService.notifyUpdate(updated as ITodo);
+            },
+            error: () => {
+                this._toastService.error('Failed to update subtask status');
+            }
+        });
     }
 
     isCurrentUser(assignedUserId: number | null | undefined): boolean {

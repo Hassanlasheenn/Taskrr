@@ -76,7 +76,8 @@
                                      [class.tc-item__subtask-row--done]="subtask.status === 'done'"
                                      (click)="onSubtaskClick(subtask, $event)">
                                     <i class="bi tc-item__subtask-status"
-                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"
+                                       (click)="onUpdateSubtaskStatus(subtask, $event)"></i>
                                     <span class="tc-item__subtask-title">{{ subtask.title }}</span>
                                     <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
                                 </div>
@@ -182,7 +183,8 @@
                                      [class.tc-item__subtask-row--done]="subtask.status === 'done'"
                                      (click)="onSubtaskClick(subtask, $event)">
                                     <i class="bi tc-item__subtask-status"
-                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"
+                                       (click)="onUpdateSubtaskStatus(subtask, $event)"></i>
                                     <span class="tc-item__subtask-title">{{ subtask.title }}</span>
                                     <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
                                 </div>
@@ -288,7 +290,8 @@
                                      [class.tc-item__subtask-row--done]="subtask.status === 'done'"
                                      (click)="onSubtaskClick(subtask, $event)">
                                     <i class="bi tc-item__subtask-status"
-                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"
+                                       (click)="onUpdateSubtaskStatus(subtask, $event)"></i>
                                     <span class="tc-item__subtask-title">{{ subtask.title }}</span>
                                     <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
                                 </div>
@@ -394,7 +397,8 @@
                                      [class.tc-item__subtask-row--done]="subtask.status === 'done'"
                                      (click)="onSubtaskClick(subtask, $event)">
                                     <i class="bi tc-item__subtask-status"
-                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"
+                                       (click)="onUpdateSubtaskStatus(subtask, $event)"></i>
                                     <span class="tc-item__subtask-title">{{ subtask.title }}</span>
                                     <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
                                 </div>
@@ -500,7 +504,8 @@
                                      [class.tc-item__subtask-row--done]="subtask.status === 'done'"
                                      (click)="onSubtaskClick(subtask, $event)">
                                     <i class="bi tc-item__subtask-status"
-                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"
+                                       (click)="onUpdateSubtaskStatus(subtask, $event)"></i>
                                     <span class="tc-item__subtask-title">{{ subtask.title }}</span>
                                     <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
                                 </div>
