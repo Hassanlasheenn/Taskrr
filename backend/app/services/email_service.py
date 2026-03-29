@@ -58,8 +58,8 @@ class EmailService:
             </head>
             <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: {self.bg_light}; color: {self.text_primary};">
                 <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.1);">
-                    <div style="background: linear-gradient(135deg, {self.primary_gradient_start} 0%, {self.primary_gradient_end} 100%); padding: 40px 30px; text-align: center;">
-                        <h1 style="margin: 0; font-family: 'Georgia', serif; font-size: 48px; font-weight: bold; letter-spacing: 0.05em; color: #ffffff !important;">Taskrr</h1>
+                    <div style="background: linear-gradient(135deg, {self.primary_gradient_start} 0%, {self.primary_gradient_end} 100%); padding: 14px 24px; text-align: left;">
+                        <span style="font-family: 'Trebuchet MS', Arial, sans-serif; font-size: 22px; font-weight: 700; font-style: italic; letter-spacing: 1px; color: #ffffff;">Taskrr</span>
                     </div>
                     <div style="padding: 40px; text-align: center; line-height: 1.6;">
                         <h2 style="color: {self.text_primary}; margin-bottom: 20px; font-size: 24px;">Welcome to Taskrr!</h2>
@@ -129,8 +129,8 @@ class EmailService:
             </head>
             <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: {self.bg_light}; color: {self.text_primary};">
                 <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
-                    <div style="background: linear-gradient(135deg, {self.primary_gradient_start} 0%, {self.primary_gradient_end} 100%); padding: 30px; text-align: center;">
-                        <h1 style="margin: 0; font-family: 'Georgia', serif; font-size: 42px; font-weight: bold; color: #ffffff !important;">Taskrr</h1>
+                    <div style="background: linear-gradient(135deg, {self.primary_gradient_start} 0%, {self.primary_gradient_end} 100%); padding: 14px 24px; text-align: left;">
+                        <span style="font-family: 'Trebuchet MS', Arial, sans-serif; font-size: 22px; font-weight: 700; font-style: italic; letter-spacing: 1px; color: #ffffff;">Taskrr</span>
                     </div>
                     <div style="padding: 35px; color: {self.text_primary}; line-height: 1.6;">
                         <h3 style="font-weight: 700; color: {self.text_primary};">New Task Notification</h3>
@@ -189,10 +189,10 @@ class EmailService:
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
             </head>
-            <body style="font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: {self.bg_light}; color: {self.text_primary};">
+            <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: {self.bg_light}; color: {self.text_primary};">
                 <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
-                    <div style="background: linear-gradient(135deg, {self.primary_gradient_start} 0%, {self.primary_gradient_end} 100%); padding: 30px; text-align: center;">
-                        <h1 style="margin: 0; font-family: "Georgia", serif; font-size: 42px; font-weight: bold; color: #ffffff !important;">Taskrr</h1>
+                    <div style="background: linear-gradient(135deg, {self.primary_gradient_start} 0%, {self.primary_gradient_end} 100%); padding: 14px 24px; text-align: left;">
+                        <span style="font-family: 'Trebuchet MS', Arial, sans-serif; font-size: 22px; font-weight: 700; font-style: italic; letter-spacing: 1px; color: #ffffff;">Taskrr</span>
                     </div>
                     <div style="padding: 35px; color: {self.text_primary}; line-height: 1.6; text-align: center;">
                         <h3 style="font-weight: 700; color: {self.text_primary};">Password Reset Request</h3>
