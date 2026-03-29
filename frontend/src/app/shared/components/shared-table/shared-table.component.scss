@@ -142,12 +142,13 @@
 
         &.todo-table {
             th:nth-child(1), td:nth-child(1) { width: auto; } // Title
-            th:nth-child(2), td:nth-child(2) { width: 180px; } // Status
-            th:nth-child(3), td:nth-child(3) { width: 160px; } // Priority
-            th:nth-child(4), td:nth-child(4) { width: 180px; } // Category
-            th:nth-child(5), td:nth-child(5) { width: 185px; } // Due Date
-            th:nth-child(6), td:nth-child(6) { width: 140px; } // Created
-            th:nth-child(7), td:nth-child(7) { width: 100px; } // Actions
+            th:nth-child(2), td:nth-child(2) { width: 150px; } // Status
+            th:nth-child(3), td:nth-child(3) { width: 140px; } // Priority
+            th:nth-child(4), td:nth-child(4) { width: 150px; } // Category
+            th:nth-child(5), td:nth-child(5) { width: 130px; } // Time Est.
+            th:nth-child(6), td:nth-child(6) { width: 165px; } // Due Date
+            th:nth-child(7), td:nth-child(7) { width: 140px; } // Created
+            th:nth-child(8), td:nth-child(8) { width: 90px; }  // Actions
         }
 
         &.user-table {
@@ -200,6 +201,41 @@
             .dropdown-form__field {
                 color: var(--primary-gradient-start) !important;
                 text-transform: none !important;
+            }
+        }
+
+        // Time Input Overrides - specific to todo-table
+        .table-time-input {
+            ::ng-deep .time-input-container {
+                margin-bottom: 0;
+                width: 100%;
+
+                .time-input-label { display: none; }
+                .time-input-wrapper {
+                    padding: 4px 10px;
+                    height: 34px !important;
+                    border-radius: 20px;
+                    background-color: rgba(139, 92, 246, 0.08) !important;
+                    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+                    min-height: unset;
+
+                    .time-input-icon {
+                        margin-right: 6px;
+                        font-size: 0.8rem;
+                        color: #8b5cf6;
+                    }
+                    .time-input-field {
+                        font-size: 0.8rem;
+                        font-weight: 600;
+                        color: #8b5cf6;
+                        padding: 0;
+                        height: 24px;
+                        background: transparent;
+                        border: none;
+                    }
+                    .time-clear-btn { font-size: 0.7rem; }
+                }
+                .time-quick-options { display: none; }
             }
         }
 

@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ChangeDetectorRef } from "@angular/core";
-import { FormGroup, ReactiveFormsModule, AbstractControl } from "@angular/forms";
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, forwardRef, ChangeDetectorRef } from "@angular/core";
+import { FormGroup, ReactiveFormsModule, AbstractControl, ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
 import { ICustomStyle, IFieldControl } from "../../../interfaces";
 import { ReactiveFormService } from "../../../services/reactive-form.service";
 import { Subscription } from "rxjs";
@@ -10,9 +10,16 @@ import { Subscription } from "rxjs";
     templateUrl: './time-input.component.html',
     styleUrls: ['./time-input.component.scss'],
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule]
+    imports: [CommonModule, ReactiveFormsModule],
+    providers: [
+        {
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: forwardRef(() => TimeInputComponent),
+            multi: true
+        }
+    ]
 })
-export class TimeInputComponent implements OnInit, OnDestroy, OnChanges {
+export class TimeInputComponent implements OnInit, OnDestroy, OnChanges, ControlValueAccessor {
     @Input() label: string = 'Time Estimate';
     @Input() placeholder: string = 'e.g., 1w 2d 3h 30m';
     @Input() name: string = '';
@@ -25,6 +32,12 @@ export class TimeInputComponent implements OnInit, OnDestroy, OnChanges {
     errorMessage: string | null = null;
     typeError: string | null = null;
     private readonly subscriptions: Subscription[] = [];
+
+    // ControlValueAccessor members
+    innerValue: string = '';
+    onChange: any = () => {};
+    onTouched: any = () => {};
+    disabled: boolean = false;
 
     static validateTimeString(value: string): string | null {
         if (!value?.trim()) return null;
@@ -69,7 +82,9 @@ export class TimeInputComponent implements OnInit, OnDestroy, OnChanges {
     ) {}
 
     ngOnInit() {
-        this.setupValidation();
+        if (this.formGroup && this.name) {
+            this.setupValidation();
+        }
     }
 
     ngOnDestroy() {
@@ -95,10 +110,17 @@ export class TimeInputComponent implements OnInit, OnDestroy, OnChanges {
         const control = this.control;
         if (!control) return;
 
+        // Initial check
+        this.typeError = TimeInputComponent.validateTimeString(control.value);
+        this.updateErrorMessage();
+
         const valueSub = control.valueChanges.subscribe((val) => {
-            this.typeError = TimeInputComponent.validateTimeString(val);
-            this.updateErrorMessage();
-            this.cdr.markForCheck();
+            if (this.innerValue !== val) {
+                this.innerValue = val || '';
+                this.typeError = TimeInputComponent.validateTimeString(this.innerValue);
+                this.updateErrorMessage();
+                this.cdr.markForCheck();
+            }
         });
         this.subscriptions.push(valueSub);
 
@@ -107,10 +129,6 @@ export class TimeInputComponent implements OnInit, OnDestroy, OnChanges {
             this.cdr.markForCheck();
         });
         this.subscriptions.push(statusSub);
-        
-        // Initial check
-        this.typeError = TimeInputComponent.validateTimeString(control.value);
-        this.updateErrorMessage();
     }
 
     get control(): AbstractControl | null {
@@ -128,27 +146,70 @@ export class TimeInputComponent implements OnInit, OnDestroy, OnChanges {
         }
     }
 
-    onQuickSelect(value: string): void {
-        const control = this.control;
-        if (!control || control.disabled) return;
+    onInputChange(event: any): void {
+        const value = event.target.value;
+        this.updateValue(value);
+    }
 
-        const currentVal = control.value || '';
+    private updateValue(value: string): void {
+        if (this.innerValue === value) return;
+        
+        this.innerValue = value;
+        this.typeError = TimeInputComponent.validateTimeString(value);
+        this.onChange(value);
+        this.onTouched();
+        this.updateErrorMessage();
+        
+        // If we have a form control, we also need to update it explicitly
+        // to ensure the parent form group is notified even if we're not using formControlName
+        const control = this.control;
+        if (control && control.value !== value) {
+            control.setValue(value);
+            control.markAsDirty();
+            control.markAsTouched();
+        }
+        
+        this.cdr.markForCheck();
+    }
+
+    onQuickSelect(value: string): void {
+        if (this.disabled) return;
+        
+        const currentVal = this.innerValue || '';
         let newVal = value;
 
         if (currentVal && !currentVal.includes(value)) {
             newVal = `${currentVal} ${value}`.trim();
         }
 
-        control.setValue(newVal);
-        control.markAsDirty();
-        control.markAsTouched();
+        this.updateValue(newVal);
     }
 
     onClear(): void {
-        const control = this.control;
-        if (!control || control.disabled) return;
-        control.setValue('');
-        control.markAsDirty();
-        control.markAsTouched();
+        if (this.disabled) return;
+        this.updateValue('');
+    }
+
+    // ControlValueAccessor implementation
+    writeValue(value: any): void {
+        const val = value || '';
+        if (this.innerValue !== val) {
+            this.innerValue = val;
+            this.typeError = TimeInputComponent.validateTimeString(this.innerValue);
+            this.cdr.markForCheck();
+        }
+    }
+
+    registerOnChange(fn: any): void {
+        this.onChange = fn;
+    }
+
+    registerOnTouched(fn: any): void {
+        this.onTouched = fn;
+    }
+
+    setDisabledState(isDisabled: boolean): void {
+        this.disabled = isDisabled;
+        this.cdr.markForCheck();
     }
 }

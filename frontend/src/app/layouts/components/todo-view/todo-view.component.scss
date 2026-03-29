@@ -119,6 +119,18 @@
     gap: 1rem;
 }
 
+.todo-view-dropdown-wrap {
+    min-width: 140px;
+    
+    ::ng-deep .dropdown-form__input-wrapper,
+    ::ng-deep .time-input-wrapper {
+        min-height: 38px !important;
+        height: 38px !important;
+        border-radius: 12px !important;
+        padding: 0 12px !important;
+    }
+}
+
 .todo-view-header-buttons {
     display: flex;
     align-items: center;
@@ -613,10 +625,62 @@
     gap: 0.25rem;
     flex-shrink: 0;
 
-    app-progress-bar,
+    app-progress-bar {
+        width: 150px;
+        flex-shrink: 0;
+    }
+
     .time-logged-container {
         width: 150px;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+
+        ::ng-deep .dynamic-form-wrapper {
+            width: 100%;
+            .field-container { margin-bottom: 0; }
+        }
+
+        ::ng-deep .time-input-container {
+            margin-bottom: 0;
+            gap: 0;
+            width: 100%;
+
+            .time-input-label { display: none; }
+            .time-input-wrapper {
+                display: flex;
+                align-items: center;
+                padding: 2px 8px;
+                border-radius: 8px;
+                background: rgba(139, 92, 246, 0.1);
+                border: 1px solid rgba(139, 92, 246, 0.2);
+                min-height: unset;
+                width: 100%;
+
+                .time-input-icon {
+                    margin-right: 5px;
+                    font-size: 0.8rem;
+                    color: #8b5cf6;
+                    flex-shrink: 0;
+                }
+                .time-input-field {
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    color: #8b5cf6;
+                    padding: 0;
+                    height: 20px;
+                    flex: 1;
+                    min-width: 0;
+                    background: transparent;
+                    border: none;
+                }
+                .time-clear-btn { 
+                    font-size: 0.65rem;
+                    flex-shrink: 0;
+                }
+            }
+            .time-quick-options { display: none; }
+        }
     }
 
     @media (max-width: 600px) {
@@ -632,57 +696,6 @@
         app-progress-bar {
             order: 1;
         }
-    }
-}
-
-.time-logged-container {
-    display: flex;
-    align-items: center;
-
-    ::ng-deep .dynamic-form-wrapper {
-        width: 100%;
-        .field-container { margin-bottom: 0; }
-    }
-
-    ::ng-deep .time-input-container {
-        margin-bottom: 0;
-        gap: 0;
-        width: 100%;
-
-        .time-input-label { display: none; }
-        .time-input-wrapper {
-            display: flex;
-            align-items: center;
-            padding: 2px 8px;
-            border-radius: 8px;
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-            min-height: unset;
-            width: 100%;
-
-            .time-input-icon {
-                margin-right: 5px;
-                font-size: 0.8rem;
-                color: #8b5cf6;
-                flex-shrink: 0;
-            }
-            .time-input-field {
-                font-size: 0.7rem;
-                font-weight: 700;
-                color: #8b5cf6;
-                padding: 0;
-                height: 20px;
-                flex: 1;
-                min-width: 0;
-                background: transparent;
-                border: none;
-            }
-            .time-clear-btn { 
-                font-size: 0.65rem;
-                flex-shrink: 0;
-            }
-        }
-        .time-quick-options { display: none; }
     }
 }
 

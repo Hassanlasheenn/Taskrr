@@ -122,6 +122,7 @@
                         <th>Status</th>
                         <th>Priority</th>
                         <th>Category</th>
+                        <th>Time Est.</th>
                         <th>Due Date</th>
                         <th class="created-col sortable" (click)="toggleSort()">
                             Created
@@ -205,6 +206,16 @@
                                 />
                             </div>
                         </td>
+                        <td data-label="Time Est.">
+                            <app-time-input
+                                class="table-time-input"
+                                [name]="'time_estimate_' + todo.id"
+                                [ngModel]="todo.time_estimate"
+                                (ngModelChange)="onFieldChange(todo, 'time_estimate', $event)"
+                                [customInputClass]="'inline-time-input'"
+                                [field]="getTimeEstimateField(todo)"
+                            />
+                        </td>
                         <td data-label="Due Date">
                             <app-date-picker
                                 class="table-date-picker"
@@ -227,7 +238,7 @@
                         </td>
                     </tr>
                     <tr *ngIf="todos.length === 0">
-                        <td colspan="6" class="empty-row-cell">
+                        <td colspan="7" class="empty-row-cell">
                             <div class="empty-table-msg">{{ emptyMessage }}</div>
                         </td>
                     </tr>

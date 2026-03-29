@@ -12,7 +12,7 @@ import { IUserListResponse } from "../../../auth/interfaces";
 import { LoaderService } from "../../../core/services/loader.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
-import { ITodo, ITodoComment, ITodoHistoryEntry, TodoStatus } from "../../../core/interfaces/todo.interface";
+import { ITodo, ITodoComment, ITodoHistoryEntry, ITodoUpdate, TodoStatus } from "../../../core/interfaces/todo.interface";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { CanComponentDeactivate } from "../../../auth/guards";
 import { ParseMentionsPipe } from "../../../core/pipes/parse-mentions.pipe";
@@ -912,7 +912,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
 
         this.saving = true;
         
-        this._todoService.updateTodo(userId, this.todo.id, {
+        const updatePayload: ITodoUpdate = {
             status: formValue.status,
             priority: formValue.priority,
             description: formValue.description,
@@ -920,7 +920,9 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
             due_date: formValue.due_date || null,
             time_estimate: formValue.time_estimate || null,
             time_logged: finalTimeLogged || null
-        }).subscribe({
+        };
+
+        this._todoService.updateTodo(userId, this.todo.id, updatePayload).subscribe({
             next: (updated) => {
                 this.todo = {
                     ...this.todo!,

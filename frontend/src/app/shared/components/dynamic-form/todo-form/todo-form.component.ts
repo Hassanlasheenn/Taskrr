@@ -303,8 +303,8 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             const updateData: ITodoUpdate = {
                 title: todoData.title,
                 description: todoData.description,
-                due_date: todoData.due_date || null,
-                time_estimate: todoData.time_estimate || null,
+                due_date: todoData.due_date !== undefined ? todoData.due_date : null,
+                time_estimate: todoData.time_estimate !== undefined ? todoData.time_estimate : null,
                 category: todoData.category,
                 status: formValue.status || 'new',
                 assigned_to_user_id: todoData.assigned_to_user_id

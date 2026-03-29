@@ -1,14 +1,4 @@
-<div class="time-input-container" [formGroup]="formGroup!" *ngIf="formGroup; else noFormGroup">
-    <ng-container *ngTemplateOutlet="content"></ng-container>
-</div>
-
-<ng-template #noFormGroup>
-    <div class="time-input-container">
-        <ng-container *ngTemplateOutlet="content"></ng-container>
-    </div>
-</ng-template>
-
-<ng-template #content>
+<div class="time-input-container" [formGroup]="formGroup" *ngIf="formGroup && name; else standalone">
     <label *ngIf="label" [for]="'time-' + name" class="time-input-label">
         {{ label }}
         <span *ngIf="field?.required" class="required-star">*</span>
@@ -49,5 +39,52 @@
     <div *ngIf="activeError" class="error-message">
         <i class="bi bi-exclamation-circle"></i>
         <span>{{ activeError }}</span>
+    </div>
+</div>
+
+<ng-template #standalone>
+    <div class="time-input-container">
+        <label *ngIf="label" class="time-input-label">
+            {{ label }}
+            <span *ngIf="field?.required" class="required-star">*</span>
+        </label>
+
+        <div class="time-input-wrapper" [class.time-input-wrapper--error]="isInvalid || !!typeError" [ngClass]="customInputClass || ''">
+            <span class="time-input-icon">
+                <i class="bi bi-stopwatch"></i>
+            </span>
+            
+            <input
+                type="text"
+                [value]="innerValue"
+                (input)="onInputChange($event)"
+                [placeholder]="placeholder"
+                class="time-input-field"
+                [style]="customInputStyle"
+                [disabled]="disabled"
+                autocomplete="off"
+            />
+
+            <button *ngIf="innerValue" type="button" class="time-clear-btn" (click)="onClear()" title="Clear">
+                <i class="bi bi-x-circle-fill"></i>
+            </button>
+        </div>
+
+        <!-- Quick select chips -->
+        <div class="time-quick-options" *ngIf="!customInputClass?.includes('inline')">
+            <button 
+                type="button" 
+                *ngFor="let opt of quickOptions" 
+                class="time-chip"
+                (click)="onQuickSelect(opt.value)"
+            >
+                {{ opt.label }}
+            </button>
+        </div>
+
+        <div *ngIf="activeError" class="error-message">
+            <i class="bi bi-exclamation-circle"></i>
+            <span>{{ activeError }}</span>
+        </div>
     </div>
 </ng-template>

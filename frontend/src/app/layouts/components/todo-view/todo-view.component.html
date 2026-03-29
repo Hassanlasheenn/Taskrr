@@ -26,7 +26,7 @@
                                 </div>
                             </div>
                             <!-- Right: time tracking -->
-                            <div *ngIf="todoForm.get('time_estimate')?.value" class="time-tracking-row">
+                            <div class="time-tracking-row" *ngIf="todoForm.get('time_estimate')?.value">
                                 <div class="time-logged-container">
                                     <app-dynamic-form
                                         [form]="logTimeForm"
