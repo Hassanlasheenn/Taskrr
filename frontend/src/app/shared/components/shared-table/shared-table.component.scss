@@ -39,36 +39,54 @@
             grid-template-columns: repeat(2, 1fr);
         }
 
-        @media (max-width: 380px) {
+        @media (max-width: 480px) {
             grid-template-columns: 1fr;
         }
 
-        // Normalize all filter input heights to 42px
+        // Normalize all filter input heights to 42px and handle responsive font-size
         ::ng-deep {
-            .input-form__input input {
-                height: 42px !important;
-                padding-top: 0 !important;
-                padding-bottom: 0 !important;
-            }
-
-            .dropdown-form__input-wrapper {
-                height: 42px !important;
-            }
-
-            .dropdown-form__field {
-                height: 42px !important;
-                padding-top: 0 !important;
-                padding-bottom: 0 !important;
-            }
-
-            .date-picker__input-wrapper {
-                height: 42px !important;
-            }
-
+            .input-form__input input,
+            .dropdown-form__field,
             .date-picker__field {
                 height: 42px !important;
                 padding-top: 0 !important;
                 padding-bottom: 0 !important;
+                font-size: 0.85rem !important;
+
+                &::placeholder {
+                    font-size: 0.8rem !important;
+                }
+
+                @media (max-width: 768px) {
+                    font-size: 0.8rem !important;
+                    &::placeholder {
+                        font-size: 0.75rem !important;
+                    }
+                }
+            }
+
+            .date-picker__field {
+                padding-left: 2.5rem !important;
+                padding-right: 1.5rem !important;
+                
+                @media (max-width: 768px) {
+                    padding-left: 2.25rem !important;
+                }
+            }
+
+            .date-picker__icon-wrapper {
+                left: 0.75rem !important;
+                font-size: 0.85rem !important;
+            }
+
+            .date-picker__arrow-wrapper {
+                right: 0.5rem !important;
+                font-size: 0.7rem !important;
+            }
+
+            .dropdown-form__input-wrapper,
+            .date-picker__input-wrapper {
+                height: 42px !important;
             }
         }
     }
@@ -84,6 +102,10 @@
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.04em;
+
+            @media (max-width: 768px) {
+                font-size: 0.65rem;
+            }
         }
     }
 
