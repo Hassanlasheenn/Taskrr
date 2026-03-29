@@ -71,6 +71,7 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
         title: new FormControl<string>(''),
         priority: new FormControl<string | null>(null),
         status: new FormControl<string | null>(null),
+        type: new FormControl<string | null>(null),
         created_from: new FormControl<string | null>(this._defaultFromStr),
         created_to: new FormControl<string | null>(this._todayStr),
     });
@@ -110,6 +111,21 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
                 { key: 'inProgress', value: 'In Progress' },
                 { key: 'paused', value: 'Paused' },
                 { key: 'done', value: 'Done' }
+            ],
+            validations: []
+        },
+        {
+            label: 'Type',
+            type: InputTypes.DROPDOWN,
+            formControlName: 'type',
+            placeholder: 'All types',
+            value: null,
+            options: [
+                { key: null, value: 'All' },
+                { key: 'project', value: 'Project' },
+                { key: 'story', value: 'Story' },
+                { key: 'workitem', value: 'Work Item' },
+                { key: 'task', value: 'Task' }
             ],
             validations: []
         },
@@ -175,7 +191,7 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
         ).subscribe(() => this._emitCurrentFilter());
 
         // Dropdowns + date pickers: react immediately
-        (['priority', 'status', 'created_from', 'created_to'] as const).forEach(field => {
+        (['priority', 'status', 'type', 'created_from', 'created_to'] as const).forEach(field => {
             this.filterForm.get(field)!.valueChanges.pipe(
                 distinctUntilChanged(),
                 takeUntil(this._filterDestroy$)
@@ -197,6 +213,7 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
         if (value.title?.trim()) filter.title = value.title.trim();
         if (value.priority) filter.priority = value.priority;
         if (value.status) filter.status = value.status;
+        if (value.type) filter.type = value.type;
         if (value.created_from) filter.created_from = value.created_from;
         if (value.created_to) filter.created_to = value.created_to;
         return filter;
@@ -213,6 +230,7 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
             title: '',
             priority: null,
             status: null,
+            type: null,
             created_from: this._defaultFromStr,
             created_to: this._todayStr
         });
@@ -223,7 +241,7 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
         const datesAreDefault =
             value.created_from === this._defaultFromStr &&
             value.created_to === this._todayStr;
-        return !!(value.title?.trim() || value.priority || value.status || !datesAreDefault);
+        return !!(value.title?.trim() || value.priority || value.status || value.type || !datesAreDefault);
     }
 
     // --- Todo mode helpers ---
@@ -240,6 +258,13 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
         { key: 'high', value: 'High' }
     ];
 
+    readonly typeOptions = [
+        { key: 'project', value: 'Project' },
+        { key: 'story', value: 'Story' },
+        { key: 'workitem', value: 'Work Item' },
+        { key: 'task', value: 'Task' }
+    ];
+
     readonly categoryOptions = [
         { key: '', value: 'No Category' },
         { key: 'Work', value: 'Work' },
@@ -249,6 +274,10 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
         { key: 'Learning', value: 'Learning' },
         { key: 'Other', value: 'Other' }
     ];
+
+    getTypeClass(todo: ITodo): string {
+        return `type-${todo.type || 'workitem'}`;
+    }
 
     getStatusField(todo: ITodo): IFieldControl {
         return {

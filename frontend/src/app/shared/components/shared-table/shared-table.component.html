@@ -32,8 +32,8 @@
                 />
             </div>
             <div class="filter-field">
-                <label class="filter-field__label">Created from</label>
-                <app-date-picker
+                <label class="filter-field__label">Type</label>
+                <app-dropdown-form
                     [formGroup]="filterForm"
                     [name]="filterFields[3].formControlName"
                     [isFilter]="true"
@@ -41,12 +41,21 @@
                 />
             </div>
             <div class="filter-field">
-                <label class="filter-field__label">Created to</label>
+                <label class="filter-field__label">Created from</label>
                 <app-date-picker
                     [formGroup]="filterForm"
                     [name]="filterFields[4].formControlName"
                     [isFilter]="true"
                     [field]="filterFields[4]"
+                />
+            </div>
+            <div class="filter-field">
+                <label class="filter-field__label">Created to</label>
+                <app-date-picker
+                    [formGroup]="filterForm"
+                    [name]="filterFields[5].formControlName"
+                    [isFilter]="true"
+                    [field]="filterFields[5]"
                 />
             </div>
         </div>
@@ -119,6 +128,7 @@
                 <thead>
                     <tr>
                         <th>Title</th>
+                        <th>Type</th>
                         <th>Status</th>
                         <th>Priority</th>
                         <th>Category</th>
@@ -159,6 +169,16 @@
                                     />
                                 </div>
                             </ng-template>
+                        </td>
+                        <td data-label="Type">
+                            <span class="type-badge" [ngClass]="getTypeClass(todo)">
+                                <i class="bi" 
+                                   [class.bi-layers-fill]="todo.type === 'project'"
+                                   [class.bi-journal-bookmark-fill]="todo.type === 'story'"
+                                   [class.bi-clipboard-check-fill]="todo.type === 'workitem' || !todo.type"
+                                   [class.bi-check2-square]="todo.type === 'task'"></i>
+                                {{ (todo.type || 'workitem') }}
+                            </span>
                         </td>
                         <td data-label="Status">
                             <app-dropdown-form
@@ -227,7 +247,7 @@
                         </td>
                     </tr>
                     <tr *ngIf="todos.length === 0">
-                        <td colspan="6" class="empty-row-cell">
+                        <td colspan="8" class="empty-row-cell">
                             <div class="empty-table-msg">{{ emptyMessage }}</div>
                         </td>
                     </tr>

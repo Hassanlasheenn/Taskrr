@@ -39,8 +39,9 @@
                             *ngFor="let todo of getTodosForDate(date); trackBy: trackById"
                             class="todo-badge"
                             [ngClass]="getPriorityClass(todo.priority)"
-                            [title]="todo.title"
+                            [title]="getTodoTypeLabel(getTodoType(todo)) + ': ' + todo.title"
                         >
+                            <i class="bi" [ngClass]="getTodoTypeIcon(getTodoType(todo))" style="font-size: 0.7rem; margin-right: 2px;"></i>
                             {{ todo.title }}
                         </div>
                     </div>
@@ -87,6 +88,10 @@
                                     <div class="todo-content">
                                         <div class="todo-header-row d-flex justify-content-between align-items-start">
                                             <div class="todo-title-group d-flex flex-wrap align-items-center gap-2">
+                                                <span class="todo-type-badge-mini" [ngClass]="'type-' + getTodoType(todo)">
+                                                    <i class="bi" [ngClass]="getTodoTypeIcon(getTodoType(todo))"></i>
+                                                    {{ getTodoTypeLabel(getTodoType(todo)) }}
+                                                </span>
                                                 <h4 class="todo-title">{{ todo.title }}</h4>
                                                 <span class="todo-priority-badge" [ngClass]="getPriorityClass(todo.priority)">
                                                     {{ todo.priority }}
