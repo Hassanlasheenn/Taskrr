@@ -92,8 +92,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     }
 
     getProjectStories(projectId: number): ITodo[] {
-        const children = this._storyChildCache.get(projectId) || [];
-        return children.filter(t => t.type === 'story' || (t.subtask_count ?? 0) > 0);
+        return this._storyChildCache.get(projectId) || [];
     }
 
     DashboardSections = DashboardSections;
@@ -524,7 +523,11 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             .pipe(takeUntil(this._destroy$))
             .subscribe({
                 next: (res) => {
-                    this.storySubtasks = res.todos as ITodo[];
+                    let children = res.todos as ITodo[];
+                    if (this.selectedCategory) {
+                        children = children.filter(t => t.category === this.selectedCategory);
+                    }
+                    this.storySubtasks = children;
                     this.loadingStorySubtasks = false;
                 },
                 error: () => { this.loadingStorySubtasks = false; }
@@ -546,7 +549,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         this.selectedStory = null;
         this.storySubtasks = [];
         const cached = this._storyChildCache.get(project.id);
-        if (cached) {
+        if (cached && !this.selectedCategory) {
             this.projectStories = cached;
         } else {
             const userId = this._authService.getCurrentUserId();
@@ -555,8 +558,12 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 .pipe(takeUntil(this._destroy$))
                 .subscribe({
                     next: (res) => {
-                        const children = res.todos as ITodo[];
-                        this._storyChildCache.set(project.id, children);
+                        let children = res.todos as ITodo[];
+                        if (!this.selectedCategory) {
+                            this._storyChildCache.set(project.id, children);
+                        } else {
+                            children = children.filter(t => t.category === this.selectedCategory);
+                        }
                         this.projectStories = children;
                     }
                 });
