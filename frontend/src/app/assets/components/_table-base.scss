@@ -236,10 +236,13 @@
         }
     }
 
-    // Media query for desktop - Allow overflow for dropdowns
+    // Media query for desktop - Enable scrolling but provide enough height for dropdowns
     @media (min-width: 1491px) {
         .custom-table-wrapper {
-            overflow: visible !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            min-height: 450px;
+            width: 100%;
         }
     }
 
