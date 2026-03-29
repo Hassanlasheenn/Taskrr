@@ -10,4 +10,5 @@ export enum InputTypes {
     CHECKBOX = 'checkbox',
     DROPDOWN = 'dropdown',
     TEXTAREA = 'textarea',
+    TIME_ESTIMATE = 'time_estimate',
 }

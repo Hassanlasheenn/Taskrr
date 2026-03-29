@@ -65,6 +65,15 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             showAttachHint: true
         },
         {
+            label: 'Time Estimate',
+            type: InputTypes.TIME_ESTIMATE,
+            formControlName: 'time_estimate',
+            placeholder: 'e.g., 1w 2d 3h 30m',
+            value: '',
+            required: false,
+            validations: []
+        },
+        {
             label: 'Category',
             type: InputTypes.DROPDOWN,
             formControlName: 'category',
@@ -284,6 +293,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             title: formValue.title,
             description: formValue.description || undefined,
             due_date: formValue.due_date || undefined,
+            time_estimate: formValue.time_estimate || undefined,
             priority: formValue.priority || 'medium',
             category: finalCategory || undefined,
             assigned_to_user_id: formValue.assigned_to_user_id === "null" ? null : formValue.assigned_to_user_id
@@ -294,6 +304,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 title: todoData.title,
                 description: todoData.description,
                 due_date: todoData.due_date || null,
+                time_estimate: todoData.time_estimate || null,
                 category: todoData.category,
                 status: formValue.status || 'new',
                 assigned_to_user_id: todoData.assigned_to_user_id
@@ -355,6 +366,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             title: todo.title || '',
             description: todo.description || '',
             due_date: todo.due_date ? todo.due_date.split('T')[0] : '',
+            time_estimate: todo.time_estimate || '',
             priority: todo.priority || 'medium',
             category: isCustomCategory ? 'Other' : (todo.category || ''),
             status: todo.status || 'new',
@@ -380,10 +392,11 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             const priorityChanged = formValue.priority !== (this.editingTodo.priority || 'medium');
             const statusChanged = formValue.status !== (this.editingTodo.status || 'new');
             const categoryChanged = finalCategory !== (this.editingTodo.category || '');
+            const timeEstimateChanged = formValue.time_estimate !== (this.editingTodo.time_estimate || '');
             const titleChanged = formValue.title !== this.editingTodo.title;
             const descriptionChanged = formValue.description !== (this.editingTodo.description || '');
             
-            return priorityChanged || statusChanged || categoryChanged || titleChanged || descriptionChanged;
+            return priorityChanged || statusChanged || categoryChanged || timeEstimateChanged || titleChanged || descriptionChanged;
         }
         return this.form.dirty;
     }

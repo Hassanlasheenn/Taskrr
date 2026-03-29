@@ -36,11 +36,18 @@
                     <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                     <div class="tc-item__body">
                         <p class="tc-item__title">{{ todo.title }}</p>
-                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at">
+                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
+                            <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
                             <span *ngIf="todo.due_date" class="tc-item__date" [ngClass]="getDueDateClass(todo.due_date)"><i class="bi bi-alarm"></i>{{ formatDate(todo.due_date) }}</span>
                             <span *ngIf="todo.created_at" class="tc-item__created"><i class="bi bi-calendar3"></i>{{ formatDate(todo.created_at) }}</span>
                         </div>
+                        <app-progress-bar
+                            *ngIf="todo.time_estimate && todo.time_logged"
+                            [estimate]="todo.time_estimate"
+                            [logged]="todo.time_logged"
+                            size="sm"
+                        />
                     </div>
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
@@ -90,11 +97,18 @@
                     <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                     <div class="tc-item__body">
                         <p class="tc-item__title">{{ todo.title }}</p>
-                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at">
+                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
+                            <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
                             <span *ngIf="todo.due_date" class="tc-item__date" [ngClass]="getDueDateClass(todo.due_date)"><i class="bi bi-alarm"></i>{{ formatDate(todo.due_date) }}</span>
                             <span *ngIf="todo.created_at" class="tc-item__created"><i class="bi bi-calendar3"></i>{{ formatDate(todo.created_at) }}</span>
                         </div>
+                        <app-progress-bar
+                            *ngIf="todo.time_estimate && todo.time_logged"
+                            [estimate]="todo.time_estimate"
+                            [logged]="todo.time_logged"
+                            size="sm"
+                        />
                     </div>
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
@@ -144,11 +158,18 @@
                     <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                     <div class="tc-item__body">
                         <p class="tc-item__title">{{ todo.title }}</p>
-                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at">
+                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
+                            <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
                             <span *ngIf="todo.due_date" class="tc-item__date" [ngClass]="getDueDateClass(todo.due_date)"><i class="bi bi-alarm"></i>{{ formatDate(todo.due_date) }}</span>
                             <span *ngIf="todo.created_at" class="tc-item__created"><i class="bi bi-calendar3"></i>{{ formatDate(todo.created_at) }}</span>
                         </div>
+                        <app-progress-bar
+                            *ngIf="todo.time_estimate && todo.time_logged"
+                            [estimate]="todo.time_estimate"
+                            [logged]="todo.time_logged"
+                            size="sm"
+                        />
                     </div>
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
@@ -198,11 +219,18 @@
                     <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                     <div class="tc-item__body">
                         <p class="tc-item__title">{{ todo.title }}</p>
-                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at">
+                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
+                            <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
                             <span *ngIf="todo.due_date" class="tc-item__date" [ngClass]="getDueDateClass(todo.due_date)"><i class="bi bi-alarm"></i>{{ formatDate(todo.due_date) }}</span>
                             <span *ngIf="todo.created_at" class="tc-item__created"><i class="bi bi-calendar3"></i>{{ formatDate(todo.created_at) }}</span>
                         </div>
+                        <app-progress-bar
+                            *ngIf="todo.time_estimate && todo.time_logged"
+                            [estimate]="todo.time_estimate"
+                            [logged]="todo.time_logged"
+                            size="sm"
+                        />
                     </div>
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
@@ -252,11 +280,18 @@
                     <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                     <div class="tc-item__body">
                         <p class="tc-item__title">{{ todo.title }}</p>
-                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at">
+                        <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
+                            <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
                             <span *ngIf="todo.due_date" class="tc-item__date" [ngClass]="getDueDateClass(todo.due_date)"><i class="bi bi-alarm"></i>{{ formatDate(todo.due_date) }}</span>
                             <span *ngIf="todo.created_at" class="tc-item__created"><i class="bi bi-calendar3"></i>{{ formatDate(todo.created_at) }}</span>
                         </div>
+                        <app-progress-bar
+                            *ngIf="todo.time_estimate && todo.time_logged"
+                            [estimate]="todo.time_estimate"
+                            [logged]="todo.time_logged"
+                            size="sm"
+                        />
                     </div>
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>

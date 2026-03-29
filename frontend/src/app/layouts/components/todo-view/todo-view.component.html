@@ -9,21 +9,39 @@
                 <form [formGroup]="todoForm" (ngSubmit)="onSave()">
                     <header class="todo-view-header">
                         <div class="todo-view-title-row">
-                            <h1 class="todo-view-title">{{ todo.title }}</h1>
-                            <span *ngIf="todo.category" class="todo-view-category-tag">
-                                <i class="bi bi-tag-fill"></i>
-                                <span class="todo-view-category-tag-text">{{ todo.category }}</span>
-                            </span>
-                            <!-- Due Date -->
-                            <div *ngIf="todoForm.get('due_date')?.value" class="due-date-view-container">
-                                <app-dynamic-form
-                                    [form]="todoForm"
-                                    [fields]="[dueDateField]"
-                                    [isFilter]="false"
-                                    [isBadge]="true"
+                            <!-- Left: title, category, due date -->
+                            <div class="todo-view-title-group">
+                                <h1 class="todo-view-title">{{ todo.title }}</h1>
+                                <span *ngIf="todo.category" class="todo-view-category-tag">
+                                    <i class="bi bi-tag-fill"></i>
+                                    <span class="todo-view-category-tag-text">{{ todo.category }}</span>
+                                </span>
+                                <div *ngIf="todoForm.get('due_date')?.value" class="due-date-view-container">
+                                    <app-dynamic-form
+                                        [form]="todoForm"
+                                        [fields]="[dueDateField]"
+                                        [isFilter]="false"
+                                        [isBadge]="true"
+                                    />
+                                </div>
+                            </div>
+                            <!-- Right: time tracking -->
+                            <div *ngIf="todoForm.get('time_estimate')?.value" class="time-tracking-row">
+                                <div class="time-logged-container">
+                                    <app-dynamic-form
+                                        [form]="logTimeForm"
+                                        [fields]="[logTimeField]"
+                                        [isFilter]="false"
+                                        [isBadge]="true"
+                                    />
+                                </div>
+                                <app-progress-bar
+                                    [estimate]="todoForm.get('time_estimate')?.value || ''"
+                                    [logged]="todoForm.get('time_logged')?.value || ''"
                                 />
                             </div>
                         </div>
+
                         <div class="todo-view-meta">
                             <ng-container *ngIf="formatDate(todo.created_at) as created">
                                 <span class="todo-view-meta-item"><i class="bi bi-calendar3"></i> {{ created.date }} {{ created.time }}</span>

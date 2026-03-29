@@ -66,9 +66,19 @@
 .todo-view-title-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.75rem;
     margin-bottom: 0.75rem;
+}
+
+.todo-view-title-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    flex: 1;
+    min-width: 0;
 }
 
 .todo-view-title {
@@ -571,6 +581,109 @@
 .todo-view-meta-item {
     display: inline-flex;
     align-items: center;
+}
+
+.due-date-view-container {
+    display: inline-flex;
+    ::ng-deep .dynamic-form-wrapper {
+        .field-container { margin-bottom: 0; }
+        .input-wrapper {
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: rgba(107, 207, 209, 0.1);
+            border: 1px solid rgba(107, 207, 209, 0.2);
+            min-height: unset;
+
+            input {
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: var(--primary-gradient-start);
+                padding: 0;
+                height: 24px;
+            }
+        }
+    }
+}
+
+// ── Time Tracking Row ──────────────────────────────────────────────────────
+.time-tracking-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    flex-shrink: 0;
+
+    app-progress-bar,
+    .time-logged-container {
+        width: 150px;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 600px) {
+        margin-left: 0;
+        width: 100%;
+        align-items: flex-start;
+
+        app-progress-bar,
+        .time-logged-container {
+            width: 100%;
+        }
+
+        app-progress-bar {
+            order: 1;
+        }
+    }
+}
+
+.time-logged-container {
+    display: flex;
+    align-items: center;
+
+    ::ng-deep .dynamic-form-wrapper {
+        width: 100%;
+        .field-container { margin-bottom: 0; }
+    }
+
+    ::ng-deep .time-input-container {
+        margin-bottom: 0;
+        gap: 0;
+        width: 100%;
+
+        .time-input-label { display: none; }
+        .time-input-wrapper {
+            display: flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 8px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            min-height: unset;
+            width: 100%;
+
+            .time-input-icon {
+                margin-right: 5px;
+                font-size: 0.8rem;
+                color: #8b5cf6;
+                flex-shrink: 0;
+            }
+            .time-input-field {
+                font-size: 0.7rem;
+                font-weight: 700;
+                color: #8b5cf6;
+                padding: 0;
+                height: 20px;
+                flex: 1;
+                min-width: 0;
+                background: transparent;
+                border: none;
+            }
+            .time-clear-btn { 
+                font-size: 0.65rem;
+                flex-shrink: 0;
+            }
+        }
+        .time-quick-options { display: none; }
+    }
 }
 
 .todo-view-comments {

@@ -1,0 +1,6 @@
+<div class="pb-wrap" [class.pb-wrap--sm]="size === 'sm'">
+    <div class="pb-track" [ngClass]="colorClass">
+        <div class="pb-fill" [style.width.%]="fillPercent"></div>
+    </div>
+    <span *ngIf="label" class="pb-label">{{ label }}</span>
+</div>

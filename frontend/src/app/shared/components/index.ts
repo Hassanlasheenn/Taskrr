@@ -5,3 +5,5 @@ export { UploadPhotoComponent } from './form-fields/upload-photo/upload-photo.co
 export { DynamicFormComponent } from './dynamic-form/dynamic-form.component';
 export { NotFoundComponent } from './not-found/not-found.component';
 export { NotificationsComponent } from './notifications/notifications.component';
+export { TimeInputComponent } from './form-fields/time-input/time-input.component';
+export { ProgressBarComponent } from './progress-bar/progress-bar.component';

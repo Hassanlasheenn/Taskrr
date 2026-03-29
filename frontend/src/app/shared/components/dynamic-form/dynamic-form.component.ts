@@ -4,6 +4,7 @@ import { DropdownFormComponent } from "../form-fields/dropdown/dropdown.componen
 import { UploadPhotoComponent } from "../form-fields/upload-photo/upload-photo.component";
 import { DatePickerComponent } from "../form-fields/date-picker/date-picker.component";
 import { TextareaFormComponent } from "../form-fields/textarea/textarea.component";
+import { TimeInputComponent } from "../form-fields/time-input/time-input.component";
 import { CommonModule } from "@angular/common";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { trackById } from "../../helpers";
@@ -21,6 +22,7 @@ import { InputTypes } from "../../enums";
         UploadPhotoComponent, 
         DatePickerComponent,
         TextareaFormComponent,
+        TimeInputComponent,
         CommonModule, 
         ReactiveFormsModule
     ]

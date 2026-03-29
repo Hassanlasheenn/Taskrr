@@ -31,6 +31,29 @@ storage_service = S3StorageService()
 todo_limiter = RateLimiter(requests_limit=10, window_seconds=60)
 
 
+def _ensure_time_estimate_column(db: Session):
+    from sqlalchemy import text
+    from .. import database as _db
+    db_url = str(_db.engine.url).lower()
+    try:
+        if "postgresql" in db_url or "postgres" in db_url:
+            result = db.execute(text(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+                "WHERE TABLE_NAME = 'todos' AND COLUMN_NAME = 'time_estimate'"
+            ))
+            if result.scalar() == 0:
+                db.execute(text("ALTER TABLE todos ADD COLUMN time_estimate VARCHAR(50)"))
+                db.commit()
+        elif "sqlite" in db_url:
+            result = db.execute(text("PRAGMA table_info(todos)"))
+            columns = [row[1] for row in result]
+            if "time_estimate" not in columns:
+                db.execute(text("ALTER TABLE todos ADD COLUMN time_estimate VARCHAR(50)"))
+                db.commit()
+    except Exception:
+        db.rollback()
+
+
 @router.get("", response_model=schemas.TodoListResponse)
 def get_todos(
     user_id: int,
@@ -45,6 +68,7 @@ def get_todos(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    _ensure_time_estimate_column(db)
     sort_order = sort_order.lower() if sort_order.lower() in ("asc", "desc") else "desc"
     has_filters = any([title, priority, status, created_from, created_to])
     cache_key = f"{PREFIX_TODOS_LIST}{user_id}:{skip}:{limit}:{sort_order}:{title or ''}:{priority or ''}:{status or ''}:{created_from or ''}:{created_to or ''}"
@@ -93,36 +117,9 @@ def get_todos(
     total = db.query(models.Todo).filter(todo_filter).count()
     todo_responses = []
     for todo in todos:
-        assigned_to_username = None
-        if todo.assigned_to_user_id:
-            assigned_user = db.query(models.User).filter(
-                models.User.id == todo.assigned_to_user_id
-            ).first()
-            if assigned_user:
-                assigned_to_username = assigned_user.username
-        todo_dict = {
-            "id": todo.id,
-            "title": todo.title,
-            "description": todo.description,
-            "status": todo.status or models.TodoStatus.NEW.value,
-            "priority": todo.priority,
-            "category": todo.category,
-            "due_date": todo.due_date,
-            "reminder_sent_at": todo.reminder_sent_at,
-            "order_index": todo.order_index,
-            "created_at": todo.created_at,
-            "updated_at": todo.updated_at,
-            "user_id": todo.user_id,
-            "assigned_to_user_id": todo.assigned_to_user_id,
-            "assigned_to_username": assigned_to_username
-        }
-        todo_responses.append(schemas.TodoResponse(**todo_dict))
+        todo_responses.append(_build_todo_response(todo, db))
     if not has_filters:
-        cache_set(
-            cache_key,
-            {"todos": [t.model_dump(mode="json") for t in todo_responses], "total": total},
-            CACHE_TTL_TODO_LIST,
-        )
+        cache_set(cache_key, {"todos": [t.model_dump() for t in todo_responses], "total": total}, CACHE_TTL_TODO_LIST)
     return schemas.TodoListResponse(todos=todo_responses, total=total)
 
 
@@ -130,46 +127,35 @@ def get_todos(
 async def create_todo(
     todo: schemas.TodoCreate,
     user_id: int,
-    # Removed background_tasks
     db: Session = Depends(database.get_db),
     _ = Depends(todo_limiter)
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
     max_index = db.query(func.max(models.Todo.order_index)).filter(
         models.Todo.user_id == user_id
     ).scalar()
     next_index = (max_index or 0) + 1
-    
-    # Validate assignment
+
     if todo.assigned_to_user_id:
         assigned_to_user = db.query(models.User).filter(
             models.User.id == todo.assigned_to_user_id
         ).first()
         if not assigned_to_user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Assigned user not found"
-            )
-        # If the creator is not an admin, they can only assign to regular users
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assigned user not found")
         if user.role != models.UserRole.ADMIN.value and assigned_to_user.role != models.UserRole.USER.value:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Non-admin users can only assign todos to regular users"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Non-admin users can only assign todos to regular users")
 
-    
     db_todo = models.Todo(
         title=todo.title,
         description=todo.description,
         priority=todo.priority.value,
         status=todo.status.value if todo.status else models.TodoStatus.NEW.value,
         category=todo.category,
+        time_estimate=todo.time_estimate,
+        time_logged=todo.time_logged,
         due_date=todo.due_date,
         order_index=next_index,
         user_id=user_id,
@@ -178,65 +164,39 @@ async def create_todo(
     db.add(db_todo)
     db.commit()
     db.refresh(db_todo)
-    
-    # Log creation in history
+
     _add_field_history(db, db_todo.id, user_id, "created", None, "Task Created")
-    
+
     assigned_to_username = None
-    assigned_user_email = None
     creator = db.query(models.User).filter(models.User.id == user_id).first()
     creator_username = creator.username if creator else "Admin"
-    
+
     if db_todo.assigned_to_user_id:
         assigned_user = db.query(models.User).filter(
             models.User.id == db_todo.assigned_to_user_id
         ).first()
         if assigned_user:
             assigned_to_username = assigned_user.username
-            assigned_user_email = assigned_user.email
-            
-            # Only notify the assigned user if they are not the creator (no self-notifications)
-            # Note: The creator (user_id) never receives notifications, only the assigned user does
-            should_notify = (
-                assigned_user.id != user_id  # Not self-assignment
-            )
-            
-            if should_notify:
+            if assigned_user.id != user_id:
                 message = f"{creator_username} assigned you a todo: {db_todo.title}"
                 await create_notification(
                     db,
-                    assigned_user.id,  # Only send to assigned user, never to creator
+                    assigned_user.id,
                     db_todo.id,
                     message,
                     creator_username,
-                    assigned_user_email,
+                    assigned_user.email,
                     db_todo.title
                 )
-    
+
     invalidate_todo_list_for_user(user_id)
     if db_todo.assigned_to_user_id:
         invalidate_todo_list_for_user(db_todo.assigned_to_user_id)
     invalidate_admin_users_with_todos()
 
+    return _build_todo_response(db_todo, db)
 
 
-    todo_dict = {
-        "id": db_todo.id,
-        "title": db_todo.title,
-        "description": db_todo.description,
-        "status": db_todo.status or models.TodoStatus.NEW.value,
-        "priority": db_todo.priority,
-        "category": db_todo.category,
-        "due_date": db_todo.due_date,
-        "reminder_sent_at": db_todo.reminder_sent_at,
-        "order_index": db_todo.order_index,
-        "created_at": db_todo.created_at,
-        "updated_at": db_todo.updated_at,
-        "user_id": db_todo.user_id,
-        "assigned_to_user_id": db_todo.assigned_to_user_id,
-        "assigned_to_username": assigned_to_username
-    }
-    return schemas.TodoResponse(**todo_dict)
 def _validate_assigned_user(assigned_to_user_id: int | None, db: Session, user_role: str) -> None:
     if not assigned_to_user_id:
         return
@@ -275,7 +235,9 @@ def _build_todo_response(todo_db: models.Todo, db: Session) -> schemas.TodoRespo
         "updated_at": todo_db.updated_at,
         "user_id": todo_db.user_id,
         "assigned_to_user_id": todo_db.assigned_to_user_id,
-        "assigned_to_username": assigned_to_username
+        "assigned_to_username": assigned_to_username,
+        "time_estimate": todo_db.time_estimate,
+        "time_logged": todo_db.time_logged
     }
     return schemas.TodoResponse(**todo_dict)
 
@@ -284,6 +246,7 @@ def _can_access_todo(todo_db: models.Todo, user_id: int, db: Session) -> bool:
     """True if user is creator, assigned to the todo, or admin."""
     if todo_db.user_id == user_id or todo_db.assigned_to_user_id == user_id:
         return True
+    _ensure_time_estimate_column(db)
     user = db.query(models.User).filter(models.User.id == user_id).first()
     return user is not None and user.role == models.UserRole.ADMIN.value
 
@@ -749,6 +712,7 @@ async def update_todo(
     db: Session = Depends(database.get_db),
     _ = Depends(todo_limiter)
 ):
+    _ensure_time_estimate_column(db)
     """Update a todo by ID"""
     todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
     if not todo_db:
@@ -772,7 +736,9 @@ async def update_todo(
     old_status = todo_db.status
     old_assigned_user_id = todo_db.assigned_to_user_id
     old_due_date = todo_db.due_date
-    
+    old_time_estimate = todo_db.time_estimate
+    old_time_logged = todo_db.time_logged
+
     # Track which fields actually changed (for notification)
     changed_fields = []
     
@@ -800,7 +766,17 @@ async def update_todo(
         if todo_db.category != todo.category:
             changed_fields.append('category')
         todo_db.category = todo.category
-    
+
+    provided_fields = todo.model_dump(exclude_unset=True)
+    if 'time_estimate' in provided_fields:
+        if todo_db.time_estimate != todo.time_estimate:
+            changed_fields.append('time_estimate')
+        todo_db.time_estimate = todo.time_estimate
+    if 'time_logged' in provided_fields:
+        if todo_db.time_logged != todo.time_logged:
+            changed_fields.append('time_logged')
+        todo_db.time_logged = todo.time_logged
+
     # Handle due_date update
     provided_fields = todo.model_dump(exclude_unset=True)
     if 'due_date' in provided_fields:
@@ -1013,6 +989,10 @@ async def update_todo(
         _add_field_history(db, todo_id, user_id, "category", old_category, todo_db.category)
     if old_priority != todo_db.priority:
         _add_field_history(db, todo_id, user_id, "priority", old_priority, todo_db.priority)
+    if old_time_estimate != todo_db.time_estimate:
+        _add_field_history(db, todo_id, user_id, "time_estimate", old_time_estimate, todo_db.time_estimate)
+    if old_time_logged != todo_db.time_logged:
+        _add_field_history(db, todo_id, user_id, "time_logged", old_time_logged, todo_db.time_logged)
     if old_due_date != todo_db.due_date:
         old_due_str = old_due_date.strftime('%Y-%m-%d') if old_due_date else "None"
         new_due_str = todo_db.due_date.strftime('%Y-%m-%d') if todo_db.due_date else "None"

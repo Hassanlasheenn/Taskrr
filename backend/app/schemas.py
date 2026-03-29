@@ -67,6 +67,8 @@ class TodoCreate(BaseModel):
     priority: PriorityLevel = PriorityLevel.MEDIUM
     status: Optional[TodoStatus] = TodoStatus.NEW
     category: Optional[str] = None
+    time_estimate: Optional[str] = None
+    time_logged: Optional[str] = None
     due_date: Optional[datetime] = None
     assigned_to_user_id: Optional[int] = None
 
@@ -76,6 +78,8 @@ class TodoUpdate(BaseModel):
     status: Optional[TodoStatus] = None
     priority: Optional[PriorityLevel] = None
     category: Optional[str] = None
+    time_estimate: Optional[str] = None
+    time_logged: Optional[str] = None
     due_date: Optional[datetime] = None
     assigned_to_user_id: Optional[int] = None
 
@@ -86,6 +90,8 @@ class TodoResponse(BaseModel):
     status: str
     priority: str
     category: Optional[str] = None
+    time_estimate: Optional[str] = None
+    time_logged: Optional[str] = None
     due_date: Optional[datetime] = None
     reminder_sent_at: Optional[datetime] = None
     is_deleted: bool = False

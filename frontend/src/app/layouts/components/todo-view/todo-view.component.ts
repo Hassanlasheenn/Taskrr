@@ -29,6 +29,7 @@ import { InputTypes, ValidatorTypes } from "../../../shared/enums";
 
 import { DynamicFormComponent } from "../../../shared/components/dynamic-form/dynamic-form.component";
 import { PasteImageDirective } from "../../../shared/directives/paste-image.directive";
+import { ProgressBarComponent } from "../../../shared/components/progress-bar/progress-bar.component";
 
 @Component({
     selector: 'app-todo-view',
@@ -43,7 +44,8 @@ import { PasteImageDirective } from "../../../shared/directives/paste-image.dire
         TabsComponent,
         DropdownFormComponent,
         DynamicFormComponent,
-        PasteImageDirective
+        PasteImageDirective,
+        ProgressBarComponent
     ],
 })
 export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactivate {
@@ -53,6 +55,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     isCommentImageUploading = false;
     
     todoForm: FormGroup = new FormGroup({});
+    logTimeForm: FormGroup = new FormGroup({});
     
     assigneeField: IFieldControl = {
         label: 'Assignee',
@@ -112,6 +115,30 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         validations: []
     };
 
+    timeEstimateField: IFieldControl = {
+        formControlName: 'time_estimate',
+        label: 'Time Estimate',
+        type: InputTypes.TIME_ESTIMATE,
+        value: '',
+        validations: []
+    };
+
+    timeLoggedField: IFieldControl = {
+        formControlName: 'time_logged',
+        label: 'Log Time',
+        type: InputTypes.TIME_ESTIMATE,
+        value: '',
+        validations: []
+    };
+
+    logTimeField: IFieldControl = {
+        formControlName: 'time_to_log',
+        label: 'Log Time',
+        type: InputTypes.TIME_ESTIMATE,
+        value: '',
+        validations: []
+    };
+
     initialFormValue: any = null;
     
     mentionableUsers: IUserListResponse[] = [];
@@ -167,7 +194,9 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     get hasChanges(): boolean {
         if (!this.todo || !this.initialFormValue) return false;
         const currentFormValue = this.todoForm.value;
-        return JSON.stringify(currentFormValue) !== JSON.stringify(this.initialFormValue);
+        const hasTodoChanges = JSON.stringify(currentFormValue) !== JSON.stringify(this.initialFormValue);
+        const hasTimeLogChanges = !!this.logTimeForm.get('time_to_log')?.value;
+        return hasTodoChanges || hasTimeLogChanges;
     }
 
     constructor(
@@ -224,25 +253,32 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
             this.statusField,
             this.priorityField,
             this.descriptionField,
-            this.dueDateField
+            this.dueDateField,
+            this.timeEstimateField,
+            this.timeLoggedField
+        ]);
+
+        this.logTimeForm = this._formService.initializeForm([
+            this.logTimeField
         ]);
 
         this._loaderService.show();
         this._todoService.getTodo(userId, todoId).subscribe({
             next: (response) => {
                 this.todo = response as ITodo;
-                
+
                 const formValue = {
                     assigned_to_user_id: this.todo.assigned_to_user_id || null,
                     status: this.todo.status || 'new',
                     priority: this.todo.priority || 'medium',
                     description: this.todo.description || '',
-                    due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : ''
+                    due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : '',
+                    time_estimate: this.todo.time_estimate || '',
+                    time_logged: this.todo.time_logged || ''
                 };
-                
+
                 this.todoForm.patchValue(formValue);
-                this.initialFormValue = { ...formValue };
-                
+                this.initialFormValue = { ...formValue };                
                 this._loadMentionableUsers();
                 this._loadComments();
                 this._loaderService.hide();
@@ -865,6 +901,15 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         if (!userId) return;
         
         const formValue = this.todoForm.value;
+        const timeToLog = this.logTimeForm.get('time_to_log')?.value;
+
+        let finalTimeLogged = formValue.time_logged;
+        if (timeToLog) {
+            const currentMinutes = this._parseTimeToMinutes(formValue.time_logged);
+            const extraMinutes = this._parseTimeToMinutes(timeToLog);
+            finalTimeLogged = this._formatMinutesToTime(currentMinutes + extraMinutes);
+        }
+
         this.saving = true;
         
         this._todoService.updateTodo(userId, this.todo.id, {
@@ -873,23 +918,28 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
             description: formValue.description,
             assigned_to_user_id: formValue.assigned_to_user_id,
             due_date: formValue.due_date || null,
+            time_estimate: formValue.time_estimate || null,
+            time_logged: finalTimeLogged || null
         }).subscribe({
             next: (updated) => {
                 this.todo = {
                     ...this.todo!,
                     ...updated
                 } as ITodo;
-                
+
                 const newFormValue = {
                     assigned_to_user_id: this.todo.assigned_to_user_id || null,
                     status: this.todo.status || 'new',
                     priority: this.todo.priority || 'medium',
                     description: this.todo.description || '',
-                    due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : ''
+                    due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : '',
+                    time_estimate: this.todo.time_estimate || '',
+                    time_logged: this.todo.time_logged || ''
                 };
                 
                 this.initialFormValue = { ...newFormValue };
                 this.todoForm.reset(newFormValue);
+                this.logTimeForm.reset({ time_to_log: '' });
                 
                 this.saving = false;
                 if (this.commentHistoryTab === 'history') this._loadCommentHistory();
@@ -957,6 +1007,49 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         hours = hours % 12 || 12;
         const formattedTime = `${hours}:${minutes} ${ampm}`;
         return { date: formattedDate, time: formattedTime };
+    }
+
+    private _parseTimeToMinutes(time: string | null): number {
+        if (!time) return 0;
+        const wMatch = time.match(/(\d+)w/i);
+        const dMatch = time.match(/(\d+)d/i);
+        const hMatch = time.match(/(\d+)h/i);
+        const mMatch = time.match(/(\d+)m/i);
+        
+        const weeks = wMatch ? parseInt(wMatch[1], 10) : 0;
+        const days = dMatch ? parseInt(dMatch[1], 10) : 0;
+        const hours = hMatch ? parseInt(hMatch[1], 10) : 0;
+        const minutes = mMatch ? parseInt(mMatch[1], 10) : 0;
+        
+        return (weeks * 5 * 8 * 60) + (days * 8 * 60) + (hours * 60) + minutes;
+    }
+
+    private _formatMinutesToTime(totalMinutes: number): string {
+        if (totalMinutes <= 0) return '';
+        
+        const minutesInWeek = 5 * 8 * 60;
+        const minutesInDay = 8 * 60;
+        const minutesInHour = 60;
+        
+        let remaining = totalMinutes;
+        const weeks = Math.floor(remaining / minutesInWeek);
+        remaining %= minutesInWeek;
+        
+        const days = Math.floor(remaining / minutesInDay);
+        remaining %= minutesInDay;
+        
+        const hours = Math.floor(remaining / minutesInHour);
+        remaining %= minutesInHour;
+        
+        const minutes = remaining;
+        
+        let result = '';
+        if (weeks > 0) result += `${weeks}w `;
+        if (days > 0) result += `${days}d `;
+        if (hours > 0) result += `${hours}h `;
+        if (minutes > 0) result += `${minutes}m`;
+        
+        return result.trim();
     }
 
     getDueDateUrgencyClass(dateString?: string): string {

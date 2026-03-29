@@ -7,6 +7,8 @@ export interface ITodoCreate {
     status?: TodoStatus;
     category?: string;
     due_date?: string;
+    time_estimate?: string;
+    time_logged?: string;
     assigned_to_user_id?: number | null;
 }
 
@@ -17,6 +19,8 @@ export interface ITodoUpdate {
     status?: TodoStatus;
     category?: string;
     due_date?: string | null;
+    time_estimate?: string | null;
+    time_logged?: string | null;
     assigned_to_user_id?: number | null;
 }
 
@@ -28,6 +32,8 @@ export interface ITodoResponse {
     priority: 'low' | 'medium' | 'high';
     category?: string;
     due_date?: string;
+    time_estimate?: string;
+    time_logged?: string;
     is_deleted: boolean;
     order_index: number;
     created_at?: string;
@@ -50,6 +56,8 @@ export interface ITodo {
     priority: 'low' | 'medium' | 'high';
     category?: string;
     due_date?: string;
+    time_estimate?: string;
+    time_logged?: string;
     is_deleted: boolean;
     order_index: number;
     created_at?: string;

@@ -49,6 +49,8 @@ class Todo(Base):
     status = Column(String(20), default=TodoStatus.NEW.value)
     priority = Column(String(20), default=PriorityLevel.MEDIUM.value)
     category = Column(String(100), nullable=True)
+    time_estimate = Column(String(50), nullable=True)
+    time_logged = Column(String(50), nullable=True)
     due_date = Column(DateTime(timezone=True), nullable=True)
     reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
     is_deleted = Column(Boolean, default=False, nullable=False)

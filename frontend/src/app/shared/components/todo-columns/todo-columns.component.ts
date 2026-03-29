@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { ITodo } from '../../../core/interfaces/todo.interface';
 import { trackById } from '../../helpers/trackByFn.helper';
+import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
 
 export interface ITodoStatusChange {
     todo: ITodo;
@@ -15,7 +16,7 @@ export interface ITodoStatusChange {
     templateUrl: './todo-columns.component.html',
     styleUrls: ['./todo-columns.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterLink, DragDropModule]
+    imports: [CommonModule, RouterLink, DragDropModule, ProgressBarComponent]
 })
 export class TodoColumnsComponent implements OnChanges {
     /** Main todos — split internally into 4 status columns. */

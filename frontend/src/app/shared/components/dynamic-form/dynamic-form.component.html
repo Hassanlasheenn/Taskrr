@@ -67,6 +67,19 @@
                 />
             </div>
 
+            <div *ngIf="field.type === InputTypes.TIME_ESTIMATE" class="field-container">
+                <app-time-input
+                    [label]="field.label"
+                    [formGroup]="form"
+                    [placeholder]="field.placeholder || ''"
+                    [name]="field.formControlName"
+                    [customInputStyle]="customInputStyle"
+                    [customInputClass]="field.customInputClass"
+                    [field]="field"
+                    [showErrors]="isSubmitted"
+                />
+            </div>
+
             <div *ngIf="field.type === InputTypes.TEXT || field.type === InputTypes.EMAIL || field.type === InputTypes.PASSWORD || field.type === InputTypes.NUMBER || field.type === InputTypes.TIME || field.type === InputTypes.CHECKBOX" class="field-container">
                 <app-input-form
                     [label]="field.label"

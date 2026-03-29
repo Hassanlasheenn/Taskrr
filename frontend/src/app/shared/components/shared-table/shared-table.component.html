@@ -63,7 +63,7 @@
     </div>
 
     <div class="custom-table-wrapper">
-        <table class="custom-table">
+        <table class="custom-table" [class.todo-table]="!isUsersMode" [class.user-table]="isUsersMode">
             <!-- ========== Users Mode ========== -->
             <ng-container *ngIf="isUsersMode; else todoMode">
                 <thead>
@@ -227,7 +227,7 @@
                         </td>
                     </tr>
                     <tr *ngIf="todos.length === 0">
-                        <td colspan="7" class="empty-row-cell">
+                        <td colspan="6" class="empty-row-cell">
                             <div class="empty-table-msg">{{ emptyMessage }}</div>
                         </td>
                     </tr>
