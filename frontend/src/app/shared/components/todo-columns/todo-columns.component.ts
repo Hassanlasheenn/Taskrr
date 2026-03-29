@@ -3,7 +3,7 @@ import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from
 import { RouterLink } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { ITodo } from '../../../core/interfaces/todo.interface';
-import { getTodoType, getTodoTypeLabel, getTodoTypeIcon } from '../../helpers/todo-type.helper';
+import { getTodoType, getTodoTypeLabel, getTodoTypeIcon, enrichTodoTypes } from '../../helpers/todo-type.helper';
 import { trackById } from '../../helpers/trackByFn.helper';
 import { ProgressBarComponent } from '../progress-bar/progress-bar.component';
 import { TodoService } from '../../../core/services/todo.service';
@@ -216,7 +216,7 @@ export class TodoColumnsComponent implements OnChanges {
 
         const apiStatus = this._toApiStatus(status);
 
-        this._todoService.getTodos(this.userId, pag.skip, this.limit, 'desc', { status: apiStatus === 'unassigned' ? undefined : apiStatus as any })
+        this._todoService.getTodos(this.userId, pag.skip, this.limit, 'desc', { status: apiStatus === 'unassigned' ? undefined : apiStatus as any }, undefined, true)
             .subscribe({
                 next: (res) => {
                     const newItems = res.todos as ITodo[];
@@ -329,18 +329,31 @@ export class TodoColumnsComponent implements OnChanges {
             return;
         }
         this._expandedStories.add(todo.id);
-        if (!this._loadedSubtasks.has(todo.id)) {
-            const userId = this._authService.getCurrentUserId();
-            if (!userId) return;
-            this._loadingSubtasks.add(todo.id);
-            this._todoService.getSubtasks(userId, todo.id).subscribe({
-                next: (res) => {
-                    this._loadedSubtasks.set(todo.id, res.todos as ITodo[]);
-                    this._loadingSubtasks.delete(todo.id);
-                },
-                error: () => this._loadingSubtasks.delete(todo.id)
-            });
+
+        // If we already have them in our local map, we're done.
+        if (this._loadedSubtasks.has(todo.id)) {
+            return;
         }
+
+        // Optimized: Check if they are already in the todo object (provided by loadTodos with include_subtasks)
+        if (todo.subtasks && todo.subtasks.length > 0) {
+            const enriched = enrichTodoTypes(todo.subtasks, [todo, ...todo.subtasks]);
+            this._loadedSubtasks.set(todo.id, enriched);
+            return;
+        }
+
+        // Fallback: Fetch only if missing (e.g. for newly created items or items loaded without subtasks)
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+        this._loadingSubtasks.add(todo.id);
+        this._todoService.getSubtasks(userId, todo.id).subscribe({
+            next: (res) => {
+                const enriched = enrichTodoTypes(res.todos as ITodo[], [todo, ...(res.todos as ITodo[])]);
+                this._loadedSubtasks.set(todo.id, enriched);
+                this._loadingSubtasks.delete(todo.id);
+            },
+            error: () => this._loadingSubtasks.delete(todo.id)
+        });
     }
 
     isSubtasksExpanded(id: number): boolean { return this._expandedStories.has(id); }

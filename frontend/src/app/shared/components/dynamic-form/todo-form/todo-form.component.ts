@@ -13,7 +13,7 @@ import { Subject, takeUntil } from "rxjs";
 import { AuthService } from "../../../../auth/services/auth.service";
 import { TodoService } from "../../../../core/services/todo.service";
 import { trackById } from "../../../helpers/trackByFn.helper";
-import { getTodoType } from "../../../helpers/todo-type.helper";
+import { getTodoType, enrichTodoTypes } from "../../../helpers/todo-type.helper";
 import { ClickThrottleDirective } from "../../../directives/click-throttle.directive";
 
 @Component({
@@ -160,7 +160,15 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        if ((changes['parentId'] || changes['forcedType'] || changes['hideTimeEstimate']) && !this.isEditMode) {
+        if (changes['editingTodo']) {
+            this.isEditMode = !!this.editingTodo;
+            this.initForm();
+            if (this.isEditMode && this.editingTodo) {
+                this.populateForm(this.editingTodo);
+            }
+        }
+        
+        if ((changes['parentId'] || changes['parentTodo'] || changes['forcedType'] || changes['hideTimeEstimate']) && !this.isEditMode) {
             this.initForm();
         }
     }
@@ -185,7 +193,13 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
                 }
             } else if (!this.isEditMode && !this.editingTodo) {
                 if (this.parentId) {
-                    typeField.value = 'task'; 
+                    // Infer correct type from parent
+                    if (this.parentTodo) {
+                        const pType = getTodoType(this.parentTodo as any);
+                        typeField.value = (pType === 'project') ? 'story' : 'task';
+                    } else {
+                        typeField.value = 'task'; 
+                    }
                 } else {
                     typeField.value = 'workitem';
                 }
@@ -197,6 +211,7 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
         this.updateUserDropdownField();
         this._watchCategoryChanges();
         this._watchTypeChanges();
+        this._watchParentChanges();
         
         if (this.isEditMode && this.editingTodo) {
             this._handleParentField(this.editingTodo.type || 'workitem');
@@ -210,6 +225,26 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
             .pipe(takeUntil(this._destroy$))
             .subscribe(type => {
                 this._handleParentField(type);
+            });
+    }
+
+    private _watchParentChanges(): void {
+        this.form.get('parent_id')?.valueChanges
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(parentId => {
+                if (parentId && !this.forcedType) {
+                    const parent = this.users.length > 0 ? null : null; // We need to find it in potential parents
+                    // Instead of finding it, we can infer from the label of the dropdown if we really had to, 
+                    // but better to just look at the type selection.
+                    
+                    // Actually, the simplest is to check the current selected type and see if it makes sense.
+                    // If we are linking to something, and we are currently a 'workitem', we should probably be a 'task'.
+                    const currentType = this.form.get('type')?.value;
+                    if (currentType === 'workitem') {
+                        this.form.get('type')?.setValue('task', { emitEvent: false });
+                        this._handleParentField('task');
+                    }
+                }
             });
     }
 
@@ -227,8 +262,11 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     private _loadPotentialParents(userId: number, type: string, label: string): void {
-        this._todoService.getTodos(userId, 0, 100).subscribe(res => {
-            const parents = res.todos.filter(t => getTodoType(t as any) === type);
+        this._todoService.getTodos(userId, 0, 500).subscribe(res => {
+            // Enrich first so hierarchy-based types (like Story in a Project) are correctly identified
+            const enriched = enrichTodoTypes(res.todos as ITodo[]);
+            const parents = enriched.filter(t => getTodoType(t as any) === type);
+            
             let options: { key: string | number | null, value: string }[] = parents.map(p => ({ key: p.id, value: p.title }));
             
             if (type === 'project' && parents.length === 0) {
@@ -535,9 +573,18 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     private populateFormData(todo: ITodo): void {
         const isCustomCategory = todo.category && !this.availableCategories.includes(todo.category);
 
+        let inferredType = todo.type || 'workitem';
+        // Correct legacy/bad data: if it's a child and type is generic 'workitem', infer better
+        if ((inferredType === 'workitem' || inferredType === 'task') && todo.parent_id && !this.forcedType) {
+            if (this.parentTodo) {
+                const pType = getTodoType(this.parentTodo as any);
+                inferredType = (pType === 'project') ? 'story' : 'task';
+            }
+        }
+
         const formValue: any = {
             title: todo.title || '',
-            type: this.forcedType || todo.type || 'workitem',
+            type: this.forcedType || inferredType,
             description: todo.description || '',
             due_date: todo.due_date ? todo.due_date.split('T')[0] : '',
             time_estimate: todo.time_estimate || '',
@@ -549,12 +596,10 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
             parent_id: todo.parent_id || null
         };
         
-        setTimeout(() => {
-            if (this.form) {
-                this.form.patchValue(formValue, { emitEvent: false });
-                this.form.markAsPristine();
-            }
-        }, 100);
+        if (this.form) {
+            this.form.patchValue(formValue, { emitEvent: false });
+            this.form.markAsPristine();
+        }
     }
 
     hasChanges(): boolean {

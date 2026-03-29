@@ -13,6 +13,7 @@ import { InputFormComponent } from "../form-fields/input/input.component";
 import { IFieldControl } from "../../interfaces";
 import { InputTypes } from "../../enums";
 import { PaginationComponent } from "../pagination/pagination.component";
+import { getTodoType } from "../../helpers/todo-type.helper";
 
 @Component({
     selector: 'app-shared-table',
@@ -275,8 +276,12 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
         { key: 'Other', value: 'Other' }
     ];
 
+    getTodoType(todo: ITodo): string {
+        return getTodoType(todo);
+    }
+
     getTypeClass(todo: ITodo): string {
-        return `type-${todo.type || 'workitem'}`;
+        return `type-${this.getTodoType(todo)}`;
     }
 
     getStatusField(todo: ITodo): IFieldControl {

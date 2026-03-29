@@ -9,6 +9,7 @@ import { AuthService } from "../../../auth/services/auth.service";
 import { TodoService } from "../../../core/services/todo.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { ProgressBarComponent } from "../progress-bar/progress-bar.component";
+import { ParseMentionsPipe } from "../../../core/pipes/parse-mentions.pipe";
 import { getTodoType, getTodoTypeLabel, getTodoTypeIcon } from "../../helpers/todo-type.helper";
 
 @Component({
@@ -16,7 +17,7 @@ import { getTodoType, getTodoTypeLabel, getTodoTypeIcon } from "../../helpers/to
     templateUrl: './todo-detail-dialog.component.html',
     styleUrls: ['./todo-detail-dialog.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterLink, ProgressBarComponent]
+    imports: [CommonModule, RouterLink, ProgressBarComponent, ParseMentionsPipe]
 })
 export class TodoDetailDialogComponent implements OnInit, OnDestroy {
     private readonly _destroy$ = new Subject<void>();

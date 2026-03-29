@@ -12,7 +12,7 @@ export class TodoService {
 
     constructor(private readonly _http: HttpClient) {}
 
-    getTodos(userId: number, skip: number = 0, limit: number = 100, sortOrder: 'asc' | 'desc' = 'desc', filter?: ITodoFilter, todoType?: string): Observable<ITodoListResponse> {
+    getTodos(userId: number, skip: number = 0, limit: number = 100, sortOrder: 'asc' | 'desc' = 'desc', filter?: ITodoFilter, todoType?: string, includeSubtasks: boolean = false): Observable<ITodoListResponse> {
         let url = `${this._baseUrl}?user_id=${userId}&skip=${skip}&limit=${limit}&sort_order=${sortOrder}`;
         if (filter?.title) url += `&title=${encodeURIComponent(filter.title)}`;
         if (filter?.priority) url += `&priority=${encodeURIComponent(filter.priority)}`;
@@ -21,6 +21,7 @@ export class TodoService {
         if (filter?.created_to) url += `&created_to=${filter.created_to}`;
         if (filter?.type) url += `&todo_type=${encodeURIComponent(filter.type)}`;
         if (todoType) url += `&todo_type=${encodeURIComponent(todoType)}`;
+        if (includeSubtasks) url += `&include_subtasks=true`;
         return this._http
             .get<ITodoListResponse>(url, { withCredentials: true })
             .pipe(take(1));
@@ -34,9 +35,13 @@ export class TodoService {
             .pipe(take(1));
     }
 
-    getTodo(userId: number, todoId: number): Observable<ITodoResponse> {
+    getTodo(userId: number, todoId: number, includeSubtasks: boolean = false): Observable<ITodoResponse> {
+        let url = `${this._baseUrl}/${todoId}?user_id=${userId}`;
+        if (includeSubtasks) {
+            url += '&include_subtasks=true';
+        }
         return this._http
-            .get<ITodoResponse>(`${this._baseUrl}/${todoId}?user_id=${userId}`, {
+            .get<ITodoResponse>(url, {
                 withCredentials: true
             })
             .pipe(take(1));

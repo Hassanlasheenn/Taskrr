@@ -173,11 +173,11 @@
                         <td data-label="Type">
                             <span class="type-badge" [ngClass]="getTypeClass(todo)">
                                 <i class="bi" 
-                                   [class.bi-layers-fill]="todo.type === 'project'"
-                                   [class.bi-journal-bookmark-fill]="todo.type === 'story'"
-                                   [class.bi-clipboard-check-fill]="todo.type === 'workitem' || !todo.type"
-                                   [class.bi-check2-square]="todo.type === 'task'"></i>
-                                {{ (todo.type || 'workitem') }}
+                                   [class.bi-layers-fill]="getTodoType(todo) === 'project'"
+                                   [class.bi-journal-bookmark-fill]="getTodoType(todo) === 'story'"
+                                   [class.bi-clipboard-check-fill]="getTodoType(todo) === 'workitem'"
+                                   [class.bi-check2-square]="getTodoType(todo) === 'task'"></i>
+                                {{ getTodoType(todo) }}
                             </span>
                         </td>
                         <td data-label="Status">

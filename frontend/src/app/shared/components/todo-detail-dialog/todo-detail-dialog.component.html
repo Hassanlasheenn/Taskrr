@@ -86,7 +86,12 @@
 
             <div class="detail-section" *ngIf="todo.description">
                 <span class="detail-label">Description</span>
-                <div class="description-text">{{ todo.description }}</div>
+                <div class="description-text">
+                    <ng-container *ngFor="let seg of todo.description | parseMentions">
+                        <span *ngIf="seg.type === 'text'">{{ seg.value }}</span>
+                        <img *ngIf="seg.type === 'image'" [src]="seg.value" alt="Pasted image" class="pasted-image">
+                    </ng-container>
+                </div>
             </div>
         </div>
 

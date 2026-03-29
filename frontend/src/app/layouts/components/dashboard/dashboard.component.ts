@@ -23,7 +23,7 @@ import { SharedTableComponent } from "../../../shared/components/shared-table/sh
 import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
 import { PosthogService } from "../../../core/services";
 import { TodoColumnsComponent, ITodoStatusChange } from "../../../shared/components/todo-columns/todo-columns.component";
-import { getTodoType, getTodoTypeLabel, getTodoTypeIcon } from "../../../shared/helpers/todo-type.helper";
+import { getTodoType, getTodoTypeLabel, getTodoTypeIcon, enrichTodoTypes, enrichTodo, flattenTodos } from "../../../shared/helpers/todo-type.helper";
 import { TodoDetailDialogService } from "../../../core/services/todo-detail-dialog.service";
 
 @Component({
@@ -74,6 +74,12 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         } else {
             this._expandedProjectIds.add(project.id);
             if (!this._storyChildCache.has(project.id)) {
+                // Optimized: Check if subtasks already exist in the project object
+                if (project.subtasks && project.subtasks.length > 0) {
+                    this._storyChildCache.set(project.id, project.subtasks);
+                    return;
+                }
+
                 const userId = this._authService.getCurrentUserId();
                 if (!userId) return;
                 this._todoService.getSubtasks(userId, project.id)
@@ -206,9 +212,9 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
 
-        this._todoService.getTodos(userId).pipe(takeUntil(this._destroy$)).subscribe({
+        this._todoService.getTodos(userId, 0, 100, 'desc', {}, undefined, true).pipe(takeUntil(this._destroy$)).subscribe({
             next: (response) => {
-                this.todos = response.todos as ITodo[];
+                this.todos = enrichTodoTypes(response.todos as ITodo[]);
                 this.totalTodos = response.total;
                 if (this.activeSection === DashboardSections.STORIES) {
                     this._loadStoryClassification();
@@ -385,8 +391,9 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             .subscribe({
                 next: (newTodo) => {
                     this._closeSidebarInternal();
+                    const enriched = enrichTodo(newTodo, this.todos);
                     // Invalidate cache for the parent project so it reloads its children
-                    const createdParentId = (newTodo as ITodo).parent_id;
+                    const createdParentId = (enriched as ITodo).parent_id;
                     if (createdParentId) {
                         this._storyChildCache.delete(createdParentId);
                         
@@ -400,8 +407,8 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                         this.loadTableTodos();
                     }
                     // If we're in a story detail view, append the new task immediately
-                    if (this.selectedStory && (newTodo as ITodo).parent_id === this.selectedStory.id) {
-                        this.storySubtasks = [...this.storySubtasks, newTodo as ITodo];
+                    if (this.selectedStory && (enriched as ITodo).parent_id === this.selectedStory.id) {
+                        this.storySubtasks = [...this.storySubtasks, enriched as ITodo];
                     }
                     this._toastService.success('Todo created successfully');
                     this._posthogService.capture('todo_created', {
@@ -523,7 +530,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             .pipe(takeUntil(this._destroy$))
             .subscribe({
                 next: (res) => {
-                    let children = res.todos as ITodo[];
+                    let children = enrichTodoTypes(res.todos as ITodo[], [story, ...(res.todos as ITodo[])]);
                     if (this.selectedCategory) {
                         children = children.filter(t => t.category === this.selectedCategory);
                     }
@@ -558,7 +565,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 .pipe(takeUntil(this._destroy$))
                 .subscribe({
                     next: (res) => {
-                        let children = res.todos as ITodo[];
+                        let children = enrichTodoTypes(res.todos as ITodo[], [project, ...(res.todos as ITodo[])]);
                         if (!this.selectedCategory) {
                             this._storyChildCache.set(project.id, children);
                         } else {
@@ -586,20 +593,39 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     }
 
     private _loadStoryClassification(): void {
-        const stories = this.todos.filter(t => (t.subtask_count ?? 0) > 0);
-        if (!stories.length) { this.classifyingStories = false; return; }
-        const uncached = stories.filter(s => !this._storyChildCache.has(s.id));
-        if (!uncached.length) { this.classifyingStories = false; return; }
+        const storiesWithSubtasks = this.todos.filter(t => (t.subtask_count ?? 0) > 0);
+        if (!storiesWithSubtasks.length) { 
+            this.classifyingStories = false; 
+            return; 
+        }
+
+        // Optimized: Immediately populate cache from already loaded subtasks
+        storiesWithSubtasks.forEach(todo => {
+            if (todo.subtasks && todo.subtasks.length > 0 && !this._storyChildCache.has(todo.id)) {
+                const enriched = enrichTodoTypes(todo.subtasks, [todo, ...todo.subtasks]);
+                this._storyChildCache.set(todo.id, enriched);
+            }
+        });
+
+        // Only fetch what's still missing from cache
+        const stillUncached = storiesWithSubtasks.filter(s => !this._storyChildCache.has(s.id));
+        if (!stillUncached.length) { 
+            this.classifyingStories = false; 
+            return; 
+        }
+
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
+
         this.classifyingStories = true;
-        let pending = uncached.length;
-        uncached.forEach(story => {
+        let pending = stillUncached.length;
+        stillUncached.forEach(story => {
             this._todoService.getSubtasks(userId, story.id)
                 .pipe(takeUntil(this._destroy$))
                 .subscribe({
                     next: (res) => {
-                        this._storyChildCache.set(story.id, res.todos as ITodo[]);
+                        const enriched = enrichTodoTypes(res.todos as ITodo[], [story, ...(res.todos as ITodo[])]);
+                        this._storyChildCache.set(story.id, enriched);
                         if (--pending === 0) this.classifyingStories = false;
                     },
                     error: () => { if (--pending === 0) this.classifyingStories = false; }
@@ -616,6 +642,8 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             .subscribe({
                 next: (updatedTodo: any) => {
                     this._closeSidebarInternal();
+                    const enriched = enrichTodo(updatedTodo, this.todos);
+
                     // Invalidate cache for old and new parent so both reload their children
                     const oldParentId = this.todos.find(t => t.id === event.id)?.parent_id;
                     const newParentId = event.data.parent_id;
@@ -629,10 +657,10 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
 
                     // Update in main todos list
                     const idx = this.todos.findIndex(t => t.id === event.id);
-                    const parentChanged = idx !== -1 && this.todos[idx].parent_id !== updatedTodo.parent_id;
+                    const parentChanged = idx !== -1 && this.todos[idx].parent_id !== (enriched as ITodo).parent_id;
 
                     if (idx !== -1) {
-                        this.todos[idx] = { ...this.todos[idx], ...updatedTodo } as ITodo;
+                        this.todos[idx] = { ...this.todos[idx], ...enriched } as ITodo;
                         this.todos = [...this.todos];
                     }
                     
@@ -642,7 +670,7 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                     // Update in story subtasks if present
                     const subIdx = this.storySubtasks.findIndex(t => t.id === event.id);
                     if (subIdx !== -1) {
-                        this.storySubtasks[subIdx] = { ...this.storySubtasks[subIdx], ...updatedTodo } as ITodo;
+                        this.storySubtasks[subIdx] = { ...this.storySubtasks[subIdx], ...enriched } as ITodo;
                         this.storySubtasks = [...this.storySubtasks];
                     }
                     if (this.viewMode === 'table') {
@@ -698,9 +726,10 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             .pipe(takeUntil(this._destroy$))
             .subscribe({
                 next: (updatedTodo) => {
+                    const enriched = enrichTodo(updatedTodo, this.todos);
                     const idx = this.todos.findIndex(t => t.id === event.todo.id);
                     if (idx !== -1) {
-                        this.todos[idx] = { ...this.todos[idx], ...updatedTodo } as ITodo;
+                        this.todos[idx] = { ...this.todos[idx], ...enriched } as ITodo;
                         this.todos = [...this.todos];
                     }
                     // Update in story subtasks if present
@@ -739,14 +768,42 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     loadTableTodos(): void {
         const userId = this._authService.getCurrentUserId();
         if (!userId) return;
-        const skip = (this.tablePage - 1) * this.tablePageSize;
+        
+        const serverFilter: ITodoFilter = { ...this.tableFilter };
+        const isTypeFiltering = !!serverFilter.type;
+        const isStatusFiltering = !!serverFilter.status;
+        
+        // Handle Type and Status locally to ensure they work with enriched subtasks
+        if (isTypeFiltering) delete serverFilter.type;
+        if (isStatusFiltering) delete serverFilter.status;
+
         const loadId = ++this._tableLoadId;
 
-        this._todoService.getTodos(userId, skip, this.tablePageSize, this.tableSortOrder, this.tableFilter).pipe(takeUntil(this._destroy$)).subscribe({
+        // Optimized: Single call with includeSubtasks=true
+        this._todoService.getTodos(userId, 0, 1000, this.tableSortOrder, serverFilter, undefined, true).pipe(takeUntil(this._destroy$)).subscribe({
             next: (response) => {
                 if (loadId !== this._tableLoadId) return;
-                this.tableTodos = response.todos as ITodo[];
-                this.tableTotal = response.total;
+                
+                // 1. Flatten: Get every single item in the hierarchy
+                const allTodos = flattenTodos(response.todos as ITodo[]);
+                
+                // 2. Enrich (Normalizes status and fixes types based on hierarchy)
+                let processed = enrichTodoTypes(allTodos, [...this.todos, ...allTodos]);
+                
+                // 3. Local Filtering for consistency with visual badges
+                if (this.tableFilter.type) {
+                    processed = processed.filter(t => getTodoType(t) === this.tableFilter.type);
+                }
+                if (this.tableFilter.status) {
+                    processed = processed.filter(t => t.status === this.tableFilter.status);
+                }
+
+                // Remove duplicates just in case
+                const unique = Array.from(new Map(processed.map(t => [t.id, t])).values());
+
+                this.tableTotal = unique.length;
+                const skip = (this.tablePage - 1) * this.tablePageSize;
+                this.tableTodos = unique.slice(skip, skip + this.tablePageSize);
             },
             error: (error) => {
                 if (loadId !== this._tableLoadId) return;

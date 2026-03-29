@@ -57,6 +57,7 @@ def _ensure_time_estimate_column(db: Session):
 @router.get("", response_model=schemas.TodoListResponse)
 def get_todos(
     user_id: int,
+    include_subtasks: bool = False,
     skip: int = 0,
     limit: int = 100,
     sort_order: str = "desc",
@@ -72,7 +73,7 @@ def get_todos(
     _ensure_time_estimate_column(db)
     sort_order = sort_order.lower() if sort_order.lower() in ("asc", "desc") else "desc"
     has_filters = any([title, priority, status, created_from, created_to, todo_type])
-    cache_key = f"{PREFIX_TODOS_LIST}{user_id}:{skip}:{limit}:{sort_order}:{title or ''}:{priority or ''}:{status or ''}:{created_from or ''}:{created_to or ''}:{todo_type or ''}"
+    cache_key = f"{PREFIX_TODOS_LIST}{user_id}:{skip}:{limit}:{sort_order}:{title or ''}:{priority or ''}:{status or ''}:{created_from or ''}:{created_to or ''}:{todo_type or ''}:{include_subtasks}"
     if not has_filters:
         cached = cache_get(cache_key)
         if cached is not None:
@@ -121,7 +122,7 @@ def get_todos(
     total = db.query(models.Todo).filter(todo_filter).count()
     todo_responses = []
     for todo in todos:
-        todo_responses.append(_build_todo_response(todo, db))
+        todo_responses.append(_build_todo_response(todo, db, include_subtasks=include_subtasks))
     if not has_filters:
         cache_set(cache_key, {"todos": [t.model_dump() for t in todo_responses], "total": total}, CACHE_TTL_TODO_LIST)
     return schemas.TodoListResponse(todos=todo_responses, total=total)

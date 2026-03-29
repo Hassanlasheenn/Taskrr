@@ -15,6 +15,7 @@ import { SharedTableComponent } from "../../../shared/components/shared-table/sh
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
 import { TodoColumnsComponent, ITodoStatusChange } from "../../../shared/components/todo-columns/todo-columns.component";
 import { TodoDetailDialogService } from "../../../core/services/todo-detail-dialog.service";
+import { getTodoType, enrichTodoTypes, enrichTodo } from "../../../shared/helpers/todo-type.helper";
 
 @Component({
     selector: 'app-user-details',
@@ -92,9 +93,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
     loadTableTodos(): void {
         if (!this.userData) return;
-        let todos = [...this.userData.todos];
+        
+        // 1. Enrich before filtering to ensure types are correct (e.g. Work Item -> Story)
+        let todos = enrichTodoTypes([...this.userData.todos], this.allTodos);
 
-        // Apply filters client-side
+        // 2. Apply filters client-side
         if (this.tableFilter.title) {
             const search = this.tableFilter.title.toLowerCase();
             todos = todos.filter(t => t.title.toLowerCase().includes(search));
@@ -103,10 +106,12 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
             todos = todos.filter(t => t.priority === this.tableFilter.priority);
         }
         if (this.tableFilter.status) {
+            // Match normalized status
             todos = todos.filter(t => t.status === this.tableFilter.status);
         }
         if (this.tableFilter.type) {
-            todos = todos.filter(t => t.type === this.tableFilter.type);
+            // Use getTodoType which now sees the enriched .type property
+            todos = todos.filter(t => getTodoType(t as any) === this.tableFilter.type);
         }
         if (this.tableFilter.created_from) {
             const from = new Date(this.tableFilter.created_from);
@@ -210,8 +215,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
                 next: (usersWithTodos) => {
                     const found = usersWithTodos.find(u => u.user.id === this.userId);
                     if (found) {
-                        this.userData = found;
                         this.allTodos = usersWithTodos.flatMap(u => u.todos);
+                        // Enrich with context of all todos across all users if needed
+                        const enrichedTodos = enrichTodoTypes(found.todos as ITodo[], this.allTodos as ITodo[]);
+                        this.userData = { ...found, todos: enrichedTodos as any };
+                        
                         if (this.viewMode === 'table') {
                             this.loadTableTodos();
                         }
@@ -246,10 +254,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this._destroy$))
             .subscribe({
                 next: (updatedTodo) => {
+                    const enriched = enrichTodo(updatedTodo, this.allTodos);
                     if (this.userData) {
                         const idx = this.userData.todos.findIndex(t => t.id === todo.id);
                         if (idx !== -1) {
-                            this.userData.todos[idx] = { ...this.userData.todos[idx], ...updatedTodo };
+                            this.userData.todos[idx] = { ...this.userData.todos[idx], ...enriched };
                             this.userData = { ...this.userData, todos: [...this.userData.todos] };
                         }
                     }
@@ -270,10 +279,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this._destroy$))
             .subscribe({
                 next: (updatedTodo) => {
+                    const enriched = enrichTodo(updatedTodo, this.allTodos);
                     if (this.userData) {
                         const idx = this.userData.todos.findIndex(t => t.id === event.todo.id);
                         if (idx !== -1) {
-                            this.userData.todos[idx] = { ...this.userData.todos[idx], ...updatedTodo };
+                            this.userData.todos[idx] = { ...this.userData.todos[idx], ...enriched };
                             this.userData = { ...this.userData, todos: [...this.userData.todos] };
                         }
                     }

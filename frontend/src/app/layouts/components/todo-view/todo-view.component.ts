@@ -30,7 +30,7 @@ import { InputTypes, ValidatorTypes } from "../../../shared/enums";
 
 import { PasteImageDirective } from "../../../shared/directives/paste-image.directive";
 import { parseToMinutes, minutesToEstimate } from "../../../shared/helpers/time-estimate.helper";
-import { getTodoType, getTodoTypeLabel, getTodoTypeIcon, TodoType } from "../../../shared/helpers/todo-type.helper";
+import { getTodoType, getTodoTypeLabel, getTodoTypeIcon, TodoType, enrichTodoTypes, enrichTodo } from "../../../shared/helpers/todo-type.helper";
 
 @Component({
     selector: 'app-todo-view',
@@ -345,31 +345,18 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         this.initialFormValue = null;
 
         this._loaderService.show();
-        this._todoService.getTodo(userId, todoId).subscribe({
+        this._todoService.getTodo(userId, todoId, true).subscribe({
             next: (response) => {
-                this.todo = response as ITodo;
-
-                const formValue = {
-                    assigned_to_user_id: this.todo.assigned_to_user_id || null,
-                    status: this.todo.status || 'new',
-                    priority: this.todo.priority || 'medium',
-                    description: this.todo.description || '',
-                    due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : '',
-                    time_estimate: this.todo.time_estimate || '',
-                    time_logged: this.todo.time_logged || ''
-                };
-
-                this.todoForm.patchValue(formValue);
-                this.initialFormValue = { ...formValue };
-                this.subtasks = (response.subtasks as ITodo[]) || [];
+                const todo = response as ITodo;
+                const subtasks = todo.subtasks || [];
                 
-                const type = getTodoType(this.todo);
-                if (type === 'project' || type === 'story') {
-                    this.commentHistoryTab = 'subtasks';
-                } else {
-                    this.commentHistoryTab = 'comments';
-                }
+                // Manually set the type based on the helper logic
+                todo.type = getTodoType(todo, subtasks);
+                
+                this.todo = todo;
+                this.subtasks = subtasks;
 
+                this._updateFormAndTabs();
                 this._loadMentionableUsers();
                 this._loadComments();
                 this._loaderService.hide();
@@ -380,6 +367,29 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 this._router.navigate([LayoutPaths.DASHBOARD]);
             }
         });
+    }
+
+    private _updateFormAndTabs(): void {
+        if (!this.todo) return;
+
+        const formValue = {
+            assigned_to_user_id: this.todo.assigned_to_user_id || null,
+            status: this.todo.status || 'new',
+            priority: this.todo.priority || 'medium',
+            description: this.todo.description || '',
+            due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : '',
+            time_estimate: this.todo.time_estimate || '',
+            time_logged: this.todo.time_logged || ''
+        };
+
+        this.todoForm.patchValue(formValue);
+        this.initialFormValue = { ...formValue };
+
+        if (this.todoType === 'project' || this.todoType === 'story') {
+            this.commentHistoryTab = 'subtasks';
+        } else {
+            this.commentHistoryTab = 'comments';
+        }
     }
 
     ngOnDestroy(): void {
@@ -633,32 +643,31 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     onOpenSubtaskForm(): void {
         this.subtaskToEdit = null;
         this.isSubtaskSidebarOpen = true;
-        if (this.subtaskFormComponent) {
-            this.subtaskFormComponent.resetForm();
-        }
     }
 
     onEditSubtask(subtask: ITodo): void {
         this.subtaskToEdit = subtask;
         this.isSubtaskSidebarOpen = true;
-        
-        // Wait for sidebar to open and form component to be ready
-        setTimeout(() => {
-            if (this.subtaskFormComponent) {
-                this.subtaskFormComponent.populateForm(subtask);
-            }
-        }, 200);
     }
 
     onSubtaskUpdateSubmit(event: { id: number; data: ITodoUpdate }): void {
         if (!this.userId) return;
         this._todoService.updateTodo(this.userId, event.id, event.data).subscribe({
             next: (updated) => {
-                this.subtasks = this.subtasks.map(s => s.id === event.id ? { ...s, ...updated } : s);
+                const existing = this.subtasks.find(s => s.id === event.id);
+                const enriched = enrichTodo({ ...existing, ...updated } as ITodo, [this.todo, ...this.subtasks]);
+                
+                this.subtasks = this.subtasks.map(s => s.id === event.id ? enriched : s);
+
+                if (this.todo) {
+                    this.todo.type = getTodoType(this.todo, this.subtasks);
+                }
+
                 this.isSubtaskSidebarOpen = false;
                 this.subtaskToEdit = null;
+                this._toastService.success('Subtask updated');
             },
-            error: () => this._toastService.show('Failed to update task', 'error')
+            error: (err) => this._toastService.error(err?.error?.detail || 'Failed to update subtask')
         });
     }
 
@@ -666,26 +675,39 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         if (!this.userId || !this.todo) return;
         this._todoService.createSubtask(this.userId, this.todo.id, todoData).subscribe({
             next: (subtask) => {
-                this.subtasks = [...this.subtasks, subtask];
-                if (this.todo) this.todo.subtask_count = (this.todo.subtask_count || 0) + 1;
+                const enriched = enrichTodo(subtask, [this.todo, ...this.subtasks]);
+                this.subtasks = [...this.subtasks, enriched];
+                if (this.todo) {
+                    this.todo.subtask_count = (this.todo.subtask_count || 0) + 1;
+                    this.todo.type = getTodoType(this.todo, this.subtasks);
+                }
                 this.isSubtaskSidebarOpen = false;
+                this._toastService.success('Subtask created');
             },
-            error: () => this._toastService.show('Failed to add task', 'error')
+            error: (err) => this._toastService.error(err?.error?.detail ||'Failed to add subtask')
         });
     }
 
     onSubtaskAdded(subtask: ITodo): void {
-        this.subtasks = [...this.subtasks, subtask];
-        if (this.todo) this.todo.subtask_count = (this.todo.subtask_count || 0) + 1;
+        const enriched = enrichTodo(subtask, [this.todo, ...this.subtasks]);
+        this.subtasks = [...this.subtasks, enriched];
+        if (this.todo) {
+            this.todo.subtask_count = (this.todo.subtask_count || 0) + 1;
+            this.todo.type = getTodoType(this.todo, this.subtasks);
+        }
     }
 
     onSubtaskDeleted(subtaskId: number): void {
         this.subtasks = this.subtasks.filter(s => s.id !== subtaskId);
-        if (this.todo) this.todo.subtask_count = Math.max(0, (this.todo.subtask_count || 0) - 1);
+        if (this.todo) {
+            this.todo.subtask_count = Math.max(0, (this.todo.subtask_count || 0) - 1);
+            this.todo.type = getTodoType(this.todo, this.subtasks);
+        }
     }
 
     onSubtaskUpdated(subtask: ITodo): void {
-        this.subtasks = this.subtasks.map(s => s.id === subtask.id ? subtask : s);
+        const enriched = enrichTodo(subtask, [this.todo, ...this.subtasks]);
+        this.subtasks = this.subtasks.map(s => s.id === enriched.id ? enriched : s);
     }
 
     getHistoryActionLabel(action: string): string {
