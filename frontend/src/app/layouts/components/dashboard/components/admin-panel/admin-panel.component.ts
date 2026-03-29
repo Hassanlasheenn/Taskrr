@@ -26,6 +26,12 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     trackById = trackById;
     isAdmin: boolean = false;
 
+    // Pagination
+    skip: number = 0;
+    readonly limit: number = 6;
+    hasMore: boolean = true;
+    loadingMore: boolean = false;
+
     constructor(
         private readonly _adminService: AdminService,
         private readonly _loaderService: LoaderService,
@@ -52,25 +58,47 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
             )
             .subscribe((notification) => {
                 if (notification.todo_id) {
-                    this.loadUsersWithTodos();
+                    this.refreshData();
                 }
             });
     }
 
     loadUsersWithTodos(): void {
-        this._loaderService.show();
-        this._adminService.getUsersWithTodos()
+        if (this.skip === 0) this._loaderService.show();
+        else this.loadingMore = true;
+
+        this._adminService.getUsersWithTodos(this.skip, this.limit)
             .pipe(takeUntil(this._destroy$))
             .subscribe({
                 next: (data) => {
-                    this.usersWithTodos = data;
+                    if (this.skip === 0) {
+                        this.usersWithTodos = data;
+                    } else {
+                        this.usersWithTodos = [...this.usersWithTodos, ...data];
+                    }
+                    
+                    this.hasMore = data.length === this.limit;
                     this._loaderService.hide();
+                    this.loadingMore = false;
                 },
                 error: (error) => {
                     this._loaderService.hide();
+                    this.loadingMore = false;
                     this._toastService.error(error?.error?.detail || 'Failed to load users and todos');
                 }
             });
+    }
+
+    loadMore(): void {
+        if (this.loadingMore || !this.hasMore) return;
+        this.skip += this.limit;
+        this.loadUsersWithTodos();
+    }
+
+    refreshData(): void {
+        this.skip = 0;
+        this.hasMore = true;
+        this.loadUsersWithTodos();
     }
 
     getCompletedCount(userId: number): number {

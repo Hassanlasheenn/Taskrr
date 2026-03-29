@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, EventEmitter, HostListener, Input, OnChan
 import { AuthService } from "../../../auth/services";
 import { ITodo } from "../../../core/interfaces/todo.interface";
 import { trackById } from "../../../shared/helpers/trackByFn.helper";
+import { getTodoType, getTodoTypeLabel, getTodoTypeIcon } from "../../../shared/helpers/todo-type.helper";
 import { TodoStatus as FilterStatus } from "../dashboard/components/status-filter/status-filter.component";
 import { DynamicFormComponent } from "../../../shared/components/dynamic-form/dynamic-form.component";
 import { FormGroup } from "@angular/forms";
@@ -38,6 +39,7 @@ export class TodoListComponent implements OnInit, OnChanges, OnDestroy {
     @Output() viewTodo = new EventEmitter<ITodo>();
     @Output() statusChange = new EventEmitter<FilterStatus>();
     @Output() priorityChange = new EventEmitter<string>();
+    @Output() addSubtask = new EventEmitter<ITodo>();
 
     private readonly _destroy$ = new Subject<void>();
     filterForm: FormGroup = new FormGroup({});
@@ -136,6 +138,10 @@ export class TodoListComponent implements OnInit, OnChanges, OnDestroy {
 
     onDeleteTodo(todo: ITodo): void {
         this.deleteTodo.emit(todo);
+    }
+
+    onAddSubtask(todo: ITodo): void {
+        this.addSubtask.emit(todo);
     }
 
     toggleActionsMenu(todoId: number): void {
@@ -337,4 +343,8 @@ export class TodoListComponent implements OnInit, OnChanges, OnDestroy {
         this._destroy$.next();
         this._destroy$.complete();
     }
+
+    getChipLabel(todo: any): string  { return getTodoTypeLabel(getTodoType(todo)); }
+    getChipIcon(todo: any): string   { return getTodoTypeIcon(getTodoType(todo)); }
+    getChipClass(todo: any): string  { return 'story-type-chip--' + getTodoType(todo); }
 }

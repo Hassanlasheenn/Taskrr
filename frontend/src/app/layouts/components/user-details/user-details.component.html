@@ -51,6 +51,7 @@
                     [unassignedTodos]="unassignedTodos"
                     [showUnassigned]="isAdmin && userData?.user?.role === 'admin'"
                     [todoViewPath]="layoutPaths.TODO_VIEW"
+                    [userId]="userId"
                     (edit)="onEditTodo($event)"
                     (delete)="onDeleteTodo($event)"
                     (statusChange)="onTodoStatusChange($event)"

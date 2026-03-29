@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, DateTime, Enum
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from .database import Base
 import enum
@@ -53,6 +53,7 @@ class Todo(Base):
     time_logged = Column(String(50), nullable=True)
     due_date = Column(DateTime(timezone=True), nullable=True)
     reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
+    type = Column(String(20), nullable=True, default='workitem')
     is_deleted = Column(Boolean, default=False, nullable=False)
     order_index = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -60,9 +61,17 @@ class Todo(Base):
     
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    
+    parent_id = Column(Integer, ForeignKey("todos.id"), nullable=True, index=True)
+
     user = relationship("User", back_populates="todos", foreign_keys=[user_id])
     assigned_to_user = relationship("User", foreign_keys=[assigned_to_user_id])
+    subtasks = relationship(
+        "Todo",
+        backref=backref("parent", remote_side="[Todo.id]"),
+        foreign_keys="[Todo.parent_id]",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
     comments = relationship("TodoComment", back_populates="todo", cascade="all, delete-orphan")
     comment_history = relationship("TodoCommentHistory", back_populates="todo", foreign_keys="[TodoCommentHistory.todo_id]", cascade="all, delete-orphan")
     field_history = relationship("TodoFieldHistory", back_populates="todo", foreign_keys="[TodoFieldHistory.todo_id]", cascade="all, delete-orphan")

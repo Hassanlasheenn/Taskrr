@@ -27,6 +27,7 @@ export class DashboardSideNavComponent implements OnInit {
 
     navItems: NavItem[] = [
         { section: DashboardSections.DASHBOARD, icon: 'bi-clipboard-check', label: 'Dashboard' },
+        { section: DashboardSections.STORIES, icon: 'bi-journal-bookmark-fill', label: 'Projects' },
         { section: DashboardSections.CALENDAR, icon: 'bi-calendar3', label: 'Calendar' },
         { section: DashboardSections.COMPLETED, icon: 'bi-check-circle', label: 'Completed' }
     ];

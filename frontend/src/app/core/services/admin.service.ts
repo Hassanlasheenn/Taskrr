@@ -30,9 +30,9 @@ export class AdminService {
             .pipe(take(1));
     }
 
-    getUsersWithTodos(): Observable<IUserWithTodos[]> {
+    getUsersWithTodos(skip: number = 0, limit: number = 6): Observable<IUserWithTodos[]> {
         return this._http
-            .get<IUserWithTodos[]>(API_URLS.admin.listUsersWithTodos, {
+            .get<IUserWithTodos[]>(`${API_URLS.admin.listUsersWithTodos}?skip=${skip}&limit=${limit}`, {
                 withCredentials: true
             })
             .pipe(take(1));

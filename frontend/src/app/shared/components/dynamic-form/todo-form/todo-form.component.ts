@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit, Input, OnDestroy, ElementRef } from "@angular/core";
+import { Component, Output, EventEmitter, OnInit, OnDestroy, Input, inject, OnChanges, SimpleChanges } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule, FormGroup } from "@angular/forms";
 import { DynamicFormComponent } from "../dynamic-form.component";
@@ -6,13 +6,14 @@ import { ReactiveFormService } from "../../../services/reactive-form.service";
 import { IFieldControl } from "../../../interfaces/IFieldControl.interface";
 import { InputTypes } from "../../../enums/input-types.enum";
 import { ValidatorTypes } from "../../../enums/validator-types.enum";
-import { ITodo, ITodoCreate, ITodoUpdate, TodoStatus } from "../../../../core/interfaces/todo.interface";
+import { ITodo, ITodoCreate, ITodoUpdate } from "../../../../core/interfaces/todo.interface";
 import { UserService } from "../../../../core/services/user.service";
 import { IUserListResponse } from "../../../../auth/interfaces";
 import { Subject, takeUntil } from "rxjs";
 import { AuthService } from "../../../../auth/services/auth.service";
+import { TodoService } from "../../../../core/services/todo.service";
 import { trackById } from "../../../helpers/trackByFn.helper";
-
+import { getTodoType } from "../../../helpers/todo-type.helper";
 import { ClickThrottleDirective } from "../../../directives/click-throttle.directive";
 
 @Component({
@@ -22,8 +23,17 @@ import { ClickThrottleDirective } from "../../../directives/click-throttle.direc
     standalone: true,
     imports: [CommonModule, FormsModule, DynamicFormComponent, ClickThrottleDirective],
 })
-export class TodoFormComponent implements OnInit, OnDestroy {
+export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
+    private readonly _formService = inject(ReactiveFormService);
+    private readonly _userService = inject(UserService);
+    private readonly _authService = inject(AuthService);
+    private readonly _todoService = inject(TodoService);
+
     @Input() editingTodo: ITodo | null = null;
+    @Input() parentId: number | null = null;
+    @Input() parentTodo: ITodo | null = null;
+    @Input() hideTimeEstimate: boolean = false;
+    @Input() forcedType: string | null = null;
     @Output() submitTodo = new EventEmitter<ITodoCreate>();
     @Output() updateTodo = new EventEmitter<{ id: number; data: ITodoUpdate }>();
     @Output() cancel = new EventEmitter<void>();
@@ -39,101 +49,250 @@ export class TodoFormComponent implements OnInit, OnDestroy {
 
     availableCategories: string[] = ['Work', 'Personal', 'Shopping', 'Health', 'Learning', 'Other'];
 
-    fields: IFieldControl[] = [
-        {
-            label: 'Title',
-            type: InputTypes.TEXT,
-            formControlName: 'title',
-            placeholder: 'Enter todo title',
-            value: '',
-            required: true,
-            validations: [
-                { type: ValidatorTypes.REQUIRED, message: 'Title is required' },
-                { type: ValidatorTypes.MINLENGTH, message: 'Title must be at least 3 characters', value: 3 }
-            ],
-        },
-        {
-            label: 'Description',
-            type: InputTypes.TEXTAREA,
-            formControlName: 'description',
-            placeholder: 'Enter description',
-            value: '',
-            required: false,
-            validations: [],
-            showImagePreviews: true,
-            imagePreviewMode: 'carousel',
-            showAttachHint: true
-        },
-        {
-            label: 'Time Estimate',
-            type: InputTypes.TIME_ESTIMATE,
-            formControlName: 'time_estimate',
-            placeholder: 'e.g., 1w 2d 3h 30m',
-            value: '',
-            required: false,
-            validations: []
-        },
-        {
-            label: 'Category',
-            type: InputTypes.DROPDOWN,
-            formControlName: 'category',
-            placeholder: 'Select category',
-            value: '',
-            required: false,
-            options: this.availableCategories.map(cat => ({ key: cat, value: cat })),
-            validations: [],
-        },
-        {
-            label: 'Priority',
-            type: InputTypes.DROPDOWN,
-            formControlName: 'priority',
-            placeholder: 'Select priority',
-            value: 'medium',
-            required: true,
-            options: [
-                { key: 'low', value: 'Low' },
-                { key: 'medium', value: 'Medium' },
-                { key: 'high', value: 'High' }
-            ],
-            validations: [
-                { type: ValidatorTypes.REQUIRED, message: 'Priority is required' }
-            ],
-        },
-        {
-            label: 'Due Date',
-            type: InputTypes.DATE,
-            formControlName: 'due_date',
-            placeholder: 'Select due date',
-            value: '',
-            required: false,
-            validations: [],
-        },
-        {
-            label: 'Assign To',
-            type: InputTypes.DROPDOWN,
-            formControlName: 'assigned_to_user_id',
-            placeholder: 'Select user',
-            value: null,
-            required: true,
-            validations: [
-                { type: ValidatorTypes.REQUIRED, message: 'Assignee is required' }
-            ],
-            options: [],
-        },
-    ];
+    fields: IFieldControl[] = [];
 
-    constructor(
-        private readonly _formService: ReactiveFormService,
-        private readonly _userService: UserService,
-        private readonly _authService: AuthService
-    ) {}
+    private _getDefaultFields(): IFieldControl[] {
+        return [
+            {
+                label: 'Title',
+                type: InputTypes.TEXT,
+                formControlName: 'title',
+                placeholder: 'Enter todo title',
+                value: '',
+                required: true,
+                validations: [
+                    { type: ValidatorTypes.REQUIRED, message: 'Title is required' },
+                    { type: ValidatorTypes.MINLENGTH, message: 'Title must be at least 3 characters', value: 3 }
+                ],
+            },
+            {
+                label: 'Type',
+                type: InputTypes.DROPDOWN,
+                formControlName: 'type',
+                placeholder: 'Select type',
+                value: 'workitem',
+                required: true,
+                options: [
+                    { key: 'project', value: 'Project' },
+                    { key: 'story', value: 'Story' },
+                    { key: 'workitem', value: 'Work Item' },
+                    { key: 'task', value: 'Task' }
+                ],
+                validations: [
+                    { type: ValidatorTypes.REQUIRED, message: 'Type is required' }
+                ],
+            },
+            {
+                label: 'Description',
+                type: InputTypes.TEXTAREA,
+                formControlName: 'description',
+                placeholder: 'Enter description',
+                value: '',
+                required: false,
+                validations: [],
+                showImagePreviews: true,
+                imagePreviewMode: 'carousel',
+                showAttachHint: true
+            },
+            {
+                label: 'Time Estimate',
+                type: InputTypes.TIME_ESTIMATE,
+                formControlName: 'time_estimate',
+                placeholder: 'e.g., 1w 2d 3h 30m',
+                value: '',
+                required: false,
+                validations: []
+            },
+            {
+                label: 'Category',
+                type: InputTypes.DROPDOWN,
+                formControlName: 'category',
+                placeholder: 'Select category',
+                value: '',
+                required: false,
+                options: this.availableCategories.map(cat => ({ key: cat, value: cat })),
+                validations: [],
+            },
+            {
+                label: 'Priority',
+                type: InputTypes.DROPDOWN,
+                formControlName: 'priority',
+                placeholder: 'Select priority',
+                value: 'medium',
+                required: true,
+                options: [
+                    { key: 'low', value: 'Low' },
+                    { key: 'medium', value: 'Medium' },
+                    { key: 'high', value: 'High' }
+                ],
+                validations: [
+                    { type: ValidatorTypes.REQUIRED, message: 'Priority is required' }
+                ],
+            },
+            {
+                label: 'Due Date',
+                type: InputTypes.DATE,
+                formControlName: 'due_date',
+                placeholder: 'Select due date',
+                value: '',
+                required: false,
+                validations: [],
+            },
+            {
+                label: 'Assign To',
+                type: InputTypes.DROPDOWN,
+                formControlName: 'assigned_to_user_id',
+                placeholder: 'Select user',
+                value: null,
+                required: true,
+                validations: [
+                    { type: ValidatorTypes.REQUIRED, message: 'Assignee is required' }
+                ],
+                options: [],
+            },
+        ];
+    }
 
     ngOnInit(): void {
         this.isAdmin = this._authService.isAdmin();
+        this.loadUsers();
+        this.initForm();
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if ((changes['parentId'] || changes['forcedType'] || changes['hideTimeEstimate']) && !this.isEditMode) {
+            this.initForm();
+        }
+    }
+
+    initForm(): void {
+        this.fields = this._getDefaultFields();
+        
+        if (this.hideTimeEstimate) {
+            this.fields = this.fields.filter(f => f.formControlName !== 'time_estimate');
+        }
+        
+        // Set initial type based on parentId or forcedType
+        const typeField = this.fields.find(f => f.formControlName === 'type');
+        if (typeField) {
+            if (this.forcedType) {
+                typeField.value = this.forcedType;
+                typeField.disabled = true;
+                // Filter options to only show the forced type
+                const forcedOption = typeField.options?.find(opt => opt.key === this.forcedType);
+                if (forcedOption) {
+                    typeField.options = [forcedOption];
+                }
+            } else if (!this.isEditMode && !this.editingTodo) {
+                if (this.parentId) {
+                    typeField.value = 'task'; 
+                } else {
+                    typeField.value = 'workitem';
+                }
+            }
+        }
+
         this._updateFieldsForMode();
         this.form = this._formService.initializeForm(this.fields);
-        this.loadUsers();
+        this.updateUserDropdownField();
         this._watchCategoryChanges();
+        this._watchTypeChanges();
+        
+        if (this.isEditMode && this.editingTodo) {
+            this._handleParentField(this.editingTodo.type || 'workitem');
+        } else if (this.parentId || this.forcedType) {
+            this._handleParentField(this.form.get('type')?.value);
+        }
+    }
+
+    private _watchTypeChanges(): void {
+        this.form.get('type')?.valueChanges
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(type => {
+                this._handleParentField(type);
+            });
+    }
+
+    private _handleParentField(type: string): void {
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+
+        if (type === 'task') {
+            this._loadPotentialParents(userId, 'story', 'Link to Story');
+        } else if (type === 'story') {
+            this._loadPotentialParents(userId, 'project', 'Link to Project');
+        } else {
+            this._removeParentField();
+        }
+    }
+
+    private _loadPotentialParents(userId: number, type: string, label: string): void {
+        this._todoService.getTodos(userId, 0, 100).subscribe(res => {
+            const parents = res.todos.filter(t => getTodoType(t as any) === type);
+            let options: { key: string | number | null, value: string }[] = parents.map(p => ({ key: p.id, value: p.title }));
+            
+            if (type === 'project' && parents.length === 0) {
+                options = [{ key: 'create_default', value: '+ Create General Project' }];
+            }
+
+            this._addOrUpdateParentField(label, options);
+        });
+    }
+
+    private _addOrUpdateParentField(label: string, options: { key: any, value: string }[]): void {
+        const existingIndex = this.fields.findIndex(f => f.formControlName === 'parent_id');
+        
+        // Ensure the current parentId is in the options list so the label shows up
+        if (this.parentId && !options.some(o => o.key === this.parentId)) {
+            // Find parent title from input parentTodo or editingTodo's parent info
+            let title = 'Current Parent';
+            if (this.parentTodo && this.parentTodo.id === this.parentId) {
+                title = this.parentTodo.title;
+            } else if (this.editingTodo?.parent_id === this.parentId) {
+                // If editing, we might not have the parentTodo object, but could potentially have some info
+                title = 'Current Parent';
+            }
+            options.unshift({ key: this.parentId, value: title });
+        }
+
+        const parentField: IFieldControl = {
+            label: label,
+            type: InputTypes.DROPDOWN,
+            formControlName: 'parent_id',
+            placeholder: `Select ${label.split(' ').pop()}`,
+            value: this.parentId || null,
+            required: true,
+            options: options,
+            disabled: !!this.parentId, // Disable if we already have a parentId
+            validations: [
+                { type: ValidatorTypes.REQUIRED, message: `${label} is required` }
+            ]
+        };
+
+        if (existingIndex !== -1) {
+            this.fields[existingIndex] = parentField;
+            const ctrl = this.form.get('parent_id');
+            if (ctrl) {
+                ctrl.patchValue(this.parentId || null, { emitEvent: false });
+                if (!!this.parentId) {
+                    ctrl.disable({ emitEvent: false });
+                } else {
+                    ctrl.enable({ emitEvent: false });
+                }
+            }
+        } else {
+            const typeIndex = this.fields.findIndex(f => f.formControlName === 'type');
+            this.fields.splice(typeIndex + 1, 0, parentField);
+            this.form.addControl('parent_id', this._formService.createControl(parentField));
+        }
+    }
+
+    private _removeParentField(): void {
+        const index = this.fields.findIndex(f => f.formControlName === 'parent_id');
+        if (index !== -1) {
+            this.fields.splice(index, 1);
+            this.form.removeControl('parent_id');
+        }
     }
 
     private _watchCategoryChanges(): void {
@@ -148,7 +307,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         const customCategoryIndex = this.fields.findIndex(f => f.formControlName === 'custom_category');
         
         if (show && customCategoryIndex === -1) {
-            // Find category field index to insert below it
             const categoryIndex = this.fields.findIndex(f => f.formControlName === 'category');
             const insertIndex = categoryIndex !== -1 ? categoryIndex + 1 : 3;
             
@@ -173,7 +331,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     }
 
     private _updateFieldsForMode(): void {
-        // Find fields to update based on admin status and edit mode
         const userFieldIndex = this.fields.findIndex(f => f.formControlName === 'assigned_to_user_id');
         if (userFieldIndex !== -1) {
             if (this.isAdmin) {
@@ -187,7 +344,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             }
         }
 
-        // Add status field if in edit mode
         const statusFieldIndex = this.fields.findIndex(f => f.formControlName === 'status');
         if (this.isEditMode && statusFieldIndex === -1) {
             this.fields.push({
@@ -211,7 +367,6 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             this.fields.splice(statusFieldIndex, 1);
         }
 
-        // Non-admins cannot change priority in edit mode
         const priorityFieldIndex = this.fields.findIndex(f => f.formControlName === 'priority');
         if (priorityFieldIndex !== -1) {
             this.fields[priorityFieldIndex].disabled = this.isEditMode && !this.isAdmin;
@@ -265,13 +420,11 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 }
                 this.fields[userFieldIndex].options = [{ key: null, value: 'Unassigned' }, ...userOptions];
             } else {
-                // Non-admins can only assign to themselves
                 const selfOption = currentUser
                     ? [{ key: currentUser.id, value: `${currentUser.username} (Me)` }]
                     : [];
                 this.fields[userFieldIndex].options = selfOption;
 
-                // Auto-select self if no value is set
                 if (currentUser && !this.form.get('assigned_to_user_id')?.value) {
                     this.form.get('assigned_to_user_id')?.setValue(currentUser.id, { emitEvent: false });
                 }
@@ -287,16 +440,40 @@ export class TodoFormComponent implements OnInit, OnDestroy {
         }
 
         const formValue = this.form.value;
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+
+        if (formValue.type === 'story' && formValue.parent_id === 'create_default') {
+            const defaultProject: ITodoCreate = {
+                title: 'General Project',
+                type: 'project',
+                priority: 'medium',
+                description: 'Automatically created to house stories.'
+            };
+
+            this._todoService.createTodo(userId, defaultProject).subscribe(project => {
+                this._submitFinalTodo(formValue, project.id);
+            });
+            return;
+        }
+
+        this._submitFinalTodo(formValue, formValue.parent_id === 'create_default' ? null : formValue.parent_id);
+    }
+
+    private _submitFinalTodo(formValue: any, parentIdOverride?: number | null): void {
         const finalCategory = formValue.category === 'Other' ? formValue.custom_category : formValue.category;
-        
+        const parentId = (parentIdOverride !== undefined) ? parentIdOverride : (formValue.parent_id || this.parentId);
+
         const todoData: ITodoCreate = {
             title: formValue.title,
             description: formValue.description || undefined,
             due_date: formValue.due_date || undefined,
-            time_estimate: formValue.time_estimate || undefined,
+            time_estimate: this.hideTimeEstimate ? undefined : (formValue.time_estimate || undefined),
             priority: formValue.priority || 'medium',
+            type: formValue.type || 'workitem',
             category: finalCategory || undefined,
-            assigned_to_user_id: formValue.assigned_to_user_id === "null" ? null : formValue.assigned_to_user_id
+            assigned_to_user_id: formValue.assigned_to_user_id === "null" ? null : formValue.assigned_to_user_id,
+            parent_id: parentId ?? undefined,
         };
 
         if (this.isEditMode && this.editingTodo) {
@@ -304,10 +481,12 @@ export class TodoFormComponent implements OnInit, OnDestroy {
                 title: todoData.title,
                 description: todoData.description,
                 due_date: todoData.due_date !== undefined ? todoData.due_date : null,
-                time_estimate: todoData.time_estimate !== undefined ? todoData.time_estimate : null,
+                time_estimate: this.hideTimeEstimate ? undefined : (todoData.time_estimate !== undefined ? todoData.time_estimate : null),
                 category: todoData.category,
+                type: todoData.type,
                 status: formValue.status || 'new',
-                assigned_to_user_id: todoData.assigned_to_user_id
+                assigned_to_user_id: todoData.assigned_to_user_id,
+                parent_id: parentId !== undefined ? (parentId ?? null) : undefined,
             };
             
             if (this.isAdmin) {
@@ -330,22 +509,16 @@ export class TodoFormComponent implements OnInit, OnDestroy {
     resetForm(): void {
         this.isEditMode = false;
         this.editingTodo = null;
-        this._updateFieldsForMode();
-        this.form = this._formService.initializeForm(this.fields);
-        this.updateUserDropdownField();
         this.isSubmitted = false;
         this.errorSummary = null;
+        this.initForm();
     }
 
     populateForm(todo: ITodo): void {
         this.isEditMode = true;
         this.editingTodo = todo;
-        this._updateFieldsForMode();
-        this.form = this._formService.initializeForm(this.fields);
-        this._watchCategoryChanges();
-        this.updateUserDropdownField();
+        this.initForm();
 
-        // If the todo's category is not in the predefined list, it's a custom one
         const isCustomCategory = todo.category && !this.availableCategories.includes(todo.category);
         if (isCustomCategory) {
             this.toggleCustomCategoryField(true);
@@ -364,6 +537,7 @@ export class TodoFormComponent implements OnInit, OnDestroy {
 
         const formValue: any = {
             title: todo.title || '',
+            type: this.forcedType || todo.type || 'workitem',
             description: todo.description || '',
             due_date: todo.due_date ? todo.due_date.split('T')[0] : '',
             time_estimate: todo.time_estimate || '',
@@ -371,7 +545,8 @@ export class TodoFormComponent implements OnInit, OnDestroy {
             category: isCustomCategory ? 'Other' : (todo.category || ''),
             status: todo.status || 'new',
             assigned_to_user_id: todo.assigned_to_user_id || null,
-            custom_category: isCustomCategory ? todo.category : ''
+            custom_category: isCustomCategory ? todo.category : '',
+            parent_id: todo.parent_id || null
         };
         
         setTimeout(() => {

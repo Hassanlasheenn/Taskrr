@@ -39,12 +39,12 @@
         line-height: 1.4;
 
         &:hover:not(.active) {
-            background: var(--hover-background);
+            background: var(--btn-secondary-hover-bg);
             color: var(--text-primary);
         }
 
         &.active {
-            background: var(--accent-color, #4f8ef7);
+            background: var(--primary-color);
             color: #fff;
             border-color: transparent;
         }
@@ -81,12 +81,12 @@
         transition: all 0.15s ease;
 
         &:hover:not(:disabled):not(.active) {
-            background: var(--hover-background);
+            background: var(--btn-secondary-hover-bg);
             color: var(--text-primary);
         }
 
         &.active {
-            background: var(--accent-color, #4f8ef7);
+            background: var(--primary-color);
             color: #fff;
             border-color: transparent;
         }

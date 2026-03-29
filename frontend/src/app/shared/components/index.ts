@@ -7,3 +7,5 @@ export { NotFoundComponent } from './not-found/not-found.component';
 export { NotificationsComponent } from './notifications/notifications.component';
 export { TimeInputComponent } from './form-fields/time-input/time-input.component';
 export { ProgressBarComponent } from './progress-bar/progress-bar.component';
+export { SidebarComponent } from './sidebar/sidebar.component';
+export { SubtaskListComponent } from './subtask-list/subtask-list.component';

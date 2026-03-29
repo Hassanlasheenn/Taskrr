@@ -525,6 +525,47 @@
         border-radius: 6px;
     }
 
+    .story-type-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        color: var(--primary-color, #8b5cf6);
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 6px;
+        padding: 0.2rem 0.5rem;
+        width: fit-content;
+
+        i { font-size: 0.72rem; }
+
+        &--story {
+            color: var(--primary-color, #8b5cf6);
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        &--project {
+            color: #f97316;
+            background: rgba(249, 115, 22, 0.1);
+            border-color: rgba(249, 115, 22, 0.25);
+        }
+
+        &--workitem {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        &--task {
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+    }
+
     .assigned-to-section {
         display: flex;
         align-items: center;

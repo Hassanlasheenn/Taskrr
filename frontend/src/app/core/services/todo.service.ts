@@ -12,13 +12,15 @@ export class TodoService {
 
     constructor(private readonly _http: HttpClient) {}
 
-    getTodos(userId: number, skip: number = 0, limit: number = 100, sortOrder: 'asc' | 'desc' = 'desc', filter?: ITodoFilter): Observable<ITodoListResponse> {
+    getTodos(userId: number, skip: number = 0, limit: number = 100, sortOrder: 'asc' | 'desc' = 'desc', filter?: ITodoFilter, todoType?: string): Observable<ITodoListResponse> {
         let url = `${this._baseUrl}?user_id=${userId}&skip=${skip}&limit=${limit}&sort_order=${sortOrder}`;
         if (filter?.title) url += `&title=${encodeURIComponent(filter.title)}`;
         if (filter?.priority) url += `&priority=${encodeURIComponent(filter.priority)}`;
         if (filter?.status) url += `&status=${encodeURIComponent(filter.status)}`;
         if (filter?.created_from) url += `&created_from=${filter.created_from}`;
         if (filter?.created_to) url += `&created_to=${filter.created_to}`;
+        if (filter?.type) url += `&todo_type=${encodeURIComponent(filter.type)}`;
+        if (todoType) url += `&todo_type=${encodeURIComponent(todoType)}`;
         return this._http
             .get<ITodoListResponse>(url, { withCredentials: true })
             .pipe(take(1));
@@ -122,6 +124,22 @@ export class TodoService {
     getTodoHistory(userId: number, todoId: number): Observable<ITodoHistoryResponse> {
         return this._http
             .get<ITodoHistoryResponse>(`${this._baseUrl}/${todoId}/history?user_id=${userId}`, {
+                withCredentials: true
+            })
+            .pipe(take(1));
+    }
+
+    getSubtasks(userId: number, todoId: number): Observable<ITodoListResponse> {
+        return this._http
+            .get<ITodoListResponse>(`${this._baseUrl}/${todoId}/subtasks?user_id=${userId}`, {
+                withCredentials: true
+            })
+            .pipe(take(1));
+    }
+
+    createSubtask(userId: number, parentId: number, subtask: ITodoCreate): Observable<ITodoResponse> {
+        return this._http
+            .post<ITodoResponse>(`${this._baseUrl}/${parentId}/subtasks?user_id=${userId}`, subtask, {
                 withCredentials: true
             })
             .pipe(take(1));

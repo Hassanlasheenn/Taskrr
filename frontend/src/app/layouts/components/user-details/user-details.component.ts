@@ -14,6 +14,7 @@ import { NavigationService } from "../../../core/services/navigation.service";
 import { SharedTableComponent } from "../../../shared/components/shared-table/shared-table.component";
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
 import { TodoColumnsComponent, ITodoStatusChange } from "../../../shared/components/todo-columns/todo-columns.component";
+import { TodoDetailDialogService } from "../../../core/services/todo-detail-dialog.service";
 
 @Component({
     selector: 'app-user-details',
@@ -48,7 +49,8 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         private readonly _navService: NavigationService,
         public readonly _authService: AuthService,
         private readonly _todoService: TodoService,
-        private readonly _confirmationDialog: ConfirmationDialogService
+        private readonly _confirmationDialog: ConfirmationDialogService,
+        private readonly _detailDialogService: TodoDetailDialogService
     ) {}
 
     ngOnInit(): void {
@@ -56,6 +58,18 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         if (savedViewMode === 'grid' || savedViewMode === 'table') {
             this.viewMode = savedViewMode;
         }
+
+        this._detailDialogService.todoUpdated$
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(updated => {
+                if (updated && this.userData) {
+                    const idx = this.userData.todos.findIndex(t => t.id === updated.id);
+                    if (idx !== -1) {
+                        this.userData.todos[idx] = { ...this.userData.todos[idx], ...updated } as any;
+                        this.userData = { ...this.userData };
+                    }
+                }
+            });
 
         this.isAdmin = this._authService.isAdmin();
         const idParam = this._route.snapshot.paramMap.get('id');
@@ -90,6 +104,9 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         }
         if (this.tableFilter.status) {
             todos = todos.filter(t => t.status === this.tableFilter.status);
+        }
+        if (this.tableFilter.type) {
+            todos = todos.filter(t => t.type === this.tableFilter.type);
         }
         if (this.tableFilter.created_from) {
             const from = new Date(this.tableFilter.created_from);

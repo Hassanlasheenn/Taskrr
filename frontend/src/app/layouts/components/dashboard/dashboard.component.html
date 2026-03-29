@@ -1,7 +1,19 @@
 <section class="dashboard-wrapper">
     <div class="dashboard-container">
         <div class="dashboard-content d-flex flex-column">
-            <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.COMPLETED && activeSection !== DashboardSections.USER_MANAGEMENT && activeSection !== DashboardSections.ADMIN_PANEL" class="dashboard-header d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
+            <!-- Projects & Stories header -->
+            <div *ngIf="activeSection === DashboardSections.STORIES && !selectedStory && !selectedProject" class="dashboard-header d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
+                <div class="greeting-container">
+                    <h1 class="user-name">Projects</h1>
+                </div>
+                <div class="dashboard-actions d-flex align-items-center gap-2">
+                    <button type="button" class="add-task-btn" (click)="onAddTodo()" title="Add New Project">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.COMPLETED && activeSection !== DashboardSections.USER_MANAGEMENT && activeSection !== DashboardSections.ADMIN_PANEL && activeSection !== DashboardSections.STORIES" class="dashboard-header d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
                 <div class="greeting-container">
                     <span class="time-greeting">{{ timeBasedGreeting }},</span>
                     <h1 class="user-name">{{ (userData?.username | titlecase) }}</h1>
@@ -46,6 +58,198 @@
             />
 
             <div *ngIf="activeSection !== DashboardSections.CALENDAR && activeSection !== DashboardSections.USER_MANAGEMENT && activeSection !== DashboardSections.ADMIN_PANEL" class="todo-list-wrapper">
+
+                <!-- Stories View -->
+                <ng-container *ngIf="activeSection === DashboardSections.STORIES">
+
+                    <!-- Level 3: Story Kanban (tasks within a story) -->
+                    <ng-container *ngIf="selectedStory">
+                        <div class="story-detail-header">
+                            <button type="button" class="story-back-btn" (click)="onBackToStories()">
+                                <i class="bi bi-arrow-left"></i>
+                                {{ selectedProject ? selectedProject.title : 'Projects' }}
+                            </button>
+                            <div class="story-detail-title-row">
+                                <div class="story-detail-title">
+                                    <i class="bi" [ngClass]="getStoryTypeIcon(selectedStory)"></i>
+                                    <span>{{ getStoryTypeLabel(selectedStory) }}: {{ selectedStory.title }}</span>
+                                    <span class="story-detail-count">{{ storySubtasks.length }} task{{ storySubtasks.length !== 1 ? 's' : '' }}</span>
+                                </div>
+                                <button type="button" class="add-task-btn" (click)="onAddSubtask(selectedStory)" title="Add Task">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div *ngIf="loadingStorySubtasks" class="stories-loading">
+                            <span class="spinner-border spinner-border-sm"></span>
+                            Loading tasks...
+                        </div>
+                        <app-todo-columns
+                            *ngIf="!loadingStorySubtasks && storySubtasks.length > 0"
+                            [todos]="storySubtasks"
+                            [todoViewPath]="LayoutPaths.TODO_VIEW"
+                            [userId]="_authService.getCurrentUserId()"
+                            [showAddSubtask]="false"
+                            (edit)="onEditTodo($event)"
+                            (delete)="onDeleteTodo($event)"
+                            (statusChange)="onTodoStatusChange($event)"
+                        />
+                        <div *ngIf="!loadingStorySubtasks && storySubtasks.length === 0" class="stories-empty">
+                            <i class="bi bi-inbox"></i>
+                            <p>No tasks yet.</p>
+                            <span>Click <strong>Add Task</strong> to add tasks to this story.</span>
+                        </div>
+                    </ng-container>
+
+                    <!-- Level 2: Project detail (stories within the project) -->
+                    <ng-container *ngIf="selectedProject && !selectedStory">
+                        <div class="story-detail-header">
+                            <button type="button" class="story-back-btn" (click)="onBackFromProject()">
+                                <i class="bi bi-arrow-left"></i>
+                                Projects &amp; Stories
+                            </button>
+                            <div class="story-detail-title-row">
+                                <div class="story-detail-title">
+                                    <i class="bi bi-layers-fill" style="color: #f97316;"></i>
+                                    <span>Project: {{ selectedProject.title }}</span>
+                                    <span class="story-detail-count">{{ projectStories.length }} stor{{ projectStories.length !== 1 ? 'ies' : 'y' }}</span>
+                                </div>
+                                <button type="button" class="add-task-btn" (click)="onAddSubtask(selectedProject)" title="Add Story to Project">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <app-todo-columns
+                            *ngIf="projectStories.length > 0"
+                            [todos]="projectStories"
+                            [todoViewPath]="LayoutPaths.TODO_VIEW"
+                            [userId]="_authService.getCurrentUserId()"
+                            [showAddSubtask]="true"
+                            (edit)="onEditTodo($event)"
+                            (delete)="onDeleteTodo($event)"
+                            (statusChange)="onTodoStatusChange($event)"
+                            (addSubtask)="onSelectStory($event)"
+                        />
+
+                        <div *ngIf="projectStories.length === 0" class="stories-empty">
+                            <i class="bi bi-journal-bookmark"></i>
+                            <p>No stories in this project yet.</p>
+                            <span>Click <strong>+</strong> to add a story to this project.</span>
+                        </div>
+                    </ng-container>
+                    <!-- Level 1: Landing — Projects + Stories -->
+                    <ng-container *ngIf="!selectedProject && !selectedStory">
+
+                        <div *ngIf="filteredTodos.length === 0 && !classifyingStories" class="stories-empty">
+                            <i class="bi bi-journal-bookmark"></i>
+                            <p>No stories or projects yet.</p>
+                            <span>Add tasks to any task from the Dashboard to turn it into a Story.</span>
+                        </div>
+
+                        <!-- Projects group -->
+                        <div *ngIf="projectTodos.length > 0" class="stories-group">
+                            <div class="stories-group__header">
+                                <i class="bi bi-layers-fill"></i>
+                                <span>Projects</span>
+                                <span class="stories-group__count stories-group__count--project">{{ projectTodos.length }}</span>
+                            </div>
+                            <div class="stories-list">
+                                <div *ngFor="let project of projectTodos; trackBy: trackById" class="project-expandable-row">
+                                    <div
+                                        class="story-list-item story-list-item--project-main"
+                                        [ngClass]="'priority-' + project.priority"
+                                        (click)="onToggleProjectExpand(project, $event)"
+                                    >
+                                        <span class="story-list-item__dot" [ngClass]="'priority-' + project.priority"></span>
+                                        <div class="story-list-item__content">
+                                            <span class="story-list-item__title">{{ project.title }}</span>
+                                            <span class="story-list-item__tasks">
+                                                {{ project.subtask_count }} {{ project.subtask_count !== 1 ? 'stories' : 'story' }}
+                                            </span>
+                                        </div>
+                                        <i class="bi story-list-item__expand-icon" [ngClass]="isProjectExpanded(project.id) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                                    </div>
+
+                                    <!-- Inline Stories -->
+                                    <div class="project-inline-stories" *ngIf="isProjectExpanded(project.id)">
+                                        <div *ngIf="getProjectStories(project.id).length === 0" class="project-inline-stories__empty">
+                                            No stories linked to this project.
+                                        </div>
+                                        <div
+                                            *ngFor="let story of getProjectStories(project.id); trackBy: trackById"
+                                            class="story-list-item story-list-item--nested"
+                                            [ngClass]="'priority-' + story.priority"
+                                            (click)="onSelectStoryInProject(story, project)"
+                                        >
+                                            <span class="story-list-item__dot" [ngClass]="'priority-' + story.priority"></span>
+                                            <div class="story-list-item__content">
+                                                <span class="story-list-item__title">{{ story.title }}</span>
+                                                <div class="story-list-item__meta">
+                                                    <span class="story-list-item__type-chip story-list-item__type-chip--story">
+                                                        <i class="bi bi-journal-bookmark-fill"></i>
+                                                        Story
+                                                    </span>
+                                                    <span class="story-list-item__tasks">
+                                                        {{ story.subtask_count }} task{{ story.subtask_count !== 1 ? 's' : '' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <i class="bi bi-chevron-right story-list-item__arrow"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stories group -->
+                        <div class="stories-group" [class.stories-group--spaced]="projectTodos.length > 0">
+                            <div class="stories-group__header">
+                                <i class="bi bi-journal-bookmark-fill"></i>
+                                <span>Stories</span>
+                                <span class="stories-group__count stories-group__count--story">
+                                    <ng-container *ngIf="!classifyingStories">{{ plainStoryTodos.length }}</ng-container>
+                                    <span *ngIf="classifyingStories" class="spinner-border spinner-border-sm" style="width:12px;height:12px;border-width:2px;"></span>
+                                </span>
+                            </div>
+                            <div *ngIf="plainStoryTodos.length > 0" class="stories-list">
+                                <div
+                                    *ngFor="let story of plainStoryTodos; trackBy: trackById"
+                                    class="story-list-item"
+                                    [ngClass]="'priority-' + story.priority"
+                                    (click)="onSelectStory(story)"
+                                >
+                                    <span class="story-list-item__dot" [ngClass]="'priority-' + story.priority"></span>
+                                    <div class="story-list-item__content">
+                                        <span class="story-list-item__title">{{ story.title }}</span>
+                                        <div class="story-list-item__meta">
+                                            <span class="story-list-item__type-chip story-list-item__type-chip--story">
+                                                <i class="bi bi-journal-bookmark-fill"></i>
+                                                Story
+                                            </span>
+                                            <span *ngIf="story.category" class="story-list-item__tag">
+                                                <i class="bi bi-tag"></i>{{ story.category }}
+                                            </span>
+                                            <span class="story-list-item__tasks">
+                                                {{ story.subtask_count }} task{{ story.subtask_count !== 1 ? 's' : '' }}
+                                            </span>
+                                            <span class="story-list-item__status" [ngClass]="'status-' + story.status">
+                                                {{ story.status === 'inProgress' ? 'In Progress' : (story.status | titlecase) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-chevron-right story-list-item__arrow"></i>
+                                </div>
+                            </div>
+                            <div *ngIf="plainStoryTodos.length === 0 && !classifyingStories && filteredTodos.length > 0" class="stories-section-empty">
+                                <span>No standalone stories — all items are inside Projects.</span>
+                            </div>
+                        </div>
+
+                    </ng-container>
+
+                </ng-container>
+
                 <!-- Column Bars View -->
                 <app-todo-columns
                     *ngIf="activeSection === DashboardSections.DASHBOARD && viewMode === 'grid'"
@@ -53,10 +257,12 @@
                     [unassignedTodos]="unassignedTodos"
                     [showUnassigned]="isAdmin"
                     [todoViewPath]="LayoutPaths.TODO_VIEW"
+                    [userId]="_authService.getCurrentUserId()"
                     (edit)="onEditTodo($event)"
                     (delete)="onDeleteTodo($event)"
                     (statusChange)="onTodoStatusChange($event)"
                     (unassign)="onTodoUnassign($event)"
+                    (addSubtask)="onAddSubtask($event)"
                 />
 
                 <!-- Table View for Dashboard Section -->
@@ -78,9 +284,9 @@
 
                 <!-- Legacy List View for Completed Section -->
                 <div *ngIf="activeSection === DashboardSections.COMPLETED">
-                    <app-todo-list 
-                        [todos]="filteredTodos"
-                        [totalCount]="filteredTodos.length"
+                    <app-todo-list
+                        [todos]="completedTodos"
+                        [totalCount]="completedTotal"
                         [isCompletedSection]="true"
                         [showAddButton]="false"
                         [showIndex]="false"
@@ -95,9 +301,18 @@
                         (deleteTodo)="onDeleteTodo($event)"
                         (editTodo)="onEditTodo($event)"
                         (viewTodo)="onViewTodo($event)"
+                        (addSubtask)="onAddSubtask($event)"
                         (statusChange)="onStatusChange($event)"
                         (priorityChange)="onPriorityChange($event)"
                     />
+
+                    <div *ngIf="hasMoreCompleted" class="load-more-container mt-4 mb-5">
+                        <button (click)="loadMoreCompleted()" class="load-more-btn" [disabled]="loadingMoreCompleted">
+                            <i *ngIf="!loadingMoreCompleted" class="bi bi-plus-lg me-2"></i>
+                            <span *ngIf="loadingMoreCompleted" class="spinner-border spinner-border-sm me-2"></span>
+                            {{ loadingMoreCompleted ? 'Loading...' : 'Show More' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -113,6 +328,10 @@
     <app-todo-form
         #todoForm
         [editingTodo]="editingTodo"
+        [parentId]="parentIdForSubtask"
+        [parentTodo]="parentTodoForSubtask"
+        [hideTimeEstimate]="_shouldHideTimeEstimate"
+        [forcedType]="_forcedTodoType"
         (submitTodo)="onTodoSubmit($event)"
         (updateTodo)="onTodoUpdate($event)"
         (cancel)="onSidebarClose()"

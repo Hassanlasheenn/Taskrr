@@ -1,0 +1,81 @@
+<div class="subtask-list">
+
+    <!-- Header -->
+    <div class="subtask-list-header">
+        <span class="subtask-count-label">
+            <i class="bi bi-diagram-3"></i>
+            {{ labels.plural }}
+            <span class="subtask-badge">{{ subtasks.length }}</span>
+        </span>
+        <button type="button" class="subtask-add-btn" (click)="openAddForm.emit()">
+            <i class="bi bi-plus-lg"></i>
+            Add {{ labels.singular }}
+        </button>
+    </div>
+
+    <!-- Progress bar -->
+    <div *ngIf="subtasks.length > 0" class="subtask-progress-wrap">
+        <div class="subtask-progress-bar-track">
+            <div class="subtask-progress-bar-fill" [style.width.%]="completionPercent"></div>
+        </div>
+        <span class="subtask-progress-label">{{ doneCount }}/{{ subtasks.length }} done</span>
+    </div>
+
+    <!-- Subtask rows -->
+    <ul *ngIf="subtasks.length > 0" class="subtask-items">
+        <li
+            *ngFor="let subtask of subtasks; trackBy: trackById"
+            class="subtask-item"
+            [class.subtask-done]="subtask.status === 'done'"
+        >
+            <!-- Status toggle -->
+            <button
+                type="button"
+                class="subtask-status-btn"
+                (click)="onToggleStatus(subtask)"
+                [attr.aria-label]="subtask.status === 'done' ? 'Mark incomplete' : 'Mark done'"
+            >
+                <i class="bi" [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+            </button>
+
+            <!-- Title -->
+            <span class="subtask-title" (click)="onViewSubtask(subtask)">{{ subtask.title }}</span>
+
+            <!-- Assignee -->
+            <div class="subtask-assignee" *ngIf="subtask.assigned_to_user_id; else unassignedBadge">
+                <i class="bi bi-person-fill"></i>
+                <span>{{ subtask.assigned_to_username }}</span>
+            </div>
+            <ng-template #unassignedBadge>
+                <div class="subtask-assignee subtask-assignee--unassigned">
+                    <i class="bi bi-person-x-fill"></i>
+                    <span>Unassigned</span>
+                </div>
+            </ng-template>
+
+            <!-- Edit -->
+            <button
+                type="button"
+                class="subtask-action-btn"
+                (click)="editSubtask.emit(subtask)"
+                aria-label="Edit subtask"
+            >
+                <i class="bi bi-pencil"></i>
+            </button>
+
+            <!-- Delete -->
+            <button
+                type="button"
+                class="subtask-action-btn subtask-action-btn--delete"
+                (click)="onDeleteSubtask(subtask)"
+                aria-label="Delete subtask"
+            >
+                <i class="bi bi-trash"></i>
+            </button>
+        </li>
+    </ul>
+
+    <p *ngIf="subtasks.length === 0" class="subtask-empty">
+        No {{ labels.plural.toLowerCase() }} yet. Click <strong>Add {{ labels.singular }}</strong> to get started.
+    </p>
+</div>

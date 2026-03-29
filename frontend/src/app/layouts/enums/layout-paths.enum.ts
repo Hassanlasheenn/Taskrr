@@ -1,5 +1,6 @@
 export enum LayoutPaths {
     DASHBOARD = '',
+    STORIES = 'stories',
     CALENDAR = 'calendar',
     COMPLETED = 'completed',
     ADMIN_PANEL = 'admin-panel',

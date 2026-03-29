@@ -41,6 +41,8 @@ from migrations.add_created_at_index import run_migration as migration21
 from migrations.add_password_reset_fields import run_migration as migration22
 from migrations.add_time_estimate_column import run_migration as migration23
 from migrations.add_time_logged_column import run_migration as migration24
+from migrations.add_parent_id_column import run_migration as migration25
+from migrations.add_type_column import run_migration as migration26
 
 from app.database import engine
 
@@ -78,6 +80,8 @@ def run_all_migrations():
         ("Add password reset fields", migration22),
         ("Add time_estimate column", migration23),
         ("Add time_logged column", migration24),
+        ("Add parent_id column for subtasks", migration25),
+        ("Add type column for todo classification", migration26),
     ]
     
     # We don't open a session here because each migration opens its own

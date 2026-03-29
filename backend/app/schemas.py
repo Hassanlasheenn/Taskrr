@@ -66,22 +66,26 @@ class TodoCreate(BaseModel):
     description: Optional[str] = None
     priority: PriorityLevel = PriorityLevel.MEDIUM
     status: Optional[TodoStatus] = TodoStatus.NEW
+    type: Optional[str] = 'workitem'
     category: Optional[str] = None
     time_estimate: Optional[str] = None
     time_logged: Optional[str] = None
     due_date: Optional[datetime] = None
     assigned_to_user_id: Optional[int] = None
+    parent_id: Optional[int] = None
 
 class TodoUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     status: Optional[TodoStatus] = None
     priority: Optional[PriorityLevel] = None
+    type: Optional[str] = None
     category: Optional[str] = None
     time_estimate: Optional[str] = None
     time_logged: Optional[str] = None
     due_date: Optional[datetime] = None
     assigned_to_user_id: Optional[int] = None
+    parent_id: Optional[int] = None
 
 class TodoResponse(BaseModel):
     id: int
@@ -89,6 +93,7 @@ class TodoResponse(BaseModel):
     description: Optional[str] = None
     status: str
     priority: str
+    type: Optional[str] = 'workitem'
     category: Optional[str] = None
     time_estimate: Optional[str] = None
     time_logged: Optional[str] = None
@@ -101,6 +106,9 @@ class TodoResponse(BaseModel):
     user_id: int
     assigned_to_user_id: Optional[int] = None
     assigned_to_username: Optional[str] = None
+    parent_id: Optional[int] = None
+    subtask_count: int = 0
+    subtasks: Optional[List["TodoResponse"]] = None
 
     class Config:
         from_attributes = True
@@ -111,6 +119,9 @@ class TodoResponse(BaseModel):
         if value is None:
             return None
         return value.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+TodoResponse.model_rebuild()
 
 class TodoListResponse(BaseModel):
     todos: List[TodoResponse]

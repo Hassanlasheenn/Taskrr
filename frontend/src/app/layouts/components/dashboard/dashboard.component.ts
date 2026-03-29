@@ -23,6 +23,8 @@ import { SharedTableComponent } from "../../../shared/components/shared-table/sh
 import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
 import { PosthogService } from "../../../core/services";
 import { TodoColumnsComponent, ITodoStatusChange } from "../../../shared/components/todo-columns/todo-columns.component";
+import { getTodoType, getTodoTypeLabel, getTodoTypeIcon } from "../../../shared/helpers/todo-type.helper";
+import { TodoDetailDialogService } from "../../../core/services/todo-detail-dialog.service";
 
 @Component({
     selector: 'app-dashboard',
@@ -51,7 +53,49 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     totalTodos: number = 0;
     isSidebarOpen: boolean = false;
     editingTodo: ITodo | null = null;
+    parentIdForSubtask: number | null = null;
+    parentTodoForSubtask: ITodo | null = null;
     activeSection: DashboardSections = DashboardSections.DASHBOARD;
+
+    // Stories
+    selectedStory: ITodo | null = null;
+    storySubtasks: ITodo[] = [];
+    loadingStorySubtasks = false;
+    selectedProject: ITodo | null = null;
+    projectStories: ITodo[] = [];
+    classifyingStories = false;
+    private _storyChildCache = new Map<number, ITodo[]>();
+    _expandedProjectIds = new Set<number>();
+
+    onToggleProjectExpand(project: ITodo, event: MouseEvent): void {
+        event.stopPropagation();
+        if (this._expandedProjectIds.has(project.id)) {
+            this._expandedProjectIds.delete(project.id);
+        } else {
+            this._expandedProjectIds.add(project.id);
+            if (!this._storyChildCache.has(project.id)) {
+                const userId = this._authService.getCurrentUserId();
+                if (!userId) return;
+                this._todoService.getSubtasks(userId, project.id)
+                    .pipe(takeUntil(this._destroy$))
+                    .subscribe({
+                        next: (res) => {
+                            this._storyChildCache.set(project.id, res.todos as ITodo[]);
+                        }
+                    });
+            }
+        }
+    }
+
+    isProjectExpanded(projectId: number): boolean {
+        return this._expandedProjectIds.has(projectId);
+    }
+
+    getProjectStories(projectId: number): ITodo[] {
+        const children = this._storyChildCache.get(projectId) || [];
+        return children.filter(t => t.type === 'story' || (t.subtask_count ?? 0) > 0);
+    }
+
     DashboardSections = DashboardSections;
     searchQuery: string = '';
     activeStatus: FilterStatus = 'all';
@@ -62,6 +106,14 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     collapsedSections: Set<string> = new Set();
     isAdmin: boolean = false;
     viewMode: 'grid' | 'table' = 'grid';
+
+    // Completed section pagination
+    completedTodos: ITodo[] = [];
+    completedTotal: number = 0;
+    completedSkip: number = 0;
+    readonly completedLimit: number = 6;
+    hasMoreCompleted: boolean = true;
+    loadingMoreCompleted: boolean = false;
 
     // Table-view pagination state (separate from grid data)
     tableTodos: ITodo[] = [];
@@ -80,7 +132,8 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         private readonly _confirmationDialog: ConfirmationDialogService,
         private readonly _router: Router,
         private readonly _navService: NavigationService,
-        private readonly _posthogService: PosthogService
+        private readonly _posthogService: PosthogService,
+        private readonly _detailDialogService: TodoDetailDialogService
     ) {}
 
     ngOnInit(): void {
@@ -104,6 +157,40 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 this._syncSectionWithUrl();
             });
 
+        this._detailDialogService.todoUpdated$
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(updated => {
+                if (updated) {
+                    const idx = this.todos.findIndex(t => t.id === updated.id);
+                    const parentChanged = idx !== -1 && this.todos[idx].parent_id !== updated.parent_id;
+                    const oldParentId = idx !== -1 ? this.todos[idx].parent_id : null;
+                    const newParentId = updated.parent_id;
+
+                    if (idx !== -1) {
+                        this.todos[idx] = { ...updated };
+                        this.todos = [...this.todos];
+                    } else {
+                        this.loadTodos();
+                    }
+
+                    if (parentChanged) {
+                        if (oldParentId) this._storyChildCache.delete(oldParentId);
+                        if (newParentId) this._storyChildCache.delete(newParentId);
+                        
+                        if (this.selectedProject && (this.selectedProject.id === oldParentId || this.selectedProject.id === newParentId)) {
+                            this.onSelectProject(this.selectedProject);
+                        }
+                        this.loadTodos();
+                    }
+
+                    const compIdx = this.completedTodos.findIndex(t => t.id === updated.id);
+                    if (compIdx !== -1) {
+                        this.completedTodos[compIdx] = { ...updated };
+                        this.completedTodos = [...this.completedTodos];
+                    }
+                }
+            });
+
         this._notificationService.notificationEvents$
             .pipe(
                 debounceTime(300),
@@ -124,6 +211,9 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             next: (response) => {
                 this.todos = response.todos as ITodo[];
                 this.totalTodos = response.total;
+                if (this.activeSection === DashboardSections.STORIES) {
+                    this._loadStoryClassification();
+                }
             },
             error: (error) => {
                 this._toastService.error(error?.error?.detail || 'Failed to load todos');
@@ -131,8 +221,111 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         });
     }
 
+    loadCompletedTodos(isLoadMore: boolean = false): void {
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+
+        if (!isLoadMore) {
+            this.completedSkip = 0;
+            this.hasMoreCompleted = true;
+        }
+        
+        this.loadingMoreCompleted = true;
+        this._todoService.getTodos(userId, this.completedSkip, this.completedLimit, 'desc', { status: 'done' })
+            .pipe(takeUntil(this._destroy$))
+            .subscribe({
+                next: (response) => {
+                    const newTodos = response.todos as ITodo[];
+                    if (isLoadMore) {
+                        this.completedTodos = [...this.completedTodos, ...newTodos];
+                    } else {
+                        this.completedTodos = newTodos;
+                    }
+                    this.completedTotal = response.total;
+                    this.hasMoreCompleted = this.completedTodos.length < this.completedTotal;
+                    this.loadingMoreCompleted = false;
+                },
+                error: (error) => {
+                    this.loadingMoreCompleted = false;
+                    this._toastService.error(error?.error?.detail || 'Failed to load completed todos');
+                }
+            });
+    }
+
+    loadMoreCompleted(): void {
+        if (this.loadingMoreCompleted || !this.hasMoreCompleted) return;
+        this.completedSkip += this.completedLimit;
+        this.loadCompletedTodos(true);
+    }
+
     get sidebarTitle(): string {
-        return this.editingTodo ? 'Edit Todo' : 'Add New Todo';
+        if (this.editingTodo) return 'Edit Todo';
+        
+        if (this.parentIdForSubtask) {
+            const parent = this.todos.find(t => t.id === this.parentIdForSubtask);
+            if (parent) {
+                const parentType = getTodoType(parent);
+                if (parentType === 'project') return 'Add Story';
+                if (parentType === 'story') return 'Add Task';
+            }
+            
+            // Fallback for STORIES section
+            if (this.activeSection === DashboardSections.STORIES) {
+                if (this.selectedProject && this.parentIdForSubtask === this.selectedProject.id) return 'Add Story';
+                if (this.selectedStory && this.parentIdForSubtask === this.selectedStory.id) return 'Add Task';
+            }
+            
+            return 'Add Task';
+        }
+
+        if (this.activeSection === DashboardSections.STORIES) {
+            return 'Add New Project';
+        }
+
+        return 'Add New Todo';
+    }
+
+    get _shouldHideTimeEstimate(): boolean {
+        if (this.activeSection !== DashboardSections.STORIES) return false;
+        
+        // If we have a parentId, it's either a new Story or a new Task
+        if (this.parentIdForSubtask) {
+            if (this.selectedStory && this.parentIdForSubtask === this.selectedStory.id) return false;
+            return true;
+        }
+
+        // If we are editing, check the todo's type
+        if (this.editingTodo) {
+            // Show time for stories and tasks, hide for projects
+            if (this.editingTodo.type === 'project') return true;
+            return false;
+        }
+
+        return true;
+    }
+
+    get _forcedTodoType(): string | null {
+        // If we have a parent, determine forced type based on parent's type
+        if (this.parentIdForSubtask) {
+            const parent = this.todos.find(t => t.id === this.parentIdForSubtask);
+            if (parent) {
+                const parentType = getTodoType(parent);
+                if (parentType === 'project') return 'story';
+                if (parentType === 'story') return 'task';
+            }
+            
+            // Fallback for STORIES section specifically if parent not in main list (e.g. nested navigation)
+            if (this.activeSection === DashboardSections.STORIES) {
+                if (this.selectedStory && this.parentIdForSubtask === this.selectedStory.id) return 'task';
+                if (this.selectedProject && this.parentIdForSubtask === this.selectedProject.id) return 'story';
+            }
+        }
+
+        if (this.activeSection === DashboardSections.STORIES && !this.parentIdForSubtask) {
+            return 'project';
+        }
+
+        return null;
     }
 
     get timeBasedGreeting(): string {
@@ -151,6 +344,8 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
 
     onAddTodo(): void {
         this.editingTodo = null;
+        this.parentIdForSubtask = null;
+        this.parentTodoForSubtask = null;
         this.isSidebarOpen = true;
     }
 
@@ -175,6 +370,8 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     private _closeSidebarInternal(): void {
         this.isSidebarOpen = false;
         this.editingTodo = null;
+        this.parentIdForSubtask = null;
+        this.parentTodoForSubtask = null;
         if (this.todoFormComponent) {
             this.todoFormComponent.resetForm();
         }
@@ -189,9 +386,23 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             .subscribe({
                 next: (newTodo) => {
                     this._closeSidebarInternal();
+                    // Invalidate cache for the parent project so it reloads its children
+                    const createdParentId = (newTodo as ITodo).parent_id;
+                    if (createdParentId) {
+                        this._storyChildCache.delete(createdParentId);
+                        
+                        // If we are currently viewing this parent project, refresh it
+                        if (this.selectedProject && this.selectedProject.id === createdParentId) {
+                            this.onSelectProject(this.selectedProject);
+                        }
+                    }
                     this.loadTodos();
                     if (this.viewMode === 'table') {
                         this.loadTableTodos();
+                    }
+                    // If we're in a story detail view, append the new task immediately
+                    if (this.selectedStory && (newTodo as ITodo).parent_id === this.selectedStory.id) {
+                        this.storySubtasks = [...this.storySubtasks, newTodo as ITodo];
                     }
                     this._toastService.success('Todo created successfully');
                     this._posthogService.capture('todo_created', {
@@ -233,10 +444,23 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             if (result.confirmed) {
                 this._todoService.deleteTodo(userId, todo.id).subscribe({
                     next: (response) => {
+                        const parentId = todo.parent_id;
+                        if (parentId) {
+                            this._storyChildCache.delete(parentId);
+                            if (this.selectedProject && this.selectedProject.id === parentId) {
+                                this.onSelectProject(this.selectedProject);
+                            }
+                        }
+
                         // Remove from the local lists entirely so it reflects on UI immediately
                         this.todos = this.todos.filter(t => t.id !== todo.id);
                         this.tableTodos = this.tableTodos.filter(t => t.id !== todo.id);
+                        this.storySubtasks = this.storySubtasks.filter(t => t.id !== todo.id);
                         
+                        if (parentId) {
+                            this.loadTodos();
+                        }
+
                         this._toastService.success(response?.message || 'Todo deleted successfully');
                         this._posthogService.capture('todo_deleted', { todo_id: todo.id });
                     },
@@ -255,14 +479,125 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
 
     onEditTodo(todo: ITodo): void {
         this.editingTodo = todo;
+        this.parentIdForSubtask = null;
         this.isSidebarOpen = true;
-        
+
         // Wait for sidebar to open and form component to be ready
         setTimeout(() => {
             if (this.todoFormComponent) {
                 this.todoFormComponent.populateForm(todo);
             }
         }, 200);
+    }
+
+    onAddSubtask(parentTodo: ITodo): void {
+        this.editingTodo = null;
+        this.parentIdForSubtask = parentTodo.id;
+        this.parentTodoForSubtask = parentTodo;
+        this.isSidebarOpen = true;
+    }
+
+    getStoryTypeLabel(story: ITodo): string {
+        const children = this._storyChildCache.get(story.id);
+        return getTodoTypeLabel(getTodoType(story, children));
+    }
+    getStoryTypeIcon(story: ITodo): string {
+        const children = this._storyChildCache.get(story.id);
+        return getTodoTypeIcon(getTodoType(story, children));
+    }
+    getListItemTypeLabel(story: ITodo): string {
+        const children = this._storyChildCache.get(story.id);
+        return getTodoTypeLabel(getTodoType(story, children));
+    }
+    getListItemTypeIcon(story: ITodo): string {
+        const children = this._storyChildCache.get(story.id);
+        return getTodoTypeIcon(getTodoType(story, children));
+    }
+
+    onSelectStory(story: ITodo): void {
+        this.selectedStory = story;
+        this.storySubtasks = [];
+        this.loadingStorySubtasks = true;
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+        this._todoService.getSubtasks(userId, story.id)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe({
+                next: (res) => {
+                    this.storySubtasks = res.todos as ITodo[];
+                    this.loadingStorySubtasks = false;
+                },
+                error: () => { this.loadingStorySubtasks = false; }
+            });
+    }
+
+    onSelectStoryInProject(story: ITodo, project: ITodo): void {
+        this.onSelectProject(project);
+        this.onSelectStory(story);
+    }
+
+    onBackToStories(): void {
+        this.selectedStory = null;
+        this.storySubtasks = [];
+    }
+
+    onSelectProject(project: ITodo): void {
+        this.selectedProject = project;
+        this.selectedStory = null;
+        this.storySubtasks = [];
+        const cached = this._storyChildCache.get(project.id);
+        if (cached) {
+            this.projectStories = cached;
+        } else {
+            const userId = this._authService.getCurrentUserId();
+            if (!userId) return;
+            this._todoService.getSubtasks(userId, project.id)
+                .pipe(takeUntil(this._destroy$))
+                .subscribe({
+                    next: (res) => {
+                        const children = res.todos as ITodo[];
+                        this._storyChildCache.set(project.id, children);
+                        this.projectStories = children;
+                    }
+                });
+        }
+    }
+
+    onBackFromProject(): void {
+        this.selectedProject = null;
+        this.projectStories = [];
+        this.selectedStory = null;
+        this.storySubtasks = [];
+    }
+
+    get projectTodos(): ITodo[] {
+        return this.filteredTodos.filter(t => t.type === 'project');
+    }
+
+    get plainStoryTodos(): ITodo[] {
+        return this.filteredTodos.filter(t => t.type !== 'project' && !t.parent_id);
+    }
+
+    private _loadStoryClassification(): void {
+        const stories = this.todos.filter(t => (t.subtask_count ?? 0) > 0);
+        if (!stories.length) { this.classifyingStories = false; return; }
+        const uncached = stories.filter(s => !this._storyChildCache.has(s.id));
+        if (!uncached.length) { this.classifyingStories = false; return; }
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+        this.classifyingStories = true;
+        let pending = uncached.length;
+        uncached.forEach(story => {
+            this._todoService.getSubtasks(userId, story.id)
+                .pipe(takeUntil(this._destroy$))
+                .subscribe({
+                    next: (res) => {
+                        this._storyChildCache.set(story.id, res.todos as ITodo[]);
+                        if (--pending === 0) this.classifyingStories = false;
+                    },
+                    error: () => { if (--pending === 0) this.classifyingStories = false; }
+                });
+        });
     }
 
     onTodoUpdate(event: { id: number; data: ITodoUpdate }): void {
@@ -272,9 +607,37 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         this._todoService.updateTodo(userId, event.id, event.data)
             .pipe(takeUntil(this._destroy$))
             .subscribe({
-                next: (response: any) => {
+                next: (updatedTodo: any) => {
                     this._closeSidebarInternal();
-                    this.loadTodos();
+                    // Invalidate cache for old and new parent so both reload their children
+                    const oldParentId = this.todos.find(t => t.id === event.id)?.parent_id;
+                    const newParentId = event.data.parent_id;
+                    if (oldParentId) this._storyChildCache.delete(oldParentId);
+                    if (newParentId) this._storyChildCache.delete(newParentId);
+
+                    // If we are currently viewing a project that was affected, refresh it
+                    if (this.selectedProject && (this.selectedProject.id === oldParentId || this.selectedProject.id === newParentId)) {
+                        this.onSelectProject(this.selectedProject);
+                    }
+
+                    // Update in main todos list
+                    const idx = this.todos.findIndex(t => t.id === event.id);
+                    const parentChanged = idx !== -1 && this.todos[idx].parent_id !== updatedTodo.parent_id;
+
+                    if (idx !== -1) {
+                        this.todos[idx] = { ...this.todos[idx], ...updatedTodo } as ITodo;
+                        this.todos = [...this.todos];
+                    }
+                    
+                    if (parentChanged || idx === -1) {
+                        this.loadTodos();
+                    }
+                    // Update in story subtasks if present
+                    const subIdx = this.storySubtasks.findIndex(t => t.id === event.id);
+                    if (subIdx !== -1) {
+                        this.storySubtasks[subIdx] = { ...this.storySubtasks[subIdx], ...updatedTodo } as ITodo;
+                        this.storySubtasks = [...this.storySubtasks];
+                    }
                     if (this.viewMode === 'table') {
                         this.loadTableTodos();
                     }
@@ -332,6 +695,12 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                     if (idx !== -1) {
                         this.todos[idx] = { ...this.todos[idx], ...updatedTodo } as ITodo;
                         this.todos = [...this.todos];
+                    }
+                    // Update in story subtasks if present
+                    const subIdx = this.storySubtasks.findIndex(t => t.id === event.todo.id);
+                    if (subIdx !== -1) {
+                        this.storySubtasks[subIdx] = { ...this.storySubtasks[subIdx], ...updatedTodo } as ITodo;
+                        this.storySubtasks = [...this.storySubtasks];
                     }
                     this._toastService.success(`Status updated to ${event.newStatus}${!event.todo.assigned_to_user_id ? ' and assigned to you' : ''}`);
                 },
@@ -411,10 +780,19 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         
         switch(url) {
             case LayoutPaths.CALENDAR: this.activeSection = DashboardSections.CALENDAR; break;
-            case LayoutPaths.COMPLETED: this.activeSection = DashboardSections.COMPLETED; break;
+            case LayoutPaths.STORIES:
+                this.activeSection = DashboardSections.STORIES;
+                this.selectedProject = null;
+                this.projectStories = [];
+                if (this.todos.length) this._loadStoryClassification();
+                break;
+            case LayoutPaths.COMPLETED:
+                this.activeSection = DashboardSections.COMPLETED;
+                this.loadCompletedTodos();
+                break;
             case LayoutPaths.ADMIN: this.activeSection = DashboardSections.USER_MANAGEMENT; break;
             case LayoutPaths.ADMIN_PANEL: this.activeSection = DashboardSections.ADMIN_PANEL; break;
-            case LayoutPaths.DASHBOARD: 
+            case LayoutPaths.DASHBOARD:
             case 'home':
             default: this.activeSection = DashboardSections.DASHBOARD; break;
         }
@@ -424,6 +802,10 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         this.activeStatus = 'all';
         this.activePriority = 'all';
         this.selectedCategory = null;
+        this.selectedProject = null;
+        this.projectStories = [];
+        this.selectedStory = null;
+        this.storySubtasks = [];
     }
 
     get unassignedCount(): number {
@@ -451,7 +833,6 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     get inProgressTodos(): ITodo[] { return this.filteredTodos.filter(t => t.status === 'inProgress'); }
     get newTodos(): ITodo[] { return this.filteredTodos.filter(t => t.status === 'new'); }
     get pausedTodos(): ITodo[] { return this.filteredTodos.filter(t => t.status === 'paused'); }
-    get completedTodos(): ITodo[] { return this.filteredTodos.filter(t => t.status === 'done'); }
 
     get combinedActiveTodos(): ITodo[] {
         return [...this.newTodos, ...this.inProgressTodos];
@@ -545,9 +926,21 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
             case DashboardSections.COMPLETED:
                 filtered = filtered.filter(todo => todo.status === 'done');
                 break;
+            case DashboardSections.STORIES:
+                filtered = filtered.filter(todo => 
+                    todo.type === 'project' || 
+                    todo.type === 'story' || 
+                    (todo.subtask_count ?? 0) > 0
+                );
+                if (!isAdmin) {
+                    filtered = filtered.filter(todo =>
+                        todo.assigned_to_user_id === userId || todo.user_id === userId
+                    );
+                }
+                break;
             case DashboardSections.DASHBOARD:
                 if (!isAdmin) {
-                    filtered = filtered.filter(todo => 
+                    filtered = filtered.filter(todo =>
                         todo.assigned_to_user_id === userId || todo.user_id === userId
                     );
                 }

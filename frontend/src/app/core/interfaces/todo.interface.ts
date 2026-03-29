@@ -5,11 +5,13 @@ export interface ITodoCreate {
     description?: string;
     priority: 'low' | 'medium' | 'high';
     status?: TodoStatus;
+    type?: 'project' | 'story' | 'workitem' | 'task';
     category?: string;
     due_date?: string;
     time_estimate?: string;
     time_logged?: string;
     assigned_to_user_id?: number | null;
+    parent_id?: number | null;
 }
 
 export interface ITodoUpdate {
@@ -17,11 +19,13 @@ export interface ITodoUpdate {
     description?: string;
     priority?: 'low' | 'medium' | 'high';
     status?: TodoStatus;
+    type?: 'project' | 'story' | 'workitem' | 'task';
     category?: string;
     due_date?: string | null;
     time_estimate?: string | null;
     time_logged?: string | null;
     assigned_to_user_id?: number | null;
+    parent_id?: number | null;
 }
 
 export interface ITodoResponse {
@@ -30,6 +34,7 @@ export interface ITodoResponse {
     description?: string;
     status: TodoStatus;
     priority: 'low' | 'medium' | 'high';
+    type?: 'project' | 'story' | 'workitem' | 'task';
     category?: string;
     due_date?: string;
     time_estimate?: string;
@@ -41,6 +46,9 @@ export interface ITodoResponse {
     user_id: number;
     assigned_to_user_id?: number | null;
     assigned_to_username?: string | null;
+    parent_id?: number | null;
+    subtask_count?: number;
+    subtasks?: ITodoResponse[];
 }
 
 export interface ITodoListResponse {
@@ -54,6 +62,7 @@ export interface ITodo {
     description?: string;
     status: TodoStatus;
     priority: 'low' | 'medium' | 'high';
+    type?: 'project' | 'story' | 'workitem' | 'task';
     category?: string;
     due_date?: string;
     time_estimate?: string;
@@ -65,6 +74,9 @@ export interface ITodo {
     user_id?: number;
     assigned_to_user_id?: number | null;
     assigned_to_username?: string | null;
+    parent_id?: number | null;
+    subtask_count?: number;
+    subtasks?: ITodo[];
 }
 
 export interface ITodoComment {
@@ -122,6 +134,7 @@ export interface ITodoFilter {
     title?: string;
     priority?: string;
     status?: string;
+    type?: string;
     created_from?: string;
     created_to?: string;
 }

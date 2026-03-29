@@ -25,6 +25,7 @@ export const routes: Routes = [
     
     // Dashboard Sections
     { path: LayoutPaths.DASHBOARD, component: DashboardComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard], pathMatch: 'full' },
+    { path: LayoutPaths.STORIES, component: DashboardComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard] },
     { path: LayoutPaths.COMPLETED, component: DashboardComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard] },
     { path: LayoutPaths.CALENDAR, component: DashboardComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard] },
     { path: LayoutPaths.ADMIN_PANEL, component: DashboardComponent, canActivate: [authGuard, adminGuard], canDeactivate: [canDeactivateGuard] },

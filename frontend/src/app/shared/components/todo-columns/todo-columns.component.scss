@@ -204,6 +204,46 @@
         min-height: 2.5rem; // always provides a drop target
     }
 
+    &__load-more {
+        display: flex;
+        justify-content: center;
+        padding: 0.5rem 0;
+        background: transparent;
+    }
+
+    &__load-more-btn {
+        padding: 0.4rem 1rem;
+        border-radius: 12px;
+        border: none;
+        background: transparent;
+        color: var(--primary-color, #8b5cf6);
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        box-shadow: none;
+
+        &:hover:not(:disabled) {
+            background: rgba(139, 92, 246, 0.08);
+            color: var(--primary-dark, #7c3aed);
+            transform: translateY(-1px);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .spinner-border {
+            width: 0.8rem;
+            height: 0.8rem;
+            border-width: 1.5px;
+        }
+    }
+
     &__empty {
         display: flex;
         flex-direction: column;
@@ -228,6 +268,10 @@
 // ── Todo bar item ────────────────────────────────────────────────
 .tc-item {
     display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
     align-items: flex-start;
     gap: 0.45rem;
     padding: 0.5rem 0.55rem;
@@ -245,7 +289,15 @@
     &:hover {
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.11);
         transform: translateY(-1px);
-        .tc-item__actions  { opacity: 1; }
+        
+        .tc-item__header {
+            margin-top: 1.8rem; // Push title down to make room for actions
+        }
+
+        .tc-item__actions  { 
+            opacity: 1;
+            transform: translateY(0);
+        }
         .tc-item__drag-handle { opacity: 0.5; }
     }
 
@@ -272,17 +324,30 @@
         padding-top: 3px;
         transition: opacity 0.15s ease;
         touch-action: none;
+        position: absolute;
+        left: 0.55rem;
+        top: 0.5rem;
 
         @media (max-width: 767px) { display: none; } // touch drag works without visible handle
     }
 
+    // ── Header (Dot + Title) ─────────────────────────────────────
+    &__header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        flex: 1;
+        min-width: 0;
+        transition: margin-top 0.2s ease;
+    }
+
     // ── Priority dot ─────────────────────────────────────────────
     &__dot {
-        width: 7px;
-        height: 7px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         flex-shrink: 0;
-        margin-top: 5px;
+        margin-top: 6px;
 
         &.priority-high   { background: #ef4444; }
         &.priority-medium { background: #f59e0b; }
@@ -291,25 +356,189 @@
 
     // ── Text body ────────────────────────────────────────────────
     &__body {
-        flex: 1;
+        flex: 0 0 100%;
+        order: 2;
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 0.35rem;
+        padding-left: 1.3rem; // Align with title after dot + gap
+        margin-top: 0.1rem;
     }
 
     &__title {
         margin: 0;
-        font-size: 0.8rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.45;
+        word-break: break-word;
+        display: block;
+        overflow: visible;
+        letter-spacing: -0.01em;
+    }
+
+    &__story-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        color: var(--primary-color, #8b5cf6);
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 5px;
+        padding: 0.15rem 0.4rem;
+        width: fit-content;
+        white-space: nowrap;
+
+        i { font-size: 0.68rem; }
+
+        &--story {
+            color: var(--primary-color, #8b5cf6);
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        &--project {
+            color: #f97316;
+            background: rgba(249, 115, 22, 0.1);
+            border-color: rgba(249, 115, 22, 0.25);
+        }
+
+        &--workitem {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        &--task {
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+    }
+
+    &__subtask-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        width: 100%;
+        padding: 0.3rem 0.4rem;
+        margin-top: 0.25rem;
+        border: 1px dashed rgba(139, 92, 246, 0.3);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 0.7rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        white-space: nowrap;
+
+        i { font-size: 0.7rem; }
+
+        span { flex: 1; text-align: left; }
+
+        &:hover {
+            background: rgba(139, 92, 246, 0.06);
+            border-color: rgba(139, 92, 246, 0.5);
+            color: var(--primary-color, #8b5cf6);
+        }
+    }
+
+    &__subtask-toggle-chevron {
+        font-size: 0.6rem !important;
+        transition: transform 0.2s;
+    }
+
+    // ── Inline subtask list ───────────────────────────────────────
+    &__subtasks {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        border-top: 1px solid var(--card-border-color);
+        margin-top: 0.35rem;
+        padding-top: 0.35rem;
+    }
+
+    &__subtasks-loading {
+        display: flex;
+        justify-content: center;
+        padding: 0.4rem 0;
+        color: var(--text-secondary);
+
+        .spinner-border { width: 0.9rem; height: 0.9rem; border-width: 2px; }
+    }
+
+    &__subtask-row {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.35rem;
+        border-radius: 5px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.12s;
+
+        &:hover {
+            background: var(--card-border-color);
+
+            .tc-item__subtask-arrow { opacity: 1; }
+        }
+
+        &--done {
+            .tc-item__subtask-title { text-decoration: line-through; opacity: 0.45; }
+            .tc-item__subtask-status { color: var(--primary-color, #8b5cf6); }
+        }
+    }
+
+    &__subtask-status {
+        flex-shrink: 0;
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+    }
+
+    &__subtask-assignee {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        background: var(--bg-soft, #f1f5f9);
+        color: var(--text-secondary);
+        font-size: 0.6rem;
+        font-weight: 600;
+        white-space: nowrap;
+        border: 1px solid var(--card-border-color);
+        margin: 0 0.2rem;
+
+        i { font-size: 0.65rem; }
+
+        :host-context(body.dark-theme) & {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+    }
+
+    &__subtask-title {
+        flex: 1;
+        font-size: 0.75rem;
         font-weight: 600;
         color: var(--text-primary);
         line-height: 1.35;
         word-break: break-word;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        // Clamping is overridden by .tc-col--expanded .tc-item__title (CSS parent selector)
+        overflow: visible;
+    }
+
+    &__subtask-arrow {
+        flex-shrink: 0;
+        font-size: 0.65rem;
+        color: var(--text-secondary);
+        opacity: 0;
+        transition: opacity 0.15s;
     }
 
     &__meta {
@@ -383,15 +612,33 @@
 
     // ── Action buttons ───────────────────────────────────────────
     &__actions {
+        position: absolute;
+        top: 0.4rem;
+        right: 0.5rem;
         display: flex;
         align-items: center;
         gap: 0.1rem;
         flex-shrink: 0;
         opacity: 0;
-        transition: opacity 0.15s ease;
-        padding-top: 1px;
+        transform: translateY(-5px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        padding: 0.15rem;
+        background: var(--card-color-solid, var(--bg-card, #fff));
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        z-index: 5;
 
-        @media (max-width: 767px) { opacity: 1; }
+        @media (max-width: 767px) { 
+            opacity: 1;
+            position: static;
+            box-shadow: none;
+            padding: 0;
+            margin-top: 0.25rem;
+            width: 100%;
+            justify-content: flex-end;
+            order: 5;
+            transform: none;
+        }
     }
 
     &__btn {

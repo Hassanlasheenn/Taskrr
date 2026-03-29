@@ -27,5 +27,13 @@
             <i class="bi bi-people"></i>
             <p>No users found</p>
         </div>
+
+        <div *ngIf="hasMore" class="load-more-container">
+            <button (click)="loadMore()" class="load-more-btn" [disabled]="loadingMore">
+                <i *ngIf="!loadingMore" class="bi bi-plus-lg me-2"></i>
+                <span *ngIf="loadingMore" class="spinner-border spinner-border-sm me-2"></span>
+                {{ loadingMore ? 'Loading...' : 'Show More' }}
+            </button>
+        </div>
     </div>
 </div>

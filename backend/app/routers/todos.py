@@ -65,13 +65,14 @@ def get_todos(
     status: Optional[str] = None,
     created_from: Optional[str] = None,
     created_to: Optional[str] = None,
+    todo_type: Optional[str] = None,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     _ensure_time_estimate_column(db)
     sort_order = sort_order.lower() if sort_order.lower() in ("asc", "desc") else "desc"
-    has_filters = any([title, priority, status, created_from, created_to])
-    cache_key = f"{PREFIX_TODOS_LIST}{user_id}:{skip}:{limit}:{sort_order}:{title or ''}:{priority or ''}:{status or ''}:{created_from or ''}:{created_to or ''}"
+    has_filters = any([title, priority, status, created_from, created_to, todo_type])
+    cache_key = f"{PREFIX_TODOS_LIST}{user_id}:{skip}:{limit}:{sort_order}:{title or ''}:{priority or ''}:{status or ''}:{created_from or ''}:{created_to or ''}:{todo_type or ''}"
     if not has_filters:
         cached = cache_get(cache_key)
         if cached is not None:
@@ -79,21 +80,24 @@ def get_todos(
                 todos=[schemas.TodoResponse(**t) for t in cached["todos"]],
                 total=cached["total"],
             )
-    # Admins see their own assigned todos PLUS todos with no assignee (unassigned column).
-    # Regular users only see todos assigned to them.
+    # When filtering by type, skip the parent_id=None constraint so nested items are included.
     if current_user.role == "admin":
-        todo_filter = and_(
+        base_filter = and_(
             or_(
                 models.Todo.assigned_to_user_id == user_id,
                 models.Todo.assigned_to_user_id == None
             ),
-            models.Todo.is_deleted == False
+            models.Todo.is_deleted == False,
         )
     else:
-        todo_filter = and_(
+        base_filter = and_(
             models.Todo.assigned_to_user_id == user_id,
-            models.Todo.is_deleted == False
+            models.Todo.is_deleted == False,
         )
+    if todo_type:
+        todo_filter = and_(base_filter, models.Todo.type == todo_type)
+    else:
+        todo_filter = and_(base_filter, models.Todo.parent_id == None)
     if title:
         todo_filter = and_(todo_filter, models.Todo.title.ilike(f"%{title}%"))
     if priority:
@@ -148,18 +152,39 @@ async def create_todo(
         if user.role != models.UserRole.ADMIN.value and assigned_to_user.role != models.UserRole.USER.value:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Non-admin users can only assign todos to regular users")
 
+    if todo.parent_id:
+        parent = db.query(models.Todo).filter(
+            models.Todo.id == todo.parent_id,
+            models.Todo.is_deleted == False
+        ).first()
+        if not parent:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent task not found")
+        # Allow up to 2 levels: project → story → task.
+        # Reject only if the grandparent itself already has a parent (3+ levels).
+        if parent.parent_id is not None:
+            grandparent = db.query(models.Todo).filter(
+                models.Todo.id == parent.parent_id,
+                models.Todo.is_deleted == False
+            ).first()
+            if grandparent and grandparent.parent_id is not None:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Maximum nesting depth of 2 levels exceeded")
+        if not _can_access_todo(parent, user_id, db):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot add subtask to this task")
+
     db_todo = models.Todo(
         title=todo.title,
         description=todo.description,
         priority=todo.priority.value,
         status=todo.status.value if todo.status else models.TodoStatus.NEW.value,
+        type=todo.type or 'workitem',
         category=todo.category,
         time_estimate=todo.time_estimate,
         time_logged=todo.time_logged,
         due_date=todo.due_date,
         order_index=next_index,
         user_id=user_id,
-        assigned_to_user_id=todo.assigned_to_user_id
+        assigned_to_user_id=todo.assigned_to_user_id,
+        parent_id=todo.parent_id,
     )
     db.add(db_todo)
     db.commit()
@@ -192,6 +217,8 @@ async def create_todo(
     invalidate_todo_list_for_user(user_id)
     if db_todo.assigned_to_user_id:
         invalidate_todo_list_for_user(db_todo.assigned_to_user_id)
+    if db_todo.parent_id:
+        invalidate_todo_detail(db_todo.parent_id)
     invalidate_admin_users_with_todos()
 
     return _build_todo_response(db_todo, db)
@@ -219,14 +246,19 @@ def _get_assigned_username(assigned_user_id: int | None, db: Session) -> str | N
     return assigned_user.username if assigned_user else None
 
 
-def _build_todo_response(todo_db: models.Todo, db: Session) -> schemas.TodoResponse:
+def _build_todo_response(todo_db: models.Todo, db: Session, include_subtasks: bool = False) -> schemas.TodoResponse:
     assigned_to_username = _get_assigned_username(todo_db.assigned_to_user_id, db)
+    active_subtasks = [s for s in todo_db.subtasks if not s.is_deleted]
+    subtasks_response = None
+    if include_subtasks:
+        subtasks_response = [_build_todo_response(s, db, include_subtasks=False) for s in active_subtasks]
     todo_dict = {
         "id": todo_db.id,
         "title": todo_db.title,
         "description": todo_db.description,
         "status": todo_db.status or models.TodoStatus.NEW.value,
         "priority": todo_db.priority,
+        "type": todo_db.type or 'workitem',
         "category": todo_db.category,
         "due_date": todo_db.due_date,
         "reminder_sent_at": todo_db.reminder_sent_at,
@@ -237,7 +269,10 @@ def _build_todo_response(todo_db: models.Todo, db: Session) -> schemas.TodoRespo
         "assigned_to_user_id": todo_db.assigned_to_user_id,
         "assigned_to_username": assigned_to_username,
         "time_estimate": todo_db.time_estimate,
-        "time_logged": todo_db.time_logged
+        "time_logged": todo_db.time_logged,
+        "parent_id": todo_db.parent_id,
+        "subtask_count": len(active_subtasks),
+        "subtasks": subtasks_response,
     }
     return schemas.TodoResponse(**todo_dict)
 
@@ -307,9 +342,44 @@ def get_todo(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to view this todo")
     if cached is not None:
         return schemas.TodoResponse(**cached)
-    response = _build_todo_response(todo_db, db)
+    response = _build_todo_response(todo_db, db, include_subtasks=True)
     cache_set(cache_key, response.model_dump(mode="json"), CACHE_TTL_TODO_DETAIL)
     return response
+
+
+@router.get("/{todo_id}/subtasks", response_model=schemas.TodoListResponse)
+def get_subtasks(
+    todo_id: int,
+    user_id: int,
+    db: Session = Depends(database.get_db),
+):
+    """Get all subtasks for a parent todo."""
+    parent = db.query(models.Todo).filter(
+        models.Todo.id == todo_id,
+        models.Todo.is_deleted == False
+    ).first()
+    if not parent:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    if not _can_access_todo(parent, user_id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
+    active_subtasks = [s for s in parent.subtasks if not s.is_deleted]
+    return schemas.TodoListResponse(
+        todos=[_build_todo_response(s, db) for s in active_subtasks],
+        total=len(active_subtasks),
+    )
+
+
+@router.post("/{todo_id}/subtasks", response_model=schemas.TodoResponse, status_code=status.HTTP_201_CREATED)
+async def create_subtask(
+    todo_id: int,
+    subtask: schemas.TodoCreate,
+    user_id: int,
+    db: Session = Depends(database.get_db),
+    _ = Depends(todo_limiter),
+):
+    """Create a subtask linked to a parent todo."""
+    subtask.parent_id = todo_id
+    return await create_todo(subtask, user_id, db, _)
 
 
 @router.get("/{todo_id}/comments", response_model=schemas.CommentListResponse)
@@ -766,6 +836,29 @@ async def update_todo(
         if todo_db.category != todo.category:
             changed_fields.append('category')
         todo_db.category = todo.category
+    if todo.type is not None:
+        todo_db.type = todo.type
+
+    provided_fields = todo.model_dump(exclude_unset=True)
+    if 'parent_id' in provided_fields:
+        new_parent_id = todo.parent_id
+        if new_parent_id is not None:
+            parent = db.query(models.Todo).filter(
+                models.Todo.id == new_parent_id,
+                models.Todo.is_deleted == False
+            ).first()
+            if not parent:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent task not found")
+            if new_parent_id == todo_id:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A todo cannot be its own parent")
+            if parent.parent_id is not None:
+                grandparent = db.query(models.Todo).filter(
+                    models.Todo.id == parent.parent_id,
+                    models.Todo.is_deleted == False
+                ).first()
+                if grandparent and grandparent.parent_id is not None:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Maximum nesting depth of 2 levels exceeded")
+        todo_db.parent_id = new_parent_id
 
     provided_fields = todo.model_dump(exclude_unset=True)
     if 'time_estimate' in provided_fields:
@@ -1004,6 +1097,19 @@ async def update_todo(
         new_val = (new_assignee.username if new_assignee else "Unassigned") if todo_db.assigned_to_user_id else "Unassigned"
         _add_field_history(db, todo_id, user_id, "assigned_to_user_id", old_val, new_val)
 
+    # Status propagation for subtasks
+    if status_changed and todo_db.parent_id:
+        parent = db.query(models.Todo).filter(models.Todo.id == todo_db.parent_id).first()
+        if parent:
+            sibling_statuses = [s.status for s in parent.subtasks if not s.is_deleted]
+            if all(s == models.TodoStatus.DONE.value for s in sibling_statuses):
+                parent.status = models.TodoStatus.DONE.value
+                db.commit()
+            elif todo_db.status != models.TodoStatus.DONE.value and parent.status == models.TodoStatus.DONE.value:
+                parent.status = models.TodoStatus.IN_PROGRESS.value
+                db.commit()
+            invalidate_todo_detail(todo_db.parent_id)
+
     invalidate_todo_detail(todo_id)
     invalidate_todo_list_for_user(todo_db.user_id)
     if todo_db.assigned_to_user_id:
@@ -1012,9 +1118,7 @@ async def update_todo(
         invalidate_todo_list_for_user(original_assigned_user_id)
     invalidate_admin_users_with_todos()
 
-
-
-    return _build_todo_response(todo_db, db)
+    return _build_todo_response(todo_db, db, include_subtasks=True)
 
 @router.delete("/{todo_id}")
 async def delete_todo(
@@ -1077,9 +1181,23 @@ async def delete_todo(
                     )
                 )
 
+    # Soft-delete all subtasks before deleting the parent
+    if not todo.parent_id:
+        subtask_ids = [s.id for s in todo.subtasks if not s.is_deleted]
+        if subtask_ids:
+            db.query(models.Todo).filter(
+                models.Todo.parent_id == todo_id
+            ).update({"is_deleted": True})
+            db.flush()
+            for sid in subtask_ids:
+                invalidate_todo_detail(sid)
+
+    parent_id = todo.parent_id
     db.delete(todo)
     db.commit()
     invalidate_todo_detail(todo_id)
+    if parent_id:
+        invalidate_todo_detail(parent_id)
     invalidate_todo_list_for_user(todo.user_id)
     if todo.assigned_to_user_id:
         invalidate_todo_list_for_user(todo.assigned_to_user_id)

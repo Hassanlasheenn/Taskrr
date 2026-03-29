@@ -136,10 +136,16 @@
                                             <h4 class="todo-title">{{ todo.title }}</h4>
                                             <span *ngIf="todo.status === 'done'" class="done-badge">Done</span>
                                         </div>
-                                        
+
+                                        <!-- Story badge -->
+                                        <div class="story-type-chip mt-1" [ngClass]="getChipClass(todo)">
+                                            <i class="bi" [ngClass]="getChipIcon(todo)"></i>
+                                            {{ getChipLabel(todo) }}<ng-container *ngIf="todo.subtask_count"> · {{ todo.subtask_count }}</ng-container>
+                                        </div>
+
                                         <!-- Urgency-colored Due Date Badge -->
-                                        <div *ngIf="$any(todo).due_date" 
-                                             class="due-date-card-badge mt-2" 
+                                        <div *ngIf="$any(todo).due_date"
+                                             class="due-date-card-badge mt-2"
                                              [ngClass]="getDueDateUrgencyClass($any(todo).due_date)">
                                             <i class="bi" [ngClass]="isOverdue($any(todo).due_date) ? 'bi-exclamation-circle-fill' : 'bi-alarm-fill'"></i>
                                             <span class="due-label">{{ isOverdue($any(todo).due_date) ? 'Overdue:' : 'Due Date:' }}</span>
@@ -160,6 +166,9 @@
                                             </button>
                                             <button type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
                                                 <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                            <button type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
+                                                <i class="bi bi-diagram-3"></i> Add Task
                                             </button>
                                             <button *ngIf="isAdmin" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
                                                 <i class="bi bi-trash"></i> Delete
@@ -225,6 +234,10 @@
                     <div class="todo-list-content d-flex align-items-center justify-content-between gap-2">
                         <div class="todo-list-left d-flex align-items-center gap-2 flex-wrap">
                             <h4 class="todo-list-title">{{ todo.title }}</h4>
+                            <span class="story-type-chip" [ngClass]="getChipClass(todo)">
+                                <i class="bi" [ngClass]="getChipIcon(todo)"></i>
+                                {{ getChipLabel(todo) }}<ng-container *ngIf="todo.subtask_count"> · {{ todo.subtask_count }}</ng-container>
+                            </span>
                             <span class="status-badge" [ngClass]="getStatusClass(todo.status)">
                                 {{ getStatusLabel(todo.status) }}
                             </span>
@@ -254,6 +267,9 @@
                                 </button>
                                 <button type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
                                     <i class="bi bi-pencil"></i> Edit
+                                </button>
+                                <button type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
+                                    <i class="bi bi-diagram-3"></i> Add Task
                                 </button>
                                 <button *ngIf="isAdmin" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
                                     <i class="bi bi-trash"></i> Delete
@@ -293,10 +309,14 @@
                                     <h4 class="todo-title">{{ todo.title }}</h4>
                                     <span *ngIf="todo.status === 'done'" class="done-badge">Done</span>
                                 </div>
+                                <div class="story-type-chip mt-1" [ngClass]="getChipClass(todo)">
+                                    <i class="bi" [ngClass]="getChipIcon(todo)"></i>
+                                    {{ getChipLabel(todo) }}<ng-container *ngIf="todo.subtask_count"> · {{ todo.subtask_count }}</ng-container>
+                                </div>
 
                                 <!-- Urgency-colored Due Date Badge -->
-                                <div *ngIf="$any(todo).due_date" 
-                                     class="due-date-card-badge mt-2" 
+                                <div *ngIf="$any(todo).due_date"
+                                     class="due-date-card-badge mt-2"
                                      [ngClass]="getDueDateUrgencyClass($any(todo).due_date)">
                                     <i class="bi" [ngClass]="isOverdue($any(todo).due_date) ? 'bi-exclamation-circle-fill' : 'bi-alarm-fill'"></i>
                                     <span class="due-label">{{ isOverdue($any(todo).due_date) ? 'Overdue:' : 'Due Date:' }}</span>
@@ -317,6 +337,9 @@
                                     </button>
                                     <button type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
                                         <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
+                                        <i class="bi bi-diagram-3"></i> Add Task
                                     </button>
                                     <button *ngIf="isAdmin" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
                                         <i class="bi bi-trash"></i> Delete

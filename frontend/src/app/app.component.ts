@@ -6,6 +6,7 @@ import { LoaderComponent } from './shared/components/loader/loader.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConfirmationDialogComponent } from './shared/components/confirmation-dialog/confirmation-dialog.component';
 import { SessionExpiryDialogComponent } from './shared/components/session-expiry-dialog/session-expiry-dialog.component';
+import { TodoDetailDialogComponent } from './shared/components/todo-detail-dialog/todo-detail-dialog.component';
 import { PosthogService, NavigationService } from './core/services';
 import { SeoService } from './core/services/seo.service';
 import { AuthService } from './auth/services';
@@ -26,6 +27,7 @@ import { filter, Subject, takeUntil } from 'rxjs';
     ToastComponent, 
     ConfirmationDialogComponent,
     SessionExpiryDialogComponent,
+    TodoDetailDialogComponent,
     DashboardSideNavComponent,
     SidebarComponent
   ],
@@ -92,6 +94,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this._navService.setActiveSection(DashboardSections.COMPLETED);
     } else if (url.includes(LayoutPaths.ADMIN_PANEL) || url.includes(LayoutPaths.ADMIN)) {
       this._navService.setActiveSection(DashboardSections.ADMIN_PANEL);
+    } else if (url.includes(LayoutPaths.STORIES)) {
+      this._navService.setActiveSection(DashboardSections.STORIES);
     } else {
       this._navService.setActiveSection(DashboardSections.DASHBOARD);
     }
@@ -103,6 +107,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     let path = '';
     switch(section) {
+        case DashboardSections.STORIES: path = LayoutPaths.STORIES; break;
         case DashboardSections.CALENDAR: path = LayoutPaths.CALENDAR; break;
         case DashboardSections.COMPLETED: path = LayoutPaths.COMPLETED; break;
         case DashboardSections.ADMIN_PANEL: path = LayoutPaths.ADMIN_PANEL; break;

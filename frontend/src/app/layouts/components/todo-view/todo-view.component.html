@@ -11,10 +11,18 @@
                         <div class="todo-view-title-row">
                             <!-- Left: title, category, due date -->
                             <div class="todo-view-title-group">
+                                <span class="todo-type-badge" [ngClass]="'todo-type-badge--' + todoType">
+                                    <i class="bi" [ngClass]="todoTypeIcon"></i>
+                                    {{ todoTypeLabel }}
+                                </span>
                                 <h1 class="todo-view-title">{{ todo.title }}</h1>
                                 <span *ngIf="todo.category" class="todo-view-category-tag">
                                     <i class="bi bi-tag-fill"></i>
                                     <span class="todo-view-category-tag-text">{{ todo.category }}</span>
+                                </span>
+                                <span *ngIf="isUnassigned" class="unassigned-badge">
+                                    <i class="bi bi-person-x-fill"></i>
+                                    Unassigned
                                 </span>
                                 <div *ngIf="todoForm.get('due_date')?.value" class="due-date-view-container">
                                     <app-dynamic-form
@@ -26,7 +34,7 @@
                                 </div>
                             </div>
                             <!-- Right: time tracking -->
-                            <div class="time-tracking-row" *ngIf="todoForm.get('time_estimate')?.value">
+                            <div class="time-tracking-row" *ngIf="todo.parent_id ? todoForm.get('time_estimate')?.value : (totalSubtaskTimeEstimate || todoForm.get('time_estimate')?.value)">
                                 <div class="time-logged-container">
                                     <app-dynamic-form
                                         [form]="logTimeForm"
@@ -36,8 +44,8 @@
                                     />
                                 </div>
                                 <app-progress-bar
-                                    [estimate]="todoForm.get('time_estimate')?.value || ''"
-                                    [logged]="todoForm.get('time_logged')?.value || ''"
+                                    [estimate]="todo.parent_id ? (todoForm.get('time_estimate')?.value || '') : (totalSubtaskTimeEstimate || todoForm.get('time_estimate')?.value || '')"
+                                    [logged]="todo.parent_id ? (todoForm.get('time_logged')?.value || '') : (totalSubtaskTimeLogged || todoForm.get('time_logged')?.value || '')"
                                 />
                             </div>
                         </div>
@@ -56,6 +64,7 @@
                                     [label]="'Assignee'"
                                     [field]="assigneeField"
                                     [isBadge]="true"
+                                    [customInputClass]="((todoType === 'story' || todoType === 'task') && !todoForm.get('assigned_to_user_id')?.value) ? 'status-unassigned' : ''"
                                     class="todo-view-dropdown-wrap"
                                 />
 
@@ -129,6 +138,18 @@
                             (activeTabIdChange)="setCommentHistoryTab($event)"
                             ariaLabel="Comments and history"
                         ></app-tabs>
+                        <ng-container *ngIf="commentHistoryTab === 'subtasks'">
+                            <app-subtask-list
+                                [subtasks]="subtasks"
+                                [parentId]="todo.id"
+                                [userId]="userId!"
+                                [parentType]="getTodoType(todo)"
+                                (openAddForm)="onOpenSubtaskForm()"
+                                (editSubtask)="onEditSubtask($event)"
+                                (subtaskDeleted)="onSubtaskDeleted($event)"
+                                (subtaskUpdated)="onSubtaskUpdated($event)"
+                            ></app-subtask-list>
+                        </ng-container>
                         <ng-container *ngIf="commentHistoryTab === 'comments'">
                         <ul class="todo-view-comments-list">
                             <li *ngFor="let comment of comments; trackBy: trackById" class="todo-view-comment" [class.todo-view-comment--own]="isCurrentUser(comment.user_id)">
@@ -529,6 +550,25 @@
         </div>
     </div>
 </section>
+
+<!-- Subtask Add / Edit Sidebar -->
+<app-sidebar
+    [isOpen]="isSubtaskSidebarOpen"
+    [title]="subtaskSidebarTitle"
+    width="450px"
+    (closed)="isSubtaskSidebarOpen = false; subtaskToEdit = null"
+>
+    <app-todo-form
+        #subtaskForm
+        [parentId]="subtaskToEdit ? null : (todo?.id ?? null)"
+        [parentTodo]="todo"
+        [editingTodo]="subtaskToEdit"
+        [forcedType]="forcedSubtaskType"
+        (submitTodo)="onSubtaskFormSubmit($event)"
+        (updateTodo)="onSubtaskUpdateSubmit($event)"
+        (cancel)="isSubtaskSidebarOpen = false; subtaskToEdit = null"
+    />
+</app-sidebar>
 
 <!-- Attachment Preview Overlay (Unified Slider) -->
 <div class="attachment-preview-overlay" *ngIf="previewAttachmentUrl" (click)="closePreview()">

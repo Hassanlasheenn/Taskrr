@@ -1,5 +1,6 @@
 export enum DashboardSections {
     DASHBOARD = 'dashboard',
+    STORIES = 'stories',
     CALENDAR = 'calendar',
     TODAY = 'today',
     UPCOMING = 'upcoming',

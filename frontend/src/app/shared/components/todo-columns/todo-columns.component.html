@@ -9,7 +9,7 @@
         <div class="tc-col__header" (click)="toggleSection('unassigned')">
             <i class="bi bi-clock-history tc-col__icon"></i>
             <span class="tc-col__title">Unassigned</span>
-            <span class="tc-col__count">{{ _unassigned.length }}</span>
+            <span class="tc-col__count">{{ _pagination.unassigned.total }}</span>
             <div class="tc-col__header-actions">
                 <button class="tc-col__expand-btn"
                         [title]="isExpanded('unassigned') ? 'Collapse column' : 'Expand column'"
@@ -31,11 +31,21 @@
                      [ngClass]="getPriorityClass(todo.priority)"
                      [class.tc-item--done]="todo.status === 'done' || todo.is_deleted"
                      cdkDrag
-                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
+                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }"
+                     (click)="onTodoClick(todo, $event)">
+                    
                     <span class="tc-item__drag-handle"><i class="bi bi-grip-vertical"></i></span>
-                    <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
-                    <div class="tc-item__body">
+                    
+                    <div class="tc-item__header">
+                        <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                         <p class="tc-item__title">{{ todo.title }}</p>
+                    </div>
+
+                    <div class="tc-item__body">
+                        <span class="tc-item__story-chip" [ngClass]="getChipClass(todo)">
+                            <i class="bi" [ngClass]="getChipIcon(todo)"></i>
+                            {{ getChipLabel(todo) }}<ng-container *ngIf="todo.subtask_count"> · {{ todo.subtask_count }}</ng-container>
+                        </span>
                         <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
                             <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
@@ -48,15 +58,50 @@
                             [logged]="todo.time_logged"
                             size="sm"
                         />
+                        <button *ngIf="todo.subtask_count && getTodoType(todo) !== 'workitem'"
+                                type="button"
+                                class="tc-item__subtask-toggle"
+                                (click)="toggleSubtasks(todo, $event)">
+                            <i class="bi bi-arrow-return-right"></i>
+                            <span>{{ getSubtaskToggleLabel(todo) }}</span>
+                            <i class="bi tc-item__subtask-toggle-chevron"
+                               [ngClass]="isSubtasksExpanded(todo.id) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </button>
+                        <div *ngIf="todo.subtask_count && isSubtasksExpanded(todo.id)" class="tc-item__subtasks">
+                            <div *ngIf="isLoadingSubtasks(todo.id)" class="tc-item__subtasks-loading">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </div>
+                            <div *ngFor="let subtask of getSubtasks(todo.id); trackBy: trackById">
+                                <div class="tc-item__subtask-row"
+                                     [class.tc-item__subtask-row--done]="subtask.status === 'done'"
+                                     (click)="onSubtaskClick(subtask, $event)">
+                                    <i class="bi tc-item__subtask-status"
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                    <span class="tc-item__subtask-title">{{ subtask.title }}</span>
+                                    <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
+                        <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
                         <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>
+
                 <div *ngIf="_unassigned.length === 0" class="tc-col__empty">
                     <i class="bi bi-inbox"></i><span>No unassigned tasks</span>
+                </div>
+
+                <div *ngIf="_pagination.unassigned.hasMore" class="tc-col__load-more">
+                    <button (click)="loadMore('unassigned')" class="tc-col__load-more-btn" [disabled]="_pagination.unassigned.loading">
+                        <i *ngIf="!_pagination.unassigned.loading" class="bi bi-plus-lg me-1"></i>
+                        <span *ngIf="_pagination.unassigned.loading" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ _pagination.unassigned.loading ? '...' : 'Show More' }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -70,7 +115,7 @@
         <div class="tc-col__header" (click)="toggleSection('new')">
             <i class="bi bi-plus-circle-fill tc-col__icon"></i>
             <span class="tc-col__title">New</span>
-            <span class="tc-col__count">{{ _new.length }}</span>
+            <span class="tc-col__count">{{ _pagination.new.total }}</span>
             <div class="tc-col__header-actions">
                 <button class="tc-col__expand-btn"
                         [title]="isExpanded('new') ? 'Collapse column' : 'Expand column'"
@@ -92,11 +137,21 @@
                      [ngClass]="getPriorityClass(todo.priority)"
                      [class.tc-item--done]="todo.status === 'done' || todo.is_deleted"
                      cdkDrag
-                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
+                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }"
+                     (click)="onTodoClick(todo, $event)">
+                    
                     <span class="tc-item__drag-handle"><i class="bi bi-grip-vertical"></i></span>
-                    <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
-                    <div class="tc-item__body">
+                    
+                    <div class="tc-item__header">
+                        <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                         <p class="tc-item__title">{{ todo.title }}</p>
+                    </div>
+
+                    <div class="tc-item__body">
+                        <span class="tc-item__story-chip" [ngClass]="getChipClass(todo)">
+                            <i class="bi" [ngClass]="getChipIcon(todo)"></i>
+                            {{ getChipLabel(todo) }}<ng-container *ngIf="todo.subtask_count"> · {{ todo.subtask_count }}</ng-container>
+                        </span>
                         <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
                             <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
@@ -109,15 +164,50 @@
                             [logged]="todo.time_logged"
                             size="sm"
                         />
+                        <button *ngIf="todo.subtask_count && getTodoType(todo) !== 'workitem'"
+                                type="button"
+                                class="tc-item__subtask-toggle"
+                                (click)="toggleSubtasks(todo, $event)">
+                            <i class="bi bi-arrow-return-right"></i>
+                            <span>{{ getSubtaskToggleLabel(todo) }}</span>
+                            <i class="bi tc-item__subtask-toggle-chevron"
+                               [ngClass]="isSubtasksExpanded(todo.id) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </button>
+                        <div *ngIf="todo.subtask_count && isSubtasksExpanded(todo.id)" class="tc-item__subtasks">
+                            <div *ngIf="isLoadingSubtasks(todo.id)" class="tc-item__subtasks-loading">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </div>
+                            <div *ngFor="let subtask of getSubtasks(todo.id); trackBy: trackById">
+                                <div class="tc-item__subtask-row"
+                                     [class.tc-item__subtask-row--done]="subtask.status === 'done'"
+                                     (click)="onSubtaskClick(subtask, $event)">
+                                    <i class="bi tc-item__subtask-status"
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                    <span class="tc-item__subtask-title">{{ subtask.title }}</span>
+                                    <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
+                        <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
                         <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>
+
                 <div *ngIf="_new.length === 0" class="tc-col__empty">
                     <i class="bi bi-inbox"></i><span>No new tasks</span>
+                </div>
+
+                <div *ngIf="_pagination.new.hasMore" class="tc-col__load-more">
+                    <button (click)="loadMore('new')" class="tc-col__load-more-btn" [disabled]="_pagination.new.loading">
+                        <i *ngIf="!_pagination.new.loading" class="bi bi-plus-lg me-1"></i>
+                        <span *ngIf="_pagination.new.loading" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ _pagination.new.loading ? '...' : 'Show More' }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -131,7 +221,7 @@
         <div class="tc-col__header" (click)="toggleSection('inprogress')">
             <i class="bi bi-play-circle-fill tc-col__icon"></i>
             <span class="tc-col__title">In Progress</span>
-            <span class="tc-col__count">{{ _inProgress.length }}</span>
+            <span class="tc-col__count">{{ _pagination.inprogress.total }}</span>
             <div class="tc-col__header-actions">
                 <button class="tc-col__expand-btn"
                         [title]="isExpanded('inprogress') ? 'Collapse column' : 'Expand column'"
@@ -146,18 +236,28 @@
              cdkDropList
              cdkDropListAutoScrollStep="15"
              [cdkDropListData]="_inProgress"
-             (cdkDropListDropped)="onTodoDrop($event, 'inProgress')">
+             (cdkDropListDropped)="onTodoDrop($event, 'inprogress')">
             <div class="tc-col__list">
                 <div *ngFor="let todo of _inProgress; trackBy: trackById"
                      class="tc-item"
                      [ngClass]="getPriorityClass(todo.priority)"
                      [class.tc-item--done]="todo.status === 'done' || todo.is_deleted"
                      cdkDrag
-                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
+                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }"
+                     (click)="onTodoClick(todo, $event)">
+                    
                     <span class="tc-item__drag-handle"><i class="bi bi-grip-vertical"></i></span>
-                    <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
-                    <div class="tc-item__body">
+                    
+                    <div class="tc-item__header">
+                        <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                         <p class="tc-item__title">{{ todo.title }}</p>
+                    </div>
+
+                    <div class="tc-item__body">
+                        <span class="tc-item__story-chip" [ngClass]="getChipClass(todo)">
+                            <i class="bi" [ngClass]="getChipIcon(todo)"></i>
+                            {{ getChipLabel(todo) }}<ng-container *ngIf="todo.subtask_count"> · {{ todo.subtask_count }}</ng-container>
+                        </span>
                         <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
                             <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
@@ -170,15 +270,50 @@
                             [logged]="todo.time_logged"
                             size="sm"
                         />
+                        <button *ngIf="todo.subtask_count && getTodoType(todo) !== 'workitem'"
+                                type="button"
+                                class="tc-item__subtask-toggle"
+                                (click)="toggleSubtasks(todo, $event)">
+                            <i class="bi bi-arrow-return-right"></i>
+                            <span>{{ getSubtaskToggleLabel(todo) }}</span>
+                            <i class="bi tc-item__subtask-toggle-chevron"
+                               [ngClass]="isSubtasksExpanded(todo.id) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </button>
+                        <div *ngIf="todo.subtask_count && isSubtasksExpanded(todo.id)" class="tc-item__subtasks">
+                            <div *ngIf="isLoadingSubtasks(todo.id)" class="tc-item__subtasks-loading">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </div>
+                            <div *ngFor="let subtask of getSubtasks(todo.id); trackBy: trackById">
+                                <div class="tc-item__subtask-row"
+                                     [class.tc-item__subtask-row--done]="subtask.status === 'done'"
+                                     (click)="onSubtaskClick(subtask, $event)">
+                                    <i class="bi tc-item__subtask-status"
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                    <span class="tc-item__subtask-title">{{ subtask.title }}</span>
+                                    <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
+                        <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
                         <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>
+
                 <div *ngIf="_inProgress.length === 0" class="tc-col__empty">
                     <i class="bi bi-inbox"></i><span>No tasks in progress</span>
+                </div>
+
+                <div *ngIf="_pagination.inprogress.hasMore" class="tc-col__load-more">
+                    <button (click)="loadMore('inprogress')" class="tc-col__load-more-btn" [disabled]="_pagination.inprogress.loading">
+                        <i *ngIf="!_pagination.inprogress.loading" class="bi bi-plus-lg me-1"></i>
+                        <span *ngIf="_pagination.inprogress.loading" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ _pagination.inprogress.loading ? '...' : 'Show More' }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -192,7 +327,7 @@
         <div class="tc-col__header" (click)="toggleSection('paused')">
             <i class="bi bi-pause-circle-fill tc-col__icon"></i>
             <span class="tc-col__title">Paused</span>
-            <span class="tc-col__count">{{ _paused.length }}</span>
+            <span class="tc-col__count">{{ _pagination.paused.total }}</span>
             <div class="tc-col__header-actions">
                 <button class="tc-col__expand-btn"
                         [title]="isExpanded('paused') ? 'Collapse column' : 'Expand column'"
@@ -214,11 +349,21 @@
                      [ngClass]="getPriorityClass(todo.priority)"
                      [class.tc-item--done]="todo.status === 'done' || todo.is_deleted"
                      cdkDrag
-                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
+                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }"
+                     (click)="onTodoClick(todo, $event)">
+                    
                     <span class="tc-item__drag-handle"><i class="bi bi-grip-vertical"></i></span>
-                    <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
-                    <div class="tc-item__body">
+                    
+                    <div class="tc-item__header">
+                        <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                         <p class="tc-item__title">{{ todo.title }}</p>
+                    </div>
+
+                    <div class="tc-item__body">
+                        <span class="tc-item__story-chip" [ngClass]="getChipClass(todo)">
+                            <i class="bi" [ngClass]="getChipIcon(todo)"></i>
+                            {{ getChipLabel(todo) }}<ng-container *ngIf="todo.subtask_count"> · {{ todo.subtask_count }}</ng-container>
+                        </span>
                         <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
                             <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
@@ -231,15 +376,50 @@
                             [logged]="todo.time_logged"
                             size="sm"
                         />
+                        <button *ngIf="todo.subtask_count && getTodoType(todo) !== 'workitem'"
+                                type="button"
+                                class="tc-item__subtask-toggle"
+                                (click)="toggleSubtasks(todo, $event)">
+                            <i class="bi bi-arrow-return-right"></i>
+                            <span>{{ getSubtaskToggleLabel(todo) }}</span>
+                            <i class="bi tc-item__subtask-toggle-chevron"
+                               [ngClass]="isSubtasksExpanded(todo.id) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </button>
+                        <div *ngIf="todo.subtask_count && isSubtasksExpanded(todo.id)" class="tc-item__subtasks">
+                            <div *ngIf="isLoadingSubtasks(todo.id)" class="tc-item__subtasks-loading">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </div>
+                            <div *ngFor="let subtask of getSubtasks(todo.id); trackBy: trackById">
+                                <div class="tc-item__subtask-row"
+                                     [class.tc-item__subtask-row--done]="subtask.status === 'done'"
+                                     (click)="onSubtaskClick(subtask, $event)">
+                                    <i class="bi tc-item__subtask-status"
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                    <span class="tc-item__subtask-title">{{ subtask.title }}</span>
+                                    <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
+                        <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
                         <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>
+
                 <div *ngIf="_paused.length === 0" class="tc-col__empty">
                     <i class="bi bi-inbox"></i><span>No paused tasks</span>
+                </div>
+
+                <div *ngIf="_pagination.paused.hasMore" class="tc-col__load-more">
+                    <button (click)="loadMore('paused')" class="tc-col__load-more-btn" [disabled]="_pagination.paused.loading">
+                        <i *ngIf="!_pagination.paused.loading" class="bi bi-plus-lg me-1"></i>
+                        <span *ngIf="_pagination.paused.loading" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ _pagination.paused.loading ? '...' : 'Show More' }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -253,7 +433,7 @@
         <div class="tc-col__header" (click)="toggleSection('done')">
             <i class="bi bi-check-circle-fill tc-col__icon"></i>
             <span class="tc-col__title">Done</span>
-            <span class="tc-col__count">{{ _done.length }}</span>
+            <span class="tc-col__count">{{ _pagination.done.total }}</span>
             <div class="tc-col__header-actions">
                 <button class="tc-col__expand-btn"
                         [title]="isExpanded('done') ? 'Collapse column' : 'Expand column'"
@@ -275,11 +455,21 @@
                      [ngClass]="getPriorityClass(todo.priority)"
                      [class.tc-item--done]="todo.status === 'done' || todo.is_deleted"
                      cdkDrag
-                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }">
+                     [cdkDragStartDelay]="{ touch: 150, mouse: 0 }"
+                     (click)="onTodoClick(todo, $event)">
+                    
                     <span class="tc-item__drag-handle"><i class="bi bi-grip-vertical"></i></span>
-                    <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
-                    <div class="tc-item__body">
+                    
+                    <div class="tc-item__header">
+                        <span class="tc-item__dot" [ngClass]="getPriorityClass(todo.priority)"></span>
                         <p class="tc-item__title">{{ todo.title }}</p>
+                    </div>
+
+                    <div class="tc-item__body">
+                        <span class="tc-item__story-chip" [ngClass]="getChipClass(todo)">
+                            <i class="bi" [ngClass]="getChipIcon(todo)"></i>
+                            {{ getChipLabel(todo) }}<ng-container *ngIf="todo.subtask_count"> · {{ todo.subtask_count }}</ng-container>
+                        </span>
                         <div class="tc-item__meta" *ngIf="todo.category || todo.due_date || todo.created_at || todo.time_estimate">
                             <span *ngIf="todo.category" class="tc-item__tag"><i class="bi bi-tag"></i>{{ todo.category }}</span>
                             <span *ngIf="todo.time_estimate" class="tc-item__time"><i class="bi bi-stopwatch"></i>{{ todo.time_estimate }}</span>
@@ -292,15 +482,50 @@
                             [logged]="todo.time_logged"
                             size="sm"
                         />
+                        <button *ngIf="todo.subtask_count && getTodoType(todo) !== 'workitem'"
+                                type="button"
+                                class="tc-item__subtask-toggle"
+                                (click)="toggleSubtasks(todo, $event)">
+                            <i class="bi bi-arrow-return-right"></i>
+                            <span>{{ getSubtaskToggleLabel(todo) }}</span>
+                            <i class="bi tc-item__subtask-toggle-chevron"
+                               [ngClass]="isSubtasksExpanded(todo.id) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </button>
+                        <div *ngIf="todo.subtask_count && isSubtasksExpanded(todo.id)" class="tc-item__subtasks">
+                            <div *ngIf="isLoadingSubtasks(todo.id)" class="tc-item__subtasks-loading">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </div>
+                            <div *ngFor="let subtask of getSubtasks(todo.id); trackBy: trackById">
+                                <div class="tc-item__subtask-row"
+                                     [class.tc-item__subtask-row--done]="subtask.status === 'done'"
+                                     (click)="onSubtaskClick(subtask, $event)">
+                                    <i class="bi tc-item__subtask-status"
+                                       [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                                    <span class="tc-item__subtask-title">{{ subtask.title }}</span>
+                                    <i class="bi bi-arrow-right tc-item__subtask-arrow"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
+                        <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
                         <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>
+
                 <div *ngIf="_done.length === 0" class="tc-col__empty">
                     <i class="bi bi-inbox"></i><span>No completed tasks</span>
+                </div>
+
+                <div *ngIf="_pagination.done.hasMore" class="tc-col__load-more">
+                    <button (click)="loadMore('done')" class="tc-col__load-more-btn" [disabled]="_pagination.done.loading">
+                        <i *ngIf="!_pagination.done.loading" class="bi bi-plus-lg me-1"></i>
+                        <span *ngIf="_pagination.done.loading" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ _pagination.done.loading ? '...' : 'Show More' }}
+                    </button>
                 </div>
             </div>
         </div>

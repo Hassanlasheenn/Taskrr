@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, ViewChild, HostListener } from "@angular/core";
+import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, ViewChild } from "@angular/core";
 import { FormsModule, FormGroup, ReactiveFormsModule } from "@angular/forms";
-import { ActivatedRoute, Router } from "@angular/router";
+import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { Observable, Subject } from "rxjs";
 import { map, takeUntil } from "rxjs/operators";
 import { AuthService } from "../../../auth/services/auth.service";
@@ -12,7 +12,10 @@ import { IUserListResponse } from "../../../auth/interfaces";
 import { LoaderService } from "../../../core/services/loader.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { ConfirmationDialogService } from "../../../core/services/confirmation-dialog.service";
-import { ITodo, ITodoComment, ITodoHistoryEntry, ITodoUpdate, TodoStatus } from "../../../core/interfaces/todo.interface";
+import { TodoDetailDialogService } from "../../../core/services/todo-detail-dialog.service";
+import { ITodo, ITodoComment, ITodoCreate, ITodoHistoryEntry, ITodoUpdate, TodoStatus } from "../../../core/interfaces/todo.interface";
+import { DynamicFormComponent, ProgressBarComponent, SidebarComponent, SubtaskListComponent } from "../../../shared/components";
+import { TodoFormComponent } from "../../../shared/components/dynamic-form/todo-form/todo-form.component";
 import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { CanComponentDeactivate } from "../../../auth/guards";
 import { ParseMentionsPipe } from "../../../core/pipes/parse-mentions.pipe";
@@ -21,15 +24,13 @@ import { trackById } from "../../../shared/helpers/trackByFn.helper";
 import { NavigationService } from "../../../core/services/navigation.service";
 import { PosthogService } from "../../../core/services/posthog.service";
 import { DropdownFormComponent } from "../../../shared/components/form-fields/dropdown/dropdown.component";
-import { DatePickerComponent } from "../../../shared/components/form-fields/date-picker/date-picker.component";
-import { InputFormComponent } from "../../../shared/components/form-fields/input/input.component";
 import { ReactiveFormService } from "../../../shared/services/reactive-form.service";
 import { IFieldControl } from "../../../shared/interfaces";
 import { InputTypes, ValidatorTypes } from "../../../shared/enums";
 
-import { DynamicFormComponent } from "../../../shared/components/dynamic-form/dynamic-form.component";
 import { PasteImageDirective } from "../../../shared/directives/paste-image.directive";
-import { ProgressBarComponent } from "../../../shared/components/progress-bar/progress-bar.component";
+import { parseToMinutes, minutesToEstimate } from "../../../shared/helpers/time-estimate.helper";
+import { getTodoType, getTodoTypeLabel, getTodoTypeIcon, TodoType } from "../../../shared/helpers/todo-type.helper";
 
 @Component({
     selector: 'app-todo-view',
@@ -37,15 +38,19 @@ import { ProgressBarComponent } from "../../../shared/components/progress-bar/pr
     styleUrls: ['./todo-view.component.scss'],
     standalone: true,
     imports: [
-        CommonModule, 
-        FormsModule, 
+        CommonModule,
+        FormsModule,
         ReactiveFormsModule,
-        ParseMentionsPipe, 
+        RouterLink,
+        SubtaskListComponent,
+        ParseMentionsPipe,
         TabsComponent,
         DropdownFormComponent,
         DynamicFormComponent,
         PasteImageDirective,
-        ProgressBarComponent
+        ProgressBarComponent,
+        SidebarComponent,
+        TodoFormComponent
     ],
 })
 export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactivate {
@@ -154,9 +159,13 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     editContent = '';
     savingEdit = false;
     deletingCommentId: number | null = null;
-    commentHistoryTab: 'comments' | 'history' = 'comments';
+    commentHistoryTab: 'comments' | 'history' | 'subtasks' = 'subtasks';
     commentHistory: ITodoHistoryEntry[] = [];
     loadingHistory = false;
+    subtasks: ITodo[] = [];
+    userId: number | null = null;
+    isSubtaskSidebarOpen = false;
+    subtaskToEdit: ITodo | null = null;
     trackById = trackById;
     isNavSidebarOpen: boolean = false;
     selectedFile: File | null = null;
@@ -174,12 +183,24 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     InputTypes = InputTypes;
     descriptionPreviewOpen = false;
 
-    readonly commentHistoryTabs: ITabItem[] = [
-        { id: 'comments', label: 'Comments', icon: 'bi-chat-left-text' },
-        { id: 'history', label: 'History', icon: 'bi-clock-history' },
-    ];
+    get commentHistoryTabs(): ITabItem[] {
+        const tabs: ITabItem[] = [
+            { id: 'comments', label: 'Comments', icon: 'bi-chat-left-text' },
+            { id: 'history', label: 'History', icon: 'bi-clock-history' },
+        ];
+        
+        if (this.todo) {
+            const type = getTodoType(this.todo);
+            if (type === 'project' || type === 'story') {
+                const label = type === 'project' ? 'Stories' : 'Tasks';
+                tabs.unshift({ id: 'subtasks', label: label, icon: 'bi-diagram-3' });
+            }
+        }
+        return tabs;
+    }
     LayoutPaths = LayoutPaths;
     @ViewChild('newCommentInput') newCommentInputRef?: ElementRef<HTMLTextAreaElement>;
+    @ViewChild('subtaskForm') subtaskFormComponent?: TodoFormComponent;
 
     get mentionableUsersFiltered(): IUserListResponse[] {
         const q = (this.mentionFilter || '').toLowerCase();
@@ -189,6 +210,54 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
 
     get isAdmin(): boolean {
         return this._authService.isAdmin();
+    }
+
+    get todoType(): TodoType {
+        return this.todo ? getTodoType(this.todo, this.subtasks) : 'workitem';
+    }
+
+    get todoTypeLabel(): string { return getTodoTypeLabel(this.todoType); }
+    get todoTypeIcon(): string {
+        return getTodoTypeIcon(this.todoType);
+    }
+
+    get forcedSubtaskType(): string | null {
+        const type = this.todoType;
+        if (type === 'project') return 'story';
+        if (type === 'story') return 'task';
+        return null;
+    }
+
+    get subtaskSidebarTitle(): string {
+        if (this.subtaskToEdit) {
+            const type = getTodoType(this.subtaskToEdit);
+            return `Edit ${getTodoTypeLabel(type)}`;
+        }
+        const type = this.todoType;
+        if (type === 'project') return 'Add Story';
+        return 'Add Task';
+    }
+
+    get isUnassigned(): boolean {
+        if (!this.todo) return false;
+        const val = this.todoForm.get('assigned_to_user_id')?.value;
+        return (val === null || val === undefined || val === '' || val === 'null');
+    }
+
+    get totalSubtaskTimeEstimate(): string {
+        if (!this.subtasks.length) return '';
+        const totalMins = this.subtasks.reduce(
+            (sum, s) => sum + parseToMinutes(s.time_estimate || ''), 0
+        );
+        return minutesToEstimate(totalMins);
+    }
+
+    get totalSubtaskTimeLogged(): string {
+        if (!this.subtasks.length) return '';
+        const totalMins = this.subtasks.reduce(
+            (sum, s) => sum + parseToMinutes(s.time_logged || ''), 0
+        );
+        return minutesToEstimate(totalMins);
     }
 
     get hasChanges(): boolean {
@@ -212,7 +281,8 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         private readonly _navService: NavigationService,
         private readonly _posthogService: PosthogService,
         private readonly _formService: ReactiveFormService,
-        private readonly _imageUploadService: ImageUploadService
+        private readonly _imageUploadService: ImageUploadService,
+        private readonly _detailDialogService: TodoDetailDialogService
     ) {}
 
     canDeactivate(): boolean | Observable<boolean> {
@@ -227,20 +297,13 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     }
 
     ngOnInit(): void {
-        const idParam = this._route.snapshot.paramMap.get('id');
-        const todoId = idParam ? Number.parseInt(idParam, 10) : Number.NaN;
-        if (!idParam || Number.isNaN(todoId)) {
-            this._toastService.error('Invalid todo');
-            this._router.navigate([LayoutPaths.DASHBOARD]);
-            return;
-        }
         const userId = this._authService.getCurrentUserId();
         if (!userId) {
             this._router.navigate([LayoutPaths.DASHBOARD]);
             return;
         }
+        this.userId = userId;
 
-        // Set required status based on admin role
         if (!this.isAdmin) {
             this.assigneeField.required = true;
             this.assigneeField.validations = [
@@ -262,6 +325,25 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
             this.logTimeField
         ]);
 
+        this._route.paramMap.pipe(takeUntil(this._destroy$)).subscribe(params => {
+            const idParam = params.get('id');
+            const todoId = idParam ? Number.parseInt(idParam, 10) : Number.NaN;
+            if (!idParam || Number.isNaN(todoId)) {
+                this._toastService.error('Invalid todo');
+                this._router.navigate([LayoutPaths.DASHBOARD]);
+                return;
+            }
+            this._loadTodo(userId, todoId);
+        });
+    }
+
+    private _loadTodo(userId: number, todoId: number): void {
+        this.todo = null;
+        this.subtasks = [];
+        this.comments = [];
+        this.commentHistory = [];
+        this.initialFormValue = null;
+
         this._loaderService.show();
         this._todoService.getTodo(userId, todoId).subscribe({
             next: (response) => {
@@ -278,7 +360,16 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 };
 
                 this.todoForm.patchValue(formValue);
-                this.initialFormValue = { ...formValue };                
+                this.initialFormValue = { ...formValue };
+                this.subtasks = (response.subtasks as ITodo[]) || [];
+                
+                const type = getTodoType(this.todo);
+                if (type === 'project' || type === 'story') {
+                    this.commentHistoryTab = 'subtasks';
+                } else {
+                    this.commentHistoryTab = 'comments';
+                }
+
                 this._loadMentionableUsers();
                 this._loadComments();
                 this._loaderService.hide();
@@ -535,8 +626,66 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     }
 
     setCommentHistoryTab(tab: string): void {
-        this.commentHistoryTab = tab as 'comments' | 'history';
+        this.commentHistoryTab = tab as 'comments' | 'history' | 'subtasks';
         if (this.commentHistoryTab === 'history') this._loadCommentHistory();
+    }
+
+    onOpenSubtaskForm(): void {
+        this.subtaskToEdit = null;
+        this.isSubtaskSidebarOpen = true;
+        if (this.subtaskFormComponent) {
+            this.subtaskFormComponent.resetForm();
+        }
+    }
+
+    onEditSubtask(subtask: ITodo): void {
+        this.subtaskToEdit = subtask;
+        this.isSubtaskSidebarOpen = true;
+        
+        // Wait for sidebar to open and form component to be ready
+        setTimeout(() => {
+            if (this.subtaskFormComponent) {
+                this.subtaskFormComponent.populateForm(subtask);
+            }
+        }, 200);
+    }
+
+    onSubtaskUpdateSubmit(event: { id: number; data: ITodoUpdate }): void {
+        if (!this.userId) return;
+        this._todoService.updateTodo(this.userId, event.id, event.data).subscribe({
+            next: (updated) => {
+                this.subtasks = this.subtasks.map(s => s.id === event.id ? { ...s, ...updated } : s);
+                this.isSubtaskSidebarOpen = false;
+                this.subtaskToEdit = null;
+            },
+            error: () => this._toastService.show('Failed to update task', 'error')
+        });
+    }
+
+    onSubtaskFormSubmit(todoData: ITodoCreate): void {
+        if (!this.userId || !this.todo) return;
+        this._todoService.createSubtask(this.userId, this.todo.id, todoData).subscribe({
+            next: (subtask) => {
+                this.subtasks = [...this.subtasks, subtask];
+                if (this.todo) this.todo.subtask_count = (this.todo.subtask_count || 0) + 1;
+                this.isSubtaskSidebarOpen = false;
+            },
+            error: () => this._toastService.show('Failed to add task', 'error')
+        });
+    }
+
+    onSubtaskAdded(subtask: ITodo): void {
+        this.subtasks = [...this.subtasks, subtask];
+        if (this.todo) this.todo.subtask_count = (this.todo.subtask_count || 0) + 1;
+    }
+
+    onSubtaskDeleted(subtaskId: number): void {
+        this.subtasks = this.subtasks.filter(s => s.id !== subtaskId);
+        if (this.todo) this.todo.subtask_count = Math.max(0, (this.todo.subtask_count || 0) - 1);
+    }
+
+    onSubtaskUpdated(subtask: ITodo): void {
+        this.subtasks = this.subtasks.map(s => s.id === subtask.id ? subtask : s);
     }
 
     getHistoryActionLabel(action: string): string {
@@ -918,7 +1067,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
             description: formValue.description,
             assigned_to_user_id: formValue.assigned_to_user_id,
             due_date: formValue.due_date || null,
-            time_estimate: formValue.time_estimate || null,
+            time_estimate: this.todo?.parent_id ? (formValue.time_estimate || null) : undefined,
             time_logged: finalTimeLogged || null
         };
 
@@ -943,6 +1092,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 this.todoForm.reset(newFormValue);
                 this.logTimeForm.reset({ time_to_log: '' });
                 
+                this._detailDialogService.notifyUpdate(this.todo);
                 this.saving = false;
                 if (this.commentHistoryTab === 'history') this._loadCommentHistory();
                 this._toastService.success('Todo updated');
@@ -1067,5 +1217,9 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         if (diffDays <= 3) return 'urgency-high';
         if (diffDays <= 10) return 'urgency-medium';
         return 'urgency-low';
+    }
+
+    getTodoType(todo: ITodo): string {
+        return getTodoType(todo);
     }
 }

@@ -144,3 +144,36 @@
         margin: 0;
     }
 }
+
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    padding-bottom: 2rem;
+}
+
+.load-more-btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: var(--primary-color, #8b5cf6);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    box-shadow: none;
+
+    &:hover:not(:disabled) {
+        background: rgba(139, 92, 246, 0.08);
+        color: var(--primary-dark, #7c3aed);
+        transform: translateY(-1px);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}

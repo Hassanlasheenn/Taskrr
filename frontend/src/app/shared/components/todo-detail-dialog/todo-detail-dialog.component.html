@@ -1,0 +1,97 @@
+<div class="dialog-backdrop" *ngIf="isVisible" (click)="onBackdropClick($event)">
+    <div class="dialog-container animate-slide-up">
+        <div class="dialog-header">
+            <div class="header-left">
+                <span class="dialog-type-badge" [ngClass]="dialogTypeClass">
+                    <i class="bi" [ngClass]="dialogTypeIcon"></i>
+                    {{ dialogTitle }}
+                </span>
+                <h2 class="dialog-title">{{ todo?.title }}</h2>
+            </div>
+            <div class="header-actions">
+                <button class="action-icon-btn view-btn" (click)="onViewDetails()" title="View full details">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="action-icon-btn close-btn" (click)="onClose()" title="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="dialog-body" *ngIf="todo">
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Status</span>
+                    <div class="quick-actions-list">
+                        <button 
+                            *ngFor="let s of ['new', 'inProgress', 'paused', 'done']"
+                            (click)="onUpdateStatus(s)"
+                            class="action-badge status-badge"
+                            [class.active]="todo.status === s"
+                            [ngClass]="'status-' + s"
+                        >
+                            {{ getStatusLabel(s) }}
+                        </button>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Priority</span>
+                    <div class="quick-actions-list">
+                        <button 
+                            *ngFor="let p of ['low', 'medium', 'high']"
+                            (click)="onUpdatePriority(p)"
+                            class="action-badge priority-badge"
+                            [class.active]="todo.priority === p"
+                            [ngClass]="'priority-' + p"
+                        >
+                            {{ p | titlecase }}
+                        </button>
+                    </div>
+                </div>
+                <div class="detail-item" *ngIf="todo.category">
+                    <span class="detail-label">Category</span>
+                    <span class="detail-value category-badge">
+                        <i class="bi bi-tag-fill me-1"></i>
+                        {{ todo.category }}
+                    </span>
+                </div>
+                <div class="detail-item" *ngIf="todo.due_date">
+                    <span class="detail-label">Due Date</span>
+                    <span class="detail-value date-value">
+                        <i class="bi bi-calendar-event me-1"></i>
+                        {{ todo.due_date | date:'mediumDate' }}
+                    </span>
+                </div>
+                <div class="detail-item full-width" *ngIf="todo.time_estimate || todo.time_logged">
+                    <span class="detail-label">Time Tracking</span>
+                    <div class="time-tracking-row">
+                        <span class="detail-value" *ngIf="todo.time_estimate">
+                            <i class="bi bi-stopwatch me-1"></i>
+                            Estimate: {{ todo.time_estimate }}
+                        </span>
+                        <span class="detail-value ms-3" *ngIf="todo.time_logged">
+                            <i class="bi bi-clock-history me-1"></i>
+                            Logged: {{ todo.time_logged }}
+                        </span>
+                    </div>
+                    <div class="progress-bar-container mt-2" *ngIf="todo.time_estimate && todo.time_logged">
+                        <app-progress-bar
+                            [estimate]="todo.time_estimate"
+                            [logged]="todo.time_logged"
+                            size="md"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section" *ngIf="todo.description">
+                <span class="detail-label">Description</span>
+                <div class="description-text">{{ todo.description }}</div>
+            </div>
+        </div>
+
+        <div class="dialog-footer">
+            <button class="btn-close-dialog" (click)="onClose()">Close</button>
+        </div>
+    </div>
+</div>
