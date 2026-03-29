@@ -13,14 +13,13 @@ import { InputFormComponent } from "../form-fields/input/input.component";
 import { IFieldControl } from "../../interfaces";
 import { InputTypes } from "../../enums";
 import { PaginationComponent } from "../pagination/pagination.component";
-import { TimeInputComponent } from "../form-fields/time-input/time-input.component";
 
 @Component({
     selector: 'app-shared-table',
     templateUrl: './shared-table.component.html',
     styleUrls: ['./shared-table.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterLink, FormsModule, DropdownFormComponent, DatePickerComponent, InputFormComponent, PaginationComponent, TimeInputComponent]
+    imports: [CommonModule, RouterLink, FormsModule, DropdownFormComponent, DatePickerComponent, InputFormComponent, PaginationComponent]
 })
 export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy {
     @ViewChildren('titleInput') titleInputs!: QueryList<ElementRef<HTMLInputElement>>;
@@ -282,16 +281,6 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
             formControlName: 'category',
             value: categoryValue,
             options: this.categoryOptions,
-            validations: []
-        };
-    }
-
-    getTimeEstimateField(todo: ITodo): IFieldControl {
-        return {
-            label: 'Time Estimate',
-            type: InputTypes.TIME_ESTIMATE,
-            formControlName: 'time_estimate',
-            value: todo.time_estimate || '',
             validations: []
         };
     }
