@@ -203,7 +203,7 @@
                         </div>
 
                         <!-- Stories group -->
-                        <div class="stories-group" [class.stories-group--spaced]="projectTodos.length > 0">
+                        <div *ngIf="plainStoryTodos.length > 0 || classifyingStories" class="stories-group" [class.stories-group--spaced]="projectTodos.length > 0">
                             <div class="stories-group__header">
                                 <i class="bi bi-journal-bookmark-fill"></i>
                                 <span>Stories</span>
@@ -240,9 +240,6 @@
                                     </div>
                                     <i class="bi bi-chevron-right story-list-item__arrow"></i>
                                 </div>
-                            </div>
-                            <div *ngIf="plainStoryTodos.length === 0 && !classifyingStories && filteredTodos.length > 0" class="stories-section-empty">
-                                <span>No standalone stories — all items are inside Projects.</span>
                             </div>
                         </div>
 
