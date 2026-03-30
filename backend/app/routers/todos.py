@@ -1223,17 +1223,23 @@ async def upload_todo_image(
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image must be under 10MB")
 
-    url = storage_service.upload_file(
-        content,
-        file.filename or "pasted-image.png",
-        folder="todo_images",
-        content_type=file.content_type,
-        s3_only=True  # Never fall back to local — local URLs break on redeployment
-    )
-    if not url:
+    try:
+        url = storage_service.upload_file(
+            content,
+            file.filename or "pasted-image.png",
+            folder="todo_images",
+            content_type=file.content_type,
+            s3_only=True
+        )
+        if not url:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Image storage service is currently unavailable."
+            )
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Image storage (S3) is not configured or unavailable"
+            detail=str(e)
         )
 
     return {"url": url}
