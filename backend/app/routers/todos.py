@@ -249,15 +249,22 @@ def _get_assigned_username(assigned_user_id: int | None, db: Session) -> str | N
 
 def _build_todo_response(todo_db: models.Todo, db: Session, include_subtasks: bool = False, parent_type: str | None = None) -> schemas.TodoResponse:
     assigned_to_username = _get_assigned_username(todo_db.assigned_to_user_id, db)
-    
+
+    effective_parent_type = parent_type
+    if not effective_parent_type and todo_db.parent_id:
+        parent = todo_db.parent
+        if parent:
+            effective_parent_type = parent.type or 'workitem'
+
     current_type = todo_db.type or 'workitem'
-    if current_type == 'workitem' and parent_type:
-        if parent_type == 'project':
+    if current_type == 'workitem' and effective_parent_type:
+        if effective_parent_type == 'project':
             current_type = 'story'
-        elif parent_type == 'story':
+        elif effective_parent_type == 'story':
             current_type = 'task'
-            
+
     active_subtasks = [s for s in todo_db.subtasks if not s.is_deleted]
+
     subtasks_response = None
     if include_subtasks:
         subtasks_response = [_build_todo_response(s, db, include_subtasks=False, parent_type=current_type) for s in active_subtasks]
@@ -1262,4 +1269,4 @@ async def upload_todo_image(
             detail=str(e)
         )
 
-    return {"url": url}
+    return {"url": get_full_url(request, url)}

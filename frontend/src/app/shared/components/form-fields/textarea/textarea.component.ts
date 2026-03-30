@@ -91,14 +91,14 @@ export class TextareaFormComponent implements OnInit, OnDestroy, OnChanges {
     // Clean text (no image markdown) shown in the visible textarea
     get cleanDisplayValue(): string {
         const value = this.control?.value || '';
-        return value.replace(/\n?!\[image\]\(https?:\/\/[^)]+\)/g, '').trimEnd();
+        return value.replace(/\n?!\[image\]\(((?:https?:\/\/|\/)[^)]+)\)/g, '').trimEnd();
     }
 
     // Image URLs extracted from the control value
     get computedImageUrls(): string[] {
         if (!this.showImagePreviews) return [];
         const value = this.control?.value || '';
-        const regex = /!\[image\]\((https?:\/\/[^)]+)\)/g;
+        const regex = /!\[image\]\(((?:https?:\/\/|\/)[^)]+)\)/g;
         const urls: string[] = [];
         let match: RegExpExecArray | null;
         while ((match = regex.exec(value)) !== null) {
@@ -129,17 +129,17 @@ export class TextareaFormComponent implements OnInit, OnDestroy, OnChanges {
         const inputValue = el.value;
 
         // If the paste directive inserted image markdown, strip it from the visible textarea
-        const hasImageMarkdown = /!\[image\]\(https?:\/\/[^)]+\)/.test(inputValue);
+        const hasImageMarkdown = /!\[image\]\(((?:https?:\/\/|\/)[^)]+)\)/.test(inputValue);
         let textPart = inputValue;
         const newUrls: string[] = [];
 
         if (hasImageMarkdown) {
-            const imgRegex = /!\[image\]\((https?:\/\/[^)]+)\)/g;
+            const imgRegex = /!\[image\]\(((?:https?:\/\/|\/)[^)]+)\)/g;
             let m;
             while ((m = imgRegex.exec(inputValue)) !== null) {
                 newUrls.push(m[1]);
             }
-            textPart = inputValue.replace(/\n?!\[image\]\(https?:\/\/[^)]+\)/g, '');
+            textPart = inputValue.replace(/\n?!\[image\]\(((?:https?:\/\/|\/)[^)]+)\)/g, '');
             el.value = textPart;
         }
 
@@ -300,7 +300,7 @@ export class TextareaFormComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     private _extractImageUrls(value: string): string[] {
-        const regex = /!\[image\]\((https?:\/\/[^)]+)\)/g;
+        const regex = /!\[image\]\(((?:https?:\/\/|\/)[^)]+)\)/g;
         const urls: string[] = [];
         let match;
         while ((match = regex.exec(value)) !== null) {

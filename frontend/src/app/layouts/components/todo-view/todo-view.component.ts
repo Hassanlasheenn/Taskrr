@@ -1078,11 +1078,13 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         this.saving = true;
         
         const updatePayload: ITodoUpdate = {
+            title: this.todo.title,
             status: formValue.status,
             priority: formValue.priority,
             description: formValue.description,
             assigned_to_user_id: formValue.assigned_to_user_id,
             due_date: formValue.due_date || null,
+            type: this.todo.type || 'workitem',
             time_estimate: this.todo?.parent_id ? (formValue.time_estimate || null) : undefined,
             time_logged: finalTimeLogged || null
         };
