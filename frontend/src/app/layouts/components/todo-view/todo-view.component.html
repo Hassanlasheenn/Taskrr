@@ -20,10 +20,6 @@
                                     <i class="bi bi-tag-fill"></i>
                                     <span class="todo-view-category-tag-text">{{ todo.category }}</span>
                                 </span>
-                                <span *ngIf="isUnassigned" class="unassigned-badge">
-                                    <i class="bi bi-person-x-fill"></i>
-                                    Unassigned
-                                </span>
                                 <div *ngIf="todoForm.get('due_date')?.value" class="due-date-view-container">
                                     <app-dynamic-form
                                         [form]="todoForm"

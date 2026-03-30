@@ -290,25 +290,6 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         return 'Add New Todo';
     }
 
-    get _shouldHideTimeEstimate(): boolean {
-        if (this.activeSection !== DashboardSections.STORIES) return false;
-        
-        // If we have a parentId, it's either a new Story or a new Task
-        if (this.parentIdForSubtask) {
-            if (this.selectedStory && this.parentIdForSubtask === this.selectedStory.id) return false;
-            return true;
-        }
-
-        // If we are editing, check the todo's type
-        if (this.editingTodo) {
-            // Show time for stories and tasks, hide for projects
-            if (this.editingTodo.type === 'project') return true;
-            return false;
-        }
-
-        return true;
-    }
-
     get _forcedTodoType(): string | null {
         // If we have a parent, determine forced type based on parent's type
         if (this.parentIdForSubtask) {

@@ -247,19 +247,28 @@ def _get_assigned_username(assigned_user_id: int | None, db: Session) -> str | N
     return assigned_user.username if assigned_user else None
 
 
-def _build_todo_response(todo_db: models.Todo, db: Session, include_subtasks: bool = False) -> schemas.TodoResponse:
+def _build_todo_response(todo_db: models.Todo, db: Session, include_subtasks: bool = False, parent_type: str | None = None) -> schemas.TodoResponse:
     assigned_to_username = _get_assigned_username(todo_db.assigned_to_user_id, db)
+    
+    current_type = todo_db.type or 'workitem'
+    if current_type == 'workitem' and parent_type:
+        if parent_type == 'project':
+            current_type = 'story'
+        elif parent_type == 'story':
+            current_type = 'task'
+            
     active_subtasks = [s for s in todo_db.subtasks if not s.is_deleted]
     subtasks_response = None
     if include_subtasks:
-        subtasks_response = [_build_todo_response(s, db, include_subtasks=False) for s in active_subtasks]
+        subtasks_response = [_build_todo_response(s, db, include_subtasks=False, parent_type=current_type) for s in active_subtasks]
+
     todo_dict = {
         "id": todo_db.id,
         "title": todo_db.title,
         "description": todo_db.description,
         "status": todo_db.status or models.TodoStatus.NEW.value,
         "priority": todo_db.priority,
-        "type": todo_db.type or 'workitem',
+        "type": current_type,
         "category": todo_db.category,
         "due_date": todo_db.due_date,
         "reminder_sent_at": todo_db.reminder_sent_at,
@@ -334,16 +343,24 @@ def get_todo(
     db: Session = Depends(database.get_db)
 ):
     """Get a single todo by ID. User must be the creator or assigned to the todo."""
-    cache_key = f"{PREFIX_TODO_DETAIL}{todo_id}"
-    cached = cache_get(cache_key)
     todo_db = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
     if not todo_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
     if not _can_access_todo(todo_db, user_id, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to view this todo")
-    if cached is not None:
+
+    cache_key = f"{PREFIX_TODO_DETAIL}{todo_id}"
+    cached = cache_get(cache_key)
+    if cached is not None and not todo_db.parent_id:
         return schemas.TodoResponse(**cached)
-    response = _build_todo_response(todo_db, db, include_subtasks=True)
+
+    parent_type = None
+    if todo_db.parent_id:
+        parent = db.query(models.Todo).filter(models.Todo.id == todo_db.parent_id).first()
+        if parent:
+            parent_type = _build_todo_response(parent, db, include_subtasks=False).type
+
+    response = _build_todo_response(todo_db, db, include_subtasks=True, parent_type=parent_type)
     cache_set(cache_key, response.model_dump(mode="json"), CACHE_TTL_TODO_DETAIL)
     return response
 
@@ -363,9 +380,12 @@ def get_subtasks(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     if not _can_access_todo(parent, user_id, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
+    
+    parent_type = _build_todo_response(parent, db, include_subtasks=False).type
+    
     active_subtasks = [s for s in parent.subtasks if not s.is_deleted]
     return schemas.TodoListResponse(
-        todos=[_build_todo_response(s, db) for s in active_subtasks],
+        todos=[_build_todo_response(s, db, parent_type=parent_type) for s in active_subtasks],
         total=len(active_subtasks),
     )
 

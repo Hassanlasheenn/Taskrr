@@ -350,9 +350,6 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                 const todo = response as ITodo;
                 const subtasks = todo.subtasks || [];
                 
-                // Manually set the type based on the helper logic
-                todo.type = getTodoType(todo, subtasks);
-                
                 this.todo = todo;
                 this.subtasks = subtasks;
 
@@ -655,7 +652,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         this._todoService.updateTodo(this.userId, event.id, event.data).subscribe({
             next: (updated) => {
                 const existing = this.subtasks.find(s => s.id === event.id);
-                const enriched = enrichTodo({ ...existing, ...updated } as ITodo, [this.todo, ...this.subtasks]);
+                const enriched = { ...existing, ...updated } as ITodo;
                 
                 this.subtasks = this.subtasks.map(s => s.id === event.id ? enriched : s);
 
@@ -675,8 +672,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         if (!this.userId || !this.todo) return;
         this._todoService.createSubtask(this.userId, this.todo.id, todoData).subscribe({
             next: (subtask) => {
-                const enriched = enrichTodo(subtask, [this.todo, ...this.subtasks]);
-                this.subtasks = [...this.subtasks, enriched];
+                this.subtasks = [...this.subtasks, subtask];
                 if (this.todo) {
                     this.todo.subtask_count = (this.todo.subtask_count || 0) + 1;
                     this.todo.type = getTodoType(this.todo, this.subtasks);
@@ -689,8 +685,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     }
 
     onSubtaskAdded(subtask: ITodo): void {
-        const enriched = enrichTodo(subtask, [this.todo, ...this.subtasks]);
-        this.subtasks = [...this.subtasks, enriched];
+        this.subtasks = [...this.subtasks, subtask];
         if (this.todo) {
             this.todo.subtask_count = (this.todo.subtask_count || 0) + 1;
             this.todo.type = getTodoType(this.todo, this.subtasks);
@@ -706,8 +701,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
     }
 
     onSubtaskUpdated(subtask: ITodo): void {
-        const enriched = enrichTodo(subtask, [this.todo, ...this.subtasks]);
-        this.subtasks = this.subtasks.map(s => s.id === enriched.id ? enriched : s);
+        this.subtasks = this.subtasks.map(s => s.id === subtask.id ? subtask : s);
     }
 
     getHistoryActionLabel(action: string): string {

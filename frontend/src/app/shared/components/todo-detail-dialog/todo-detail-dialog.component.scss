@@ -256,6 +256,12 @@
     border-radius: 16px;
     border: 1px solid var(--card-border-color);
 
+    .pasted-image {
+        max-width: 100%;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+
     :host-context(body.dark-theme) & {
         background: var(--bg-tertiary, rgba(255, 255, 255, 0.03));
         border-color: rgba(255, 255, 255, 0.08);

@@ -32,7 +32,7 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     @Input() editingTodo: ITodo | null = null;
     @Input() parentId: number | null = null;
     @Input() parentTodo: ITodo | null = null;
-    @Input() hideTimeEstimate: boolean = false;
+    
     @Input() forcedType: string | null = null;
     @Output() submitTodo = new EventEmitter<ITodoCreate>();
     @Output() updateTodo = new EventEmitter<{ id: number; data: ITodoUpdate }>();
@@ -168,7 +168,7 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
             }
         }
         
-        if ((changes['parentId'] || changes['parentTodo'] || changes['forcedType'] || changes['hideTimeEstimate']) && !this.isEditMode) {
+        if ((changes['parentId'] || changes['parentTodo'] || changes['forcedType']) && !this.isEditMode) {
             this.initForm();
         }
     }
@@ -176,24 +176,17 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     initForm(): void {
         this.fields = this._getDefaultFields();
         
-        if (this.hideTimeEstimate) {
-            this.fields = this.fields.filter(f => f.formControlName !== 'time_estimate');
-        }
-        
-        // Set initial type based on parentId or forcedType
         const typeField = this.fields.find(f => f.formControlName === 'type');
         if (typeField) {
             if (this.forcedType) {
                 typeField.value = this.forcedType;
                 typeField.disabled = true;
-                // Filter options to only show the forced type
                 const forcedOption = typeField.options?.find(opt => opt.key === this.forcedType);
                 if (forcedOption) {
                     typeField.options = [forcedOption];
                 }
             } else if (!this.isEditMode && !this.editingTodo) {
                 if (this.parentId) {
-                    // Infer correct type from parent
                     if (this.parentTodo) {
                         const pType = getTodoType(this.parentTodo as any);
                         typeField.value = (pType === 'project') ? 'story' : 'task';
@@ -208,6 +201,10 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
 
         this._updateFieldsForMode();
         this.form = this._formService.initializeForm(this.fields);
+        
+        const initialType = this.form.get('type')?.value || (this.editingTodo ? this.editingTodo.type : 'workitem');
+        this._handleTimeEstimateField(initialType);
+        
         this.updateUserDropdownField();
         this._watchCategoryChanges();
         this._watchTypeChanges();
@@ -225,7 +222,35 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
             .pipe(takeUntil(this._destroy$))
             .subscribe(type => {
                 this._handleParentField(type);
+                this._handleTimeEstimateField(type);
             });
+    }
+
+    private _handleTimeEstimateField(type: string): void {
+        const shouldHide = type === 'project' || type === 'story';
+        const timeEstimateIndex = this.fields.findIndex(f => f.formControlName === 'time_estimate');
+
+        if (shouldHide && timeEstimateIndex !== -1) {
+            this.fields.splice(timeEstimateIndex, 1);
+            if (this.form.get('time_estimate')) {
+                this.form.removeControl('time_estimate');
+            }
+        } else if (!shouldHide && timeEstimateIndex === -1) {
+            const timeEstimateField: IFieldControl = {
+                label: 'Time Estimate',
+                type: InputTypes.TIME_ESTIMATE,
+                formControlName: 'time_estimate',
+                placeholder: 'e.g., 1w 2d 3h 30m',
+                value: '',
+                required: false,
+                validations: []
+            };
+            const descIndex = this.fields.findIndex(f => f.formControlName === 'description');
+            this.fields.splice(descIndex + 1, 0, timeEstimateField);
+            if (!this.form.get('time_estimate')) {
+                this.form.addControl('time_estimate', this._formService.createControl(timeEstimateField));
+            }
+        }
     }
 
     private _watchParentChanges(): void {
@@ -501,14 +526,15 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     private _submitFinalTodo(formValue: any, parentIdOverride?: number | null): void {
         const finalCategory = formValue.category === 'Other' ? formValue.custom_category : formValue.category;
         const parentId = (parentIdOverride !== undefined) ? parentIdOverride : (formValue.parent_id || this.parentId);
+        const type = formValue.type || 'workitem';
 
         const todoData: ITodoCreate = {
             title: formValue.title,
             description: formValue.description || undefined,
             due_date: formValue.due_date || undefined,
-            time_estimate: this.hideTimeEstimate ? undefined : (formValue.time_estimate || undefined),
+            time_estimate: (type !== 'project' && type !== 'story') ? (formValue.time_estimate || undefined) : undefined,
             priority: formValue.priority || 'medium',
-            type: formValue.type || 'workitem',
+            type: type,
             category: finalCategory || undefined,
             assigned_to_user_id: formValue.assigned_to_user_id === "null" ? null : formValue.assigned_to_user_id,
             parent_id: parentId ?? undefined,
@@ -519,7 +545,7 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
                 title: todoData.title,
                 description: todoData.description,
                 due_date: todoData.due_date !== undefined ? todoData.due_date : null,
-                time_estimate: this.hideTimeEstimate ? undefined : (todoData.time_estimate !== undefined ? todoData.time_estimate : null),
+                time_estimate: (type !== 'project' && type !== 'story') ? (todoData.time_estimate !== undefined ? todoData.time_estimate : null) : undefined,
                 category: todoData.category,
                 type: todoData.type,
                 status: formValue.status || 'new',
