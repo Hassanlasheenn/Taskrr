@@ -1249,7 +1249,7 @@ async def upload_todo_image(
             file.filename or "pasted-image.png",
             folder="todo_images",
             content_type=file.content_type,
-            s3_only=True
+            s3_only=False
         )
         if not url:
             raise HTTPException(
