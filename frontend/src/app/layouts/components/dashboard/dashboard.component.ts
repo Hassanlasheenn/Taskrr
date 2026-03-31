@@ -67,6 +67,23 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     private _storyChildCache = new Map<number, ITodo[]>();
     _expandedProjectIds = new Set<number>();
 
+    private _refreshProjectStoriesCache(projectId: number): void {
+        const userId = this._authService.getCurrentUserId();
+        if (!userId) return;
+        this._todoService.getSubtasks(userId, projectId)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe({
+                next: (res) => {
+                    const children = enrichTodoTypes(res.todos as ITodo[], [{ id: projectId }, ...(res.todos as ITodo[])]);
+                    this._storyChildCache.set(projectId, children);
+                    // Also refresh current view if it's the selected project
+                    if (this.selectedProject && this.selectedProject.id === projectId) {
+                        this.projectStories = children;
+                    }
+                }
+            });
+    }
+
     onToggleProjectExpand(project: ITodo, event: MouseEvent): void {
         event.stopPropagation();
         if (this._expandedProjectIds.has(project.id)) {
@@ -373,20 +390,43 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
                 next: (newTodo) => {
                     this._closeSidebarInternal();
                     const enriched = enrichTodo(newTodo, this.todos);
-                    // Invalidate cache for the parent project so it reloads its children
+                    
+                    // Manually increment the subtask_count of the parent in the local list for immediate UI feedback
                     const createdParentId = (enriched as ITodo).parent_id;
                     if (createdParentId) {
+                        const parentIdx = this.todos.findIndex(t => t.id === createdParentId);
+                        if (parentIdx !== -1) {
+                            this.todos[parentIdx] = { 
+                                ...this.todos[parentIdx], 
+                                subtask_count: (this.todos[parentIdx].subtask_count || 0) + 1 
+                            };
+                            this.todos = [...this.todos]; // Trigger change detection
+                        }
+
                         this._storyChildCache.delete(createdParentId);
                         
-                        // If we are currently viewing this parent project, refresh it
-                        if (this.selectedProject && this.selectedProject.id === createdParentId) {
-                            this.onSelectProject(this.selectedProject);
+                        // Case 1: We are currently in the project detail view
+                        if (this.selectedProject) {
+                            // If the added item is a direct child of the project OR 
+                            // if it's a child of a story currently visible in the project view
+                            if (this.selectedProject.id === createdParentId || 
+                                this.projectStories.some(s => s.id === createdParentId)) {
+                                this.onSelectProject(this.selectedProject);
+                            }
+                        } 
+                        // Case 2: We are in the landing view and the parent project is expanded
+                        else if (this._expandedProjectIds.has(createdParentId)) {
+                            this._refreshProjectStoriesCache(createdParentId);
                         }
                     }
                     this.loadTodos();
                     if (this.viewMode === 'table') {
                         this.loadTableTodos();
                     }
+                    
+                    // Notify other components (like columns) via the shared service
+                    this._detailDialogService.notifyUpdate(enriched as ITodo);
+
                     // If we're in a story detail view, append the new task immediately
                     if (this.selectedStory && (enriched as ITodo).parent_id === this.selectedStory.id) {
                         this.storySubtasks = [...this.storySubtasks, enriched as ITodo];

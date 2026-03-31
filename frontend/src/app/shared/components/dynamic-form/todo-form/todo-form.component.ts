@@ -305,17 +305,21 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     private _addOrUpdateParentField(label: string, options: { key: any, value: string }[]): void {
         const existingIndex = this.fields.findIndex(f => f.formControlName === 'parent_id');
         
-        // Ensure the current parentId is in the options list so the label shows up
-        if (this.parentId && !options.some(o => o.key === this.parentId)) {
+        // Use either the @Input parentId or the one from the editing todo
+        const effectiveParentId = this.parentId || (this.isEditMode ? this.editingTodo?.parent_id : null);
+        
+        // Ensure the effectiveParentId is in the options list so the label shows up and it is preselected
+        if (effectiveParentId && !options.some(o => o.key === effectiveParentId)) {
             // Find parent title from input parentTodo or editingTodo's parent info
             let title = 'Current Parent';
-            if (this.parentTodo && this.parentTodo.id === this.parentId) {
+            if (this.parentTodo && this.parentTodo.id === effectiveParentId) {
                 title = this.parentTodo.title;
-            } else if (this.editingTodo?.parent_id === this.parentId) {
-                // If editing, we might not have the parentTodo object, but could potentially have some info
+            } else if (this.isEditMode && this.editingTodo?.parent_id === effectiveParentId) {
+                // If we're editing, we might have the parent's title stored in some extra field if we wanted,
+                // but for now 'Current Parent' is a safe fallback if it's not in the loaded list.
                 title = 'Current Parent';
             }
-            options.unshift({ key: this.parentId, value: title });
+            options.unshift({ key: effectiveParentId, value: title });
         }
 
         const parentField: IFieldControl = {
@@ -323,10 +327,10 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
             type: InputTypes.DROPDOWN,
             formControlName: 'parent_id',
             placeholder: `Select ${label.split(' ').pop()}`,
-            value: this.parentId || null,
+            value: effectiveParentId || null,
             required: true,
             options: options,
-            disabled: !!this.parentId, // Disable if we already have a parentId
+            disabled: !!this.parentId, // Disable if we already have a parentId passed via Input
             validations: [
                 { type: ValidatorTypes.REQUIRED, message: `${label} is required` }
             ]
@@ -336,7 +340,8 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
             this.fields[existingIndex] = parentField;
             const ctrl = this.form.get('parent_id');
             if (ctrl) {
-                ctrl.patchValue(this.parentId || null, { emitEvent: false });
+                // Explicitly patch value to ensure UI is in sync after options are loaded
+                ctrl.patchValue(effectiveParentId || null, { emitEvent: false });
                 if (!!this.parentId) {
                     ctrl.disable({ emitEvent: false });
                 } else {

@@ -139,6 +139,10 @@ export class TodoColumnsComponent implements OnChanges {
                             if (idx !== -1) {
                                 subtasks[idx] = { ...updated };
                                 this._loadedSubtasks.set(updated.parent_id, [...subtasks]);
+                            } else {
+                                // It's a new subtask being added to this parent
+                                const enriched = enrichTodoTypes([...subtasks, updated]);
+                                this._loadedSubtasks.set(updated.parent_id, enriched);
                             }
                         }
                     }
@@ -164,7 +168,7 @@ export class TodoColumnsComponent implements OnChanges {
     // ─────────────────────────────────────────────────────────────
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['todos'] || changes['showUnassigned']) {
-            const sig = this.todos.map(t => `${t.id}:${t.status}:${t.priority}:${t.category}:${t.title}`).join(',');
+            const sig = this.todos.map(t => `${t.id}:${t.status}:${t.priority}:${t.category}:${t.title}:${t.subtask_count}`).join(',');
             if (sig !== this._todosSignature || changes['showUnassigned']) {
                 this._todosSignature = sig;
                 

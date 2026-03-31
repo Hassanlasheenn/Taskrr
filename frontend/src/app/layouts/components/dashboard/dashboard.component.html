@@ -129,7 +129,7 @@
                             (edit)="onEditTodo($event)"
                             (delete)="onDeleteTodo($event)"
                             (statusChange)="onTodoStatusChange($event)"
-                            (addSubtask)="onSelectStory($event)"
+                            (addSubtask)="onAddSubtask($event)"
                         />
 
                         <div *ngIf="projectStories.length === 0" class="stories-empty">
