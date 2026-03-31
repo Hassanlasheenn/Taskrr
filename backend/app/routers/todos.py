@@ -21,6 +21,7 @@ from ..cache import (
 )
 from ..config import CACHE_TTL_TODO_LIST, CACHE_TTL_TODO_DETAIL, CACHE_TTL_TODO_COMMENTS
 from ..utils import get_photo_url, get_full_url
+from ..time_utils import sum_time_strings
 from ..services.storage_service import S3StorageService
 from ..services.rate_limiter import RateLimiter
 
@@ -269,6 +270,14 @@ def _build_todo_response(todo_db: models.Todo, db: Session, include_subtasks: bo
     if include_subtasks:
         subtasks_response = [_build_todo_response(s, db, include_subtasks=False, parent_type=current_type) for s in active_subtasks]
 
+    # Aggregate time estimates and logged time from subtasks if any exist
+    if active_subtasks:
+        time_estimate = sum_time_strings([s.time_estimate for s in active_subtasks])
+        time_logged = sum_time_strings([s.time_logged for s in active_subtasks])
+    else:
+        time_estimate = todo_db.time_estimate
+        time_logged = todo_db.time_logged
+
     todo_dict = {
         "id": todo_db.id,
         "title": todo_db.title,
@@ -285,8 +294,8 @@ def _build_todo_response(todo_db: models.Todo, db: Session, include_subtasks: bo
         "user_id": todo_db.user_id,
         "assigned_to_user_id": todo_db.assigned_to_user_id,
         "assigned_to_username": assigned_to_username,
-        "time_estimate": todo_db.time_estimate,
-        "time_logged": todo_db.time_logged,
+        "time_estimate": time_estimate,
+        "time_logged": time_logged,
         "parent_id": todo_db.parent_id,
         "subtask_count": len(active_subtasks),
         "subtasks": subtasks_response,
