@@ -138,7 +138,7 @@
                             <span>Click <strong>+</strong> to add a story to this project.</span>
                         </div>
                     </ng-container>
-                    <!-- Level 1: Landing — Projects + Stories -->
+                    <!-- Level 1: Landing — Projects + Stories (Now using Columns) -->
                     <ng-container *ngIf="!selectedProject && !selectedStory">
 
                         <div *ngIf="filteredTodos.length === 0 && !classifyingStories" class="stories-empty">
@@ -147,102 +147,53 @@
                             <span>Add tasks to any task from the Dashboard to turn it into a Story.</span>
                         </div>
 
-                        <!-- Projects group -->
-                        <div *ngIf="projectTodos.length > 0" class="stories-group">
-                            <div class="stories-group__header">
-                                <i class="bi bi-layers-fill"></i>
-                                <span>Projects</span>
-                                <span class="stories-group__count stories-group__count--project">{{ projectTodos.length }}</span>
-                            </div>
-                            <div class="stories-list">
-                                <div *ngFor="let project of projectTodos; trackBy: trackById" class="project-expandable-row">
-                                    <div
-                                        class="story-list-item story-list-item--project-main"
-                                        [ngClass]="'priority-' + project.priority"
-                                        (click)="onToggleProjectExpand(project, $event)"
-                                    >
-                                        <span class="story-list-item__dot" [ngClass]="'priority-' + project.priority"></span>
-                                        <div class="story-list-item__content">
-                                            <span class="story-list-item__title">{{ project.title }}</span>
-                                            <span class="story-list-item__tasks">
-                                                {{ project.subtask_count }} {{ project.subtask_count !== 1 ? 'stories' : 'story' }}
-                                            </span>
-                                        </div>
-                                        <i class="bi story-list-item__expand-icon" [ngClass]="isProjectExpanded(project.id) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        <!-- Projects & Stories Portfolio Grid -->
+                        <div *ngIf="filteredTodos.length > 0" class="project-portfolio-grid">
+                            <div *ngFor="let todo of filteredTodos; trackBy: trackById" 
+                                 class="project-card"
+                                 [ngClass]="'priority-' + todo.priority"
+                                 (click)="onStoriesItemClick(todo)">
+                                
+                                <div class="project-card__header">
+                                    <div class="project-card__type-info">
+                                        <i class="bi" [ngClass]="getStoryTypeIcon(todo)"></i>
+                                        <span>{{ getStoryTypeLabel(todo) }}</span>
                                     </div>
+                                    <span class="project-card__priority-dot" [ngClass]="'priority-' + todo.priority"></span>
+                                </div>
 
-                                    <!-- Inline Stories -->
-                                    <div class="project-inline-stories" *ngIf="isProjectExpanded(project.id)">
-                                        <div *ngIf="getProjectStories(project.id).length === 0" class="project-inline-stories__empty">
-                                            No stories linked to this project.
-                                        </div>
-                                        <div
-                                            *ngFor="let story of getProjectStories(project.id); trackBy: trackById"
-                                            class="story-list-item story-list-item--nested"
-                                            [ngClass]="'priority-' + story.priority"
-                                            (click)="onSelectStoryInProject(story, project)"
-                                        >
-                                            <span class="story-list-item__dot" [ngClass]="'priority-' + story.priority"></span>
-                                            <div class="story-list-item__content">
-                                                <span class="story-list-item__title">{{ story.title }}</span>
-                                                <div class="story-list-item__meta">
-                                                    <span class="story-list-item__type-chip story-list-item__type-chip--story">
-                                                        <i class="bi bi-journal-bookmark-fill"></i>
-                                                        Story
-                                                    </span>
-                                                    <span class="story-list-item__tasks">
-                                                        {{ story.subtask_count }} task{{ story.subtask_count !== 1 ? 's' : '' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <i class="bi bi-chevron-right story-list-item__arrow"></i>
-                                        </div>
+                                <h3 class="project-card__title">{{ todo.title }}</h3>
+                                
+                                <div class="project-card__meta">
+                                    <span *ngIf="todo.category" class="project-card__tag">
+                                        <i class="bi bi-tag"></i>{{ todo.category }}
+                                    </span>
+                                    <span class="project-card__count">
+                                        <i class="bi bi-diagram-3"></i>
+                                        {{ todo.subtask_count ?? 0 }} {{ (todo.type === 'project' || (todo.subtask_count ?? 0) > 0) ? 'stories' : 'tasks' }}
+                                    </span>
+                                </div>
+
+                                <div class="project-card__progress-wrapper" *ngIf="(todo.subtask_count ?? 0) > 0">
+                                    <div class="project-card__progress-label">
+                                        <span>Progress</span>
+                                        <span>{{ getProjectProgress(todo) }}%</span>
                                     </div>
+                                    <div class="project-card__progress-bar">
+                                        <div class="project-card__progress-fill" [style.width.%]="getProjectProgress(todo)"></div>
+                                    </div>
+                                </div>
+
+                                <div class="project-card__footer">
+                                    <span class="project-card__status" [ngClass]="'status-' + todo.status">
+                                        {{ todo.status === 'inProgress' ? 'In Progress' : (todo.status | titlecase) }}
+                                    </span>
+                                    <button class="project-card__open-btn">
+                                        View Details <i class="bi bi-arrow-right"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Stories group -->
-                        <div *ngIf="plainStoryTodos.length > 0 || classifyingStories" class="stories-group" [class.stories-group--spaced]="projectTodos.length > 0">
-                            <div class="stories-group__header">
-                                <i class="bi bi-journal-bookmark-fill"></i>
-                                <span>Stories</span>
-                                <span class="stories-group__count stories-group__count--story">
-                                    <ng-container *ngIf="!classifyingStories">{{ plainStoryTodos.length }}</ng-container>
-                                    <span *ngIf="classifyingStories" class="spinner-border spinner-border-sm" style="width:12px;height:12px;border-width:2px;"></span>
-                                </span>
-                            </div>
-                            <div *ngIf="plainStoryTodos.length > 0" class="stories-list">
-                                <div
-                                    *ngFor="let story of plainStoryTodos; trackBy: trackById"
-                                    class="story-list-item"
-                                    [ngClass]="'priority-' + story.priority"
-                                    (click)="onSelectStory(story)"
-                                >
-                                    <span class="story-list-item__dot" [ngClass]="'priority-' + story.priority"></span>
-                                    <div class="story-list-item__content">
-                                        <span class="story-list-item__title">{{ story.title }}</span>
-                                        <div class="story-list-item__meta">
-                                            <span class="story-list-item__type-chip story-list-item__type-chip--story">
-                                                <i class="bi bi-journal-bookmark-fill"></i>
-                                                Story
-                                            </span>
-                                            <span *ngIf="story.category" class="story-list-item__tag">
-                                                <i class="bi bi-tag"></i>{{ story.category }}
-                                            </span>
-                                            <span class="story-list-item__tasks">
-                                                {{ story.subtask_count }} task{{ story.subtask_count !== 1 ? 's' : '' }}
-                                            </span>
-                                            <span class="story-list-item__status" [ngClass]="'status-' + story.status">
-                                                {{ story.status === 'inProgress' ? 'In Progress' : (story.status | titlecase) }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <i class="bi bi-chevron-right story-list-item__arrow"></i>
-                                </div>
-                            </div>
-                        </div>
-
                     </ng-container>
 
                 </ng-container>

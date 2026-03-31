@@ -42,6 +42,7 @@ export class TodoColumnsComponent implements OnChanges {
     /** Emitted when a todo is dropped onto the unassigned column — parent should clear assigned_to_user_id */
     @Output() unassign = new EventEmitter<ITodo>();
     @Output() addSubtask = new EventEmitter<ITodo>();
+    @Output() itemClick = new EventEmitter<ITodo>();
 
     readonly trackById = trackById;
 
@@ -92,7 +93,12 @@ export class TodoColumnsComponent implements OnChanges {
         if (target.closest('.tc-item__btn') || target.closest('.tc-item__subtask-toggle') || target.closest('.tc-item__subtasks') || target.closest('.tc-item__subtask-status')) {
             return;
         }
-        this._dialogService.open(todo);
+        
+        if (this.itemClick.observed) {
+            this.itemClick.emit(todo);
+        } else {
+            this._dialogService.open(todo);
+        }
     }
 
     onUpdateSubtaskStatus(subtask: ITodo, event: MouseEvent): void {
@@ -430,5 +436,17 @@ export class TodoColumnsComponent implements OnChanges {
         // Pluralize
         const plural = baseLabel === 'story' ? 'stories' : 'tasks';
         return `${count} ${plural}`;
+    }
+
+    getSubtaskProgress(todo: ITodo): number {
+        if (!todo.subtask_count) return todo.status === 'done' ? 100 : 0;
+        
+        const subtasks = this._loadedSubtasks.get(todo.id) || todo.subtasks;
+        if (!subtasks || subtasks.length === 0) {
+            return todo.status === 'done' ? 100 : 0;
+        }
+
+        const doneCount = subtasks.filter(s => s.status === 'done').length;
+        return Math.round((doneCount / subtasks.length) * 100);
     }
 }

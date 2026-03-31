@@ -118,6 +118,19 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
         return this._storyChildCache.get(projectId) || [];
     }
 
+    getProjectProgress(project: ITodo): number {
+        if (!project.subtask_count) return project.status === 'done' ? 100 : 0;
+        
+        const children = this._storyChildCache.get(project.id);
+        if (!children || children.length === 0) {
+            // Fallback if not loaded: if status is done, it's 100
+            return project.status === 'done' ? 100 : 0;
+        }
+
+        const doneCount = children.filter(c => c.status === 'done').length;
+        return Math.round((doneCount / children.length) * 100);
+    }
+
     DashboardSections = DashboardSections;
     searchQuery: string = '';
     activeStatus: FilterStatus = 'all';
@@ -565,6 +578,14 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     onSelectStoryInProject(story: ITodo, project: ITodo): void {
         this.onSelectProject(project);
         this.onSelectStory(story);
+    }
+
+    onStoriesItemClick(todo: ITodo): void {
+        if (todo.type === 'project' || (todo.subtask_count && !todo.parent_id)) {
+            this.onSelectProject(todo);
+        } else {
+            this.onSelectStory(todo);
+        }
     }
 
     onBackToStories(): void {

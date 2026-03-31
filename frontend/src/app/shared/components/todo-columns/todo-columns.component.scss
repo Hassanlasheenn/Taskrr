@@ -453,6 +453,27 @@
         transition: transform 0.2s;
     }
 
+    // ── Progress Bar (Portfolio style) ──────────────────────────
+    &__progress-container {
+        width: 100%;
+        margin-top: 0.2rem;
+        margin-bottom: 0.1rem;
+    }
+
+    &__progress-bar {
+        height: 4px;
+        background: var(--bg-soft, rgba(0, 0, 0, 0.05));
+        border-radius: 2px;
+        overflow: hidden;
+    }
+
+    &__progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-gradient-start), var(--primary-gradient-end));
+        border-radius: 2px;
+        transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
     // ── Inline subtask list ───────────────────────────────────────
     &__subtasks {
         display: flex;
