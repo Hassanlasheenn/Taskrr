@@ -44,6 +44,98 @@
   <meta name="theme-color" content="#f5f5f5">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="alternate icon" type="image/x-icon" href="favicon.ico">
+  
+  <!-- Critical CSS for Hydration & Theme -->
+  <style>
+    :root {
+      --primary-color: #8b5cf6;
+      --bg-light: #efebff;
+      --bg-dark: #0a0a1a;
+      --bg-gradient-light: linear-gradient(135deg, #f4f2ff 0%, #efebff 100%);
+      --bg-gradient-dark: linear-gradient(135deg, #0a0a1a 0%, #13132b 100%);
+    }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: var(--bg-light);
+      background: var(--bg-gradient-light);
+      transition: background-color 0.3s ease;
+    }
+
+    body.dark-theme {
+      background: var(--bg-dark);
+      background: var(--bg-gradient-dark);
+    }
+
+    /* Preloader Styles */
+    .app-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      background: transparent;
+    }
+
+    .loader-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loader-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(139, 92, 246, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Hide app-root until hydration if desired, or let Angular handle it */
+    app-root:empty {
+      display: none;
+    }
+  </style>
+
+  <!-- Theme Locking Script (Executes before body renders) -->
+  <script>
+    (function() {
+      try {
+        const savedTheme = localStorage.getItem('app-theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = savedTheme || (systemDark ? 'dark' : 'light');
+        
+        if (theme === 'dark') {
+          document.body.classList.add('dark-theme');
+          document.body.classList.remove('light-theme');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0a0a1a');
+        } else {
+          document.body.classList.add('light-theme');
+          document.body.classList.remove('dark-theme');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f5f5f5');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -52,6 +144,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Chewy&family=Dancing+Script:wght@400;500;600;700&family=Kaushan+Script&family=Pacifico&display=swap" rel="stylesheet">
 </head>
 <body class="light-theme">
-  <app-root></app-root>
+  <app-root>
+    <!-- Pre-hydration Loader (replaced by Angular once ready) -->
+    <div class="app-loading" id="app-preloader">
+      <div class="loader-container">
+        <div class="loader-spinner"></div>
+      </div>
+    </div>
+  </app-root>
 </body>
 </html>

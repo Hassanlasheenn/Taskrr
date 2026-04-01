@@ -27,21 +27,18 @@
 }
 
 .loader {
-    width: 48px;
-    height: 48px;
-    border: 5px solid var(--loader-spinner-color);
-    border-bottom-color: transparent;
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(var(--primary-color-rgb), 0.1);
     border-radius: 50%;
+    border-top-color: var(--primary-color);
     display: inline-block;
     box-sizing: border-box;
-    animation: rotation 1s linear infinite;
+    animation: spin 1s ease-in-out infinite;
 }
 
-@keyframes rotation {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
+@keyframes spin {
+    to {
         transform: rotate(360deg);
     }
 }

@@ -43,18 +43,23 @@ export class ThemeService {
 
     private getInitialTheme(): ThemeMode {
         if (isPlatformBrowser(this._platformId)) {
+            // Priority 1: Saved preference
             const savedTheme = localStorage.getItem(this.STORAGE_KEY) as ThemeMode;
             if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
                 return savedTheme;
             }
 
-            // Check system preference
+            // Priority 2: Check current body class (set by locking script)
+            if (document.body.classList.contains('dark-theme')) return 'dark';
+            if (document.body.classList.contains('light-theme')) return 'light';
+
+            // Priority 3: System preference
             if (globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches) {
                 return 'dark';
             }
         }
 
-        return 'dark';
+        return 'light'; // Default to light if everything else fails
     }
 
     private applyTheme(theme: ThemeMode): void {
