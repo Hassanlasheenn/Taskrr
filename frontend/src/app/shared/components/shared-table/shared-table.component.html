@@ -239,7 +239,7 @@
                         <td data-label="Created">{{ formatCreatedAt(todo.created_at) }}</td>
                         <td class="actions-cell" data-label="Actions">
                             <div class="table-actions">
-                                <button (click)="onDelete(todo)" class="table-action-btn delete" title="Delete"
+                                <button *ngIf="canDeleteTodo(todo)" (click)="onDelete(todo)" class="table-action-btn delete" title="Delete"
                                     [disabled]="todo.is_deleted">
                                     <i class="bi bi-trash"></i>
                                 </button>

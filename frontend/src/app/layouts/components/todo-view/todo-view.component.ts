@@ -144,6 +144,20 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         validations: []
     };
 
+    isEditingTitle = false;
+    editTitleForm: FormGroup = new FormGroup({});
+    titleField: IFieldControl = {
+        formControlName: 'title',
+        label: 'Title',
+        type: InputTypes.TEXT,
+        value: '',
+        required: true,
+        validations: [
+            { type: ValidatorTypes.REQUIRED, message: 'Title is required' },
+            { type: ValidatorTypes.MINLENGTH, message: 'Title must be at least 3 characters', value: 3 }
+        ]
+    };
+
     initialFormValue: any = null;
     
     mentionableUsers: IUserListResponse[] = [];
@@ -210,6 +224,11 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
 
     get isAdmin(): boolean {
         return this._authService.isAdmin();
+    }
+
+    get canDeleteTodo(): boolean {
+        if (!this.todo) return false;
+        return this.isAdmin || this.todo.user_id === this.userId;
     }
 
     get todoType(): TodoType {
@@ -639,12 +658,49 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
 
     onOpenSubtaskForm(): void {
         this.subtaskToEdit = null;
+        if (this.subtaskFormComponent) {
+            this.subtaskFormComponent.resetForm();
+        }
         this.isSubtaskSidebarOpen = true;
     }
 
     onEditSubtask(subtask: ITodo): void {
         this.subtaskToEdit = subtask;
         this.isSubtaskSidebarOpen = true;
+    }
+
+    onStartEditTitle(): void {
+        if (!this.todo) return;
+        this.editTitleForm = this._formService.initializeForm([this.titleField]);
+        this.editTitleForm.patchValue({ title: this.todo.title });
+        this.isEditingTitle = true;
+    }
+
+    onCancelEditTitle(): void {
+        this.isEditingTitle = false;
+    }
+
+    onSaveTitle(): void {
+        if (this.editTitleForm.invalid || !this.todo || !this.userId) return;
+
+        const newTitle = this.editTitleForm.get('title')?.value;
+        if (newTitle === this.todo.title) {
+            this.isEditingTitle = false;
+            return;
+        }
+
+        const update: ITodoUpdate = { title: newTitle };
+        this._todoService.updateTodo(this.userId, this.todo.id, update).subscribe({
+            next: (updated) => {
+                if (this.todo) {
+                    this.todo.title = updated.title;
+                }
+                this.isEditingTitle = false;
+                this._toastService.success('Title updated');
+                this._detailDialogService.notifyUpdate(updated as ITodo);
+            },
+            error: (err) => this._toastService.error(err?.error?.detail || 'Failed to update title')
+        });
     }
 
     onSubtaskUpdateSubmit(event: { id: number; data: ITodoUpdate }): void {

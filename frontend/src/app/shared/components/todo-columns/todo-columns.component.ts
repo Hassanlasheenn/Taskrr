@@ -449,4 +449,9 @@ export class TodoColumnsComponent implements OnChanges {
         const doneCount = subtasks.filter(s => s.status === 'done').length;
         return Math.round((doneCount / subtasks.length) * 100);
     }
+
+    canDeleteTodo(todo: ITodo): boolean {
+        const currentUserId = this._authService.getCurrentUserId();
+        return this._authService.isAdmin() || todo.user_id === currentUserId;
+    }
 }

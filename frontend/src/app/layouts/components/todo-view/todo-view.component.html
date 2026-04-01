@@ -15,7 +15,30 @@
                                     <i class="bi" [ngClass]="todoTypeIcon"></i>
                                     {{ todoTypeLabel }}
                                 </span>
-                                <h1 class="todo-view-title">{{ todo.title }}</h1>
+                                <div class="todo-view-title-container" [class.editing]="isEditingTitle">
+                                    <ng-container *ngIf="!isEditingTitle">
+                                        <h1 class="todo-view-title">{{ todo.title }}</h1>
+                                        <button type="button" class="title-edit-btn" (click)="onStartEditTitle()" title="Edit Title">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </ng-container>
+                                    
+                                    <div *ngIf="isEditingTitle" class="title-edit-form">
+                                        <app-dynamic-form
+                                            [form]="editTitleForm"
+                                            [fields]="[titleField]"
+                                            [isFilter]="false"
+                                        />
+                                        <div class="title-edit-actions">
+                                            <button type="button" class="action-btn action-btn--save" (click)="onSaveTitle()" [disabled]="editTitleForm.invalid">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                            <button type="button" class="action-btn action-btn--cancel" (click)="onCancelEditTitle()">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <span *ngIf="todo.category" class="todo-view-category-tag">
                                     <i class="bi bi-tag-fill"></i>
                                     <span class="todo-view-category-tag-text">{{ todo.category }}</span>
@@ -95,13 +118,16 @@
                             </div>
                             <div class="todo-view-header-buttons">
                                 <button
+                                    *ngIf="canDeleteTodo"
                                     type="button"
                                     class="todo-view-delete-btn"
                                     (click)="onDeleteTodo()"
                                     aria-label="Delete todo"
                                 >
+                                    <i class="bi bi-trash"></i>
                                     Delete
                                 </button>
+
                                 <button
                                     type="submit"
                                     class="todo-view-save-btn"

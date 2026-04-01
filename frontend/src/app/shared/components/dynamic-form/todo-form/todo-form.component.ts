@@ -50,6 +50,8 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     availableCategories: string[] = ['Work', 'Personal', 'Shopping', 'Health', 'Learning', 'Other'];
 
     fields: IFieldControl[] = [];
+    private _allTodos: ITodo[] = [];
+    private _allTodosLoaded = false;
 
     private _getDefaultFields(): IFieldControl[] {
         return [
@@ -72,12 +74,7 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
                 placeholder: 'Select type',
                 value: 'workitem',
                 required: true,
-                options: [
-                    { key: 'project', value: 'Project' },
-                    { key: 'story', value: 'Story' },
-                    { key: 'workitem', value: 'Work Item' },
-                    { key: 'task', value: 'Task' }
-                ],
+                options: [], // populated dynamically
                 validations: [
                     { type: ValidatorTypes.REQUIRED, message: 'Type is required' }
                 ],
@@ -156,7 +153,58 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     ngOnInit(): void {
         this.isAdmin = this._authService.isAdmin();
         this.loadUsers();
-        this.initForm();
+        
+        const userId = this._authService.getCurrentUserId();
+        if (userId && !this.isEditMode) {
+            this._todoService.getTodos(userId, 0, 500).subscribe(res => {
+                this._allTodos = res.todos as ITodo[];
+                this._allTodosLoaded = true;
+                this.initForm();
+            });
+        } else {
+            this.initForm();
+        }
+    }
+
+    private _getTypeOptions(): { key: string, value: string }[] {
+        if (this.forcedType) {
+            const label = this.forcedType === 'project' ? 'Project' : 
+                          this.forcedType === 'story' ? 'Story' : 
+                          this.forcedType === 'task' ? 'Task' : 'Work Item';
+            return [{ key: this.forcedType, value: label }];
+        }
+
+        const allOptions = [
+            { key: 'project', value: 'Project' },
+            { key: 'story', value: 'Story' },
+            { key: 'workitem', value: 'Work Item' },
+            { key: 'task', value: 'Task' }
+        ];
+
+        // If we have a parentId or are in edit mode, show all appropriate types 
+        // (usually edit mode doesn't change type but if it does, let it be free)
+        if (this.parentId || this.isEditMode) {
+             return allOptions;
+        }
+
+        // Global Add logic: restrict based on what exists
+        const enriched = enrichTodoTypes(this._allTodos);
+        const hasProjects = enriched.some(t => getTodoType(t as any) === 'project');
+        const hasStories = enriched.some(t => getTodoType(t as any) === 'story');
+
+        const options = [
+            { key: 'project', value: 'Project' },
+            { key: 'workitem', value: 'Work Item' }
+        ];
+
+        if (hasProjects) {
+            options.push({ key: 'story', value: 'Story' });
+        }
+        if (hasStories) {
+            options.push({ key: 'task', value: 'Task' });
+        }
+
+        return options;
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -178,23 +226,27 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
         
         const typeField = this.fields.find(f => f.formControlName === 'type');
         if (typeField) {
+            const options = this._getTypeOptions();
+            typeField.options = options;
+
             if (this.forcedType) {
                 typeField.value = this.forcedType;
                 typeField.disabled = true;
-                const forcedOption = typeField.options?.find(opt => opt.key === this.forcedType);
-                if (forcedOption) {
-                    typeField.options = [forcedOption];
-                }
-            } else if (!this.isEditMode && !this.editingTodo) {
-                if (this.parentId) {
-                    if (this.parentTodo) {
-                        const pType = getTodoType(this.parentTodo as any);
-                        typeField.value = (pType === 'project') ? 'story' : 'task';
-                    } else {
-                        typeField.value = 'task'; 
-                    }
+            } else if (this.isEditMode && this.editingTodo) {
+                typeField.value = this.editingTodo.type || 'workitem';
+            } else if (this.parentId) {
+                if (this.parentTodo) {
+                    const pType = getTodoType(this.parentTodo as any);
+                    typeField.value = (pType === 'project') ? 'story' : 'task';
                 } else {
+                    typeField.value = 'task'; 
+                }
+            } else {
+                // Global Add: default to workitem if allowed, else first allowed option
+                if (options.some(o => o.key === 'workitem')) {
                     typeField.value = 'workitem';
+                } else if (options.length > 0) {
+                    typeField.value = options[0].key;
                 }
             }
         }
@@ -212,7 +264,7 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
         
         if (this.isEditMode && this.editingTodo) {
             this._handleParentField(this.editingTodo.type || 'workitem');
-        } else if (this.parentId || this.forcedType) {
+        } else {
             this._handleParentField(this.form.get('type')?.value);
         }
     }
@@ -287,19 +339,22 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     private _loadPotentialParents(userId: number, type: string, label: string): void {
-        this._todoService.getTodos(userId, 0, 500).subscribe(res => {
-            // Enrich first so hierarchy-based types (like Story in a Project) are correctly identified
-            const enriched = enrichTodoTypes(res.todos as ITodo[]);
+        const processTodos = (todos: ITodo[]) => {
+            const enriched = enrichTodoTypes(todos);
             const parents = enriched.filter(t => getTodoType(t as any) === type);
-            
-            let options: { key: string | number | null, value: string }[] = parents.map(p => ({ key: p.id, value: p.title }));
-            
-            if (type === 'project' && parents.length === 0) {
-                options = [{ key: 'create_default', value: '+ Create General Project' }];
-            }
-
+            const options: { key: string | number | null, value: string }[] = parents.map(p => ({ key: p.id, value: p.title }));
             this._addOrUpdateParentField(label, options);
-        });
+        };
+
+        if (this._allTodosLoaded) {
+            processTodos(this._allTodos);
+        } else {
+            this._todoService.getTodos(userId, 0, 500).subscribe(res => {
+                this._allTodos = res.todos as ITodo[];
+                this._allTodosLoaded = true;
+                processTodos(this._allTodos);
+            });
+        }
     }
 
     private _addOrUpdateParentField(label: string, options: { key: any, value: string }[]): void {
@@ -507,30 +562,12 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
             return;
         }
 
-        const formValue = this.form.value;
-        const userId = this._authService.getCurrentUserId();
-        if (!userId) return;
-
-        if (formValue.type === 'story' && formValue.parent_id === 'create_default') {
-            const defaultProject: ITodoCreate = {
-                title: 'General Project',
-                type: 'project',
-                priority: 'medium',
-                description: 'Automatically created to house stories.'
-            };
-
-            this._todoService.createTodo(userId, defaultProject).subscribe(project => {
-                this._submitFinalTodo(formValue, project.id);
-            });
-            return;
-        }
-
-        this._submitFinalTodo(formValue, formValue.parent_id === 'create_default' ? null : formValue.parent_id);
+        this._submitFinalTodo(this.form.value);
     }
 
-    private _submitFinalTodo(formValue: any, parentIdOverride?: number | null): void {
+    private _submitFinalTodo(formValue: any): void {
         const finalCategory = formValue.category === 'Other' ? formValue.custom_category : formValue.category;
-        const parentId = (parentIdOverride !== undefined) ? parentIdOverride : (formValue.parent_id || this.parentId);
+        const parentId = formValue.parent_id || this.parentId;
         const type = formValue.type || 'workitem';
 
         const todoData: ITodoCreate = {

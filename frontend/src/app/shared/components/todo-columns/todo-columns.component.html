@@ -95,7 +95,7 @@
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
                         <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
-                        <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
+                        <button *ngIf="canDeleteTodo(todo)" class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>
@@ -209,7 +209,7 @@
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
                         <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
-                        <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
+                        <button *ngIf="canDeleteTodo(todo)" class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>
@@ -323,7 +323,7 @@
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
                         <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
-                        <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
+                        <button *ngIf="canDeleteTodo(todo)" class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>
@@ -437,7 +437,7 @@
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
                         <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
-                        <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
+                        <button *ngIf="canDeleteTodo(todo)" class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>
@@ -551,7 +551,7 @@
                     <div class="tc-item__actions">
                         <button class="tc-item__btn tc-item__btn--edit" title="Edit" (click)="edit.emit(todo); $event.stopPropagation()"><i class="bi bi-pencil"></i></button>
                         <button *ngIf="showAddSubtask && getTodoType(todo) !== 'workitem'" class="tc-item__btn" title="Add Task" (click)="addSubtask.emit(todo); $event.stopPropagation()"><i class="bi bi-diagram-3"></i></button>
-                        <button class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
+                        <button *ngIf="canDeleteTodo(todo)" class="tc-item__btn tc-item__btn--delete" title="Delete" (click)="delete.emit(todo); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
                         <a class="tc-item__btn tc-item__btn--view" title="View" [routerLink]="['/', todoViewPath, todo.id]" (click)="$event.stopPropagation()"><i class="bi bi-arrow-right-circle-fill"></i></a>
                     </div>
                 </div>

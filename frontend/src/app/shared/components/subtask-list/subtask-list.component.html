@@ -62,16 +62,18 @@
             >
                 <i class="bi bi-pencil"></i>
             </button>
+<!-- Delete -->
+<button
+    *ngIf="canDeleteSubtask(subtask)"
+    type="button"
+    class="subtask-action-btn subtask-action-btn--delete"
+    (click)="onDeleteSubtask(subtask)"
+    aria-label="Delete subtask"
+    title="Delete subtask"
+>
+    <i class="bi bi-trash"></i>
+</button>
 
-            <!-- Delete -->
-            <button
-                type="button"
-                class="subtask-action-btn subtask-action-btn--delete"
-                (click)="onDeleteSubtask(subtask)"
-                aria-label="Delete subtask"
-            >
-                <i class="bi bi-trash"></i>
-            </button>
         </li>
     </ul>
 

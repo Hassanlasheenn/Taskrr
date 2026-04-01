@@ -98,4 +98,8 @@ export class SubtaskListComponent implements OnChanges {
             }
         });
     }
+
+    canDeleteSubtask(subtask: ITodo): boolean {
+        return this._authService.isAdmin() || subtask.user_id === this._authService.getCurrentUserId();
+    }
 }

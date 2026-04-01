@@ -94,6 +94,10 @@ export class TodoListComponent implements OnInit, OnChanges, OnDestroy {
         return this._authService.isAdmin();
     }
 
+    canDeleteTodo(todo: ITodo): boolean {
+        return this.isAdmin || todo.user_id === this._authService.getCurrentUserId();
+    }
+
     get groupedTodos(): { category: string | null; todos: ITodo[] }[] {
         if (!this.groupByCategory) {
             return this.todos.length > 0 ? [{ category: null, todos: this.todos }] : [];

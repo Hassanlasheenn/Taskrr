@@ -170,7 +170,8 @@
                                             <button type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
                                                 <i class="bi bi-diagram-3"></i> Add Task
                                             </button>
-                                            <button *ngIf="isAdmin" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
+                                            <button *ngIf="canDeleteTodo(todo)" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
+
                                                 <i class="bi bi-trash"></i> Delete
                                             </button>
                                         </div>
@@ -271,7 +272,7 @@
                                 <button type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
                                     <i class="bi bi-diagram-3"></i> Add Task
                                 </button>
-                                <button *ngIf="isAdmin" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
+                                <button *ngIf="canDeleteTodo(todo)" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
                                     <i class="bi bi-trash"></i> Delete
                                 </button>
                             </div>
@@ -341,7 +342,7 @@
                                     <button type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
                                         <i class="bi bi-diagram-3"></i> Add Task
                                     </button>
-                                    <button *ngIf="isAdmin" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
+                                    <button *ngIf="canDeleteTodo(todo)" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
                                         <i class="bi bi-trash"></i> Delete
                                     </button>
                                 </div>
