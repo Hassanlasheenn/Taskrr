@@ -5,7 +5,7 @@ import { RouterLink } from "@angular/router";
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from "rxjs";
 import { ITodo, ITodoFilter, ITodoUpdate } from "../../../core/interfaces/todo.interface";
 import { IUserListResponse } from "../../../auth/interfaces";
-import { trackById } from "../../helpers/trackByFn.helper";
+import { trackById, getTomorrowISO, getTodoType } from "../../helpers";
 import { LayoutPaths } from "../../../layouts/enums/layout-paths.enum";
 import { DropdownFormComponent } from "../form-fields/dropdown/dropdown.component";
 import { DatePickerComponent } from "../form-fields/date-picker/date-picker.component";
@@ -13,7 +13,6 @@ import { InputFormComponent } from "../form-fields/input/input.component";
 import { IFieldControl } from "../../interfaces";
 import { InputTypes } from "../../enums";
 import { PaginationComponent } from "../pagination/pagination.component";
-import { getTodoType } from "../../helpers/todo-type.helper";
 
 @Component({
     selector: 'app-shared-table',
@@ -331,7 +330,8 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
             type: InputTypes.DATE,
             formControlName: 'due_date',
             value: todo.due_date || null,
-            validations: []
+            validations: [],
+            minDate: getTomorrowISO()
         };
     }
 
@@ -483,6 +483,10 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
 
     canDeleteTodo(todo: ITodo): boolean {
         return this.isAdmin || todo.user_id === this.currentUserId;
+    }
+
+    hasChanges(): boolean {
+        return this.editingTitleId !== null || this.customCategoryTodoId !== null;
     }
 
     // --- Users mode helpers ---

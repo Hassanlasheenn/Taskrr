@@ -46,6 +46,7 @@ import { TodoDetailDialogService } from "../../../core/services/todo-detail-dial
 })
 export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeactivate {
     @ViewChild('todoForm') todoFormComponent!: TodoFormComponent;
+    @ViewChild(SharedTableComponent) sharedTableComponent?: SharedTableComponent;
     private readonly _destroy$ = new Subject<void>();
     
     userData: any;
@@ -1169,10 +1170,13 @@ export class DashboardComponent implements OnInit, OnDestroy, CanComponentDeacti
     }
 
     canDeactivate(): boolean | Observable<boolean> {
-        if (this.isSidebarOpen && this.todoFormComponent?.hasChanges()) {
+        const hasFormChanges = this.isSidebarOpen && this.todoFormComponent?.hasChanges();
+        const hasTableChanges = this.sharedTableComponent?.hasChanges();
+
+        if (hasFormChanges || hasTableChanges) {
             return this._confirmationDialog.show({
                 title: 'Unsaved Changes',
-                message: 'You have unsaved changes in your todo. Are you sure you want to leave?',
+                message: 'You have unsaved changes. Are you sure you want to leave?',
                 confirmText: 'Leave',
                 cancelText: 'Stay'
             }).pipe(map(result => result.confirmed));

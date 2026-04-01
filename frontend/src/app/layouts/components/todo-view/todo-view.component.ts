@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, ViewChild } from "@angular/core";
+import { ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy, ViewChild, AfterViewChecked } from "@angular/core";
 import { FormsModule, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { Observable, Subject } from "rxjs";
@@ -20,7 +20,7 @@ import { LayoutPaths } from "../../enums/layout-paths.enum";
 import { CanComponentDeactivate } from "../../../auth/guards";
 import { ParseMentionsPipe } from "../../../core/pipes/parse-mentions.pipe";
 import { TabsComponent, ITabItem } from "../../../shared/components/tabs";
-import { trackById } from "../../../shared/helpers/trackByFn.helper";
+import { trackById, getTomorrowISO } from "../../../shared/helpers";
 import { NavigationService } from "../../../core/services/navigation.service";
 import { PosthogService } from "../../../core/services/posthog.service";
 import { DropdownFormComponent } from "../../../shared/components/form-fields/dropdown/dropdown.component";
@@ -53,7 +53,9 @@ import { getTodoType, getTodoTypeLabel, getTodoTypeIcon, TodoType, enrichTodoTyp
         TodoFormComponent
     ],
 })
-export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactivate {
+export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactivate, AfterViewChecked {
+    @ViewChild('titleInput') titleInput?: ElementRef<HTMLInputElement>;
+    private isInputFocused = false;
     private readonly _destroy$ = new Subject<void>();
     todo: ITodo | null = null;
     saving = false;
@@ -117,7 +119,8 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         label: 'Due Date',
         type: InputTypes.DATE,
         value: '',
-        validations: []
+        validations: [],
+        minDate: getTomorrowISO()
     };
 
     timeEstimateField: IFieldControl = {
@@ -284,7 +287,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         const currentFormValue = this.todoForm.value;
         const hasTodoChanges = JSON.stringify(currentFormValue) !== JSON.stringify(this.initialFormValue);
         const hasTimeLogChanges = !!this.logTimeForm.get('time_to_log')?.value;
-        return hasTodoChanges || hasTimeLogChanges;
+        return hasTodoChanges || hasTimeLogChanges || this.isEditingTitle;
     }
 
     constructor(
@@ -669,23 +672,53 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         this.isSubtaskSidebarOpen = true;
     }
 
+    ngAfterViewChecked(): void {
+        if (this.isEditingTitle && this.titleInput && !this.isInputFocused) {
+            this.titleInput.nativeElement.focus();
+            this.isInputFocused = true;
+        }
+    }
+
     onStartEditTitle(): void {
         if (!this.todo) return;
         this.editTitleForm = this._formService.initializeForm([this.titleField]);
         this.editTitleForm.patchValue({ title: this.todo.title });
         this.isEditingTitle = true;
+        this.isInputFocused = false;
     }
 
     onCancelEditTitle(): void {
         this.isEditingTitle = false;
+        this.isInputFocused = false;
+    }
+
+    onTitleBlur(event: FocusEvent): void {
+        const relatedTarget = event.relatedTarget as HTMLElement;
+        if (relatedTarget?.closest('.todo-view-save-btn')) {
+            return;
+        }
+        
+        // Small delay to allow potential clicks on other elements to register
+        setTimeout(() => {
+            if (this.isEditingTitle) {
+                this.onCancelEditTitle();
+                this._cdr.markForCheck();
+            }
+        }, 200);
     }
 
     onSaveTitle(): void {
-        if (this.editTitleForm.invalid || !this.todo || !this.userId) return;
+        if (!this.isEditingTitle) return;
+        if (this.editTitleForm.invalid || !this.todo || !this.userId) {
+            this.isEditingTitle = false;
+            this.isInputFocused = false;
+            return;
+        }
 
         const newTitle = this.editTitleForm.get('title')?.value;
         if (newTitle === this.todo.title) {
             this.isEditingTitle = false;
+            this.isInputFocused = false;
             return;
         }
 
@@ -696,10 +729,15 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                     this.todo.title = updated.title;
                 }
                 this.isEditingTitle = false;
+                this.isInputFocused = false;
                 this._toastService.success('Title updated');
                 this._detailDialogService.notifyUpdate(updated as ITodo);
             },
-            error: (err) => this._toastService.error(err?.error?.detail || 'Failed to update title')
+            error: (err) => {
+                this.isEditingTitle = false;
+                this.isInputFocused = false;
+                this._toastService.error(err?.error?.detail || 'Failed to update title');
+            }
         });
     }
 
@@ -1134,13 +1172,14 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
         this.saving = true;
         
         const updatePayload: ITodoUpdate = {
-            title: this.todo.title,
+            title: this.isEditingTitle ? this.editTitleForm.get('title')?.value : this.todo.title,
             status: formValue.status,
             priority: formValue.priority,
             description: formValue.description,
             assigned_to_user_id: formValue.assigned_to_user_id,
             due_date: formValue.due_date || null,
             type: this.todo.type || 'workitem',
+            category: formValue.category,
             time_estimate: this.todo?.parent_id ? (formValue.time_estimate || null) : undefined,
             time_logged: finalTimeLogged || null
         };
@@ -1152,6 +1191,9 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                     ...updated
                 } as ITodo;
 
+                this.isEditingTitle = false;
+                this.isInputFocused = false;
+
                 const newFormValue = {
                     assigned_to_user_id: this.todo.assigned_to_user_id || null,
                     status: this.todo.status || 'new',
@@ -1159,7 +1201,8 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                     description: this.todo.description || '',
                     due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : '',
                     time_estimate: this.todo.time_estimate || '',
-                    time_logged: this.todo.time_logged || ''
+                    time_logged: this.todo.time_logged || '',
+                    category: this.todo.category || ''
                 };
                 
                 this.initialFormValue = { ...newFormValue };

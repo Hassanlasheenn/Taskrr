@@ -23,20 +23,16 @@
                                         </button>
                                     </ng-container>
                                     
-                                    <div *ngIf="isEditingTitle" class="title-edit-form">
-                                        <app-dynamic-form
-                                            [form]="editTitleForm"
-                                            [fields]="[titleField]"
-                                            [isFilter]="false"
+                                    <div *ngIf="isEditingTitle" class="title-edit-form" [formGroup]="editTitleForm">
+                                        <input
+                                            #titleInput
+                                            type="text"
+                                            formControlName="title"
+                                            (blur)="onTitleBlur($event)"
+                                            (keyup.enter)="onSaveTitle()"
+                                            (keyup.escape)="onCancelEditTitle()"
+                                            class="title-edit-input"
                                         />
-                                        <div class="title-edit-actions">
-                                            <button type="button" class="action-btn action-btn--save" (click)="onSaveTitle()" [disabled]="editTitleForm.invalid">
-                                                <i class="bi bi-check-lg"></i>
-                                            </button>
-                                            <button type="button" class="action-btn action-btn--cancel" (click)="onCancelEditTitle()">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
                                 <span *ngIf="todo.category" class="todo-view-category-tag">
@@ -124,7 +120,6 @@
                                     (click)="onDeleteTodo()"
                                     aria-label="Delete todo"
                                 >
-                                    <i class="bi bi-trash"></i>
                                     Delete
                                 </button>
 

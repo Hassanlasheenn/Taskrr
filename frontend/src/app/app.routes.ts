@@ -36,8 +36,8 @@ export const routes: Routes = [
         canDeactivate: [canDeactivateGuard],
     },
     { path: LayoutPaths.PROFILE, component: ProfileComponent, canActivate: [authGuard], canDeactivate: [canDeactivateGuard] },
-    { path: LayoutPaths.ADMIN, component: DashboardComponent, canActivate: [authGuard, adminGuard] },
-    { path: `${LayoutPaths.USER_DETAILS}/:id`, loadComponent: () => import('./layouts/components/user-details/user-details.component').then(m => m.UserDetailsComponent), canActivate: [authGuard, adminGuard] },
+    { path: LayoutPaths.ADMIN, component: DashboardComponent, canActivate: [authGuard, adminGuard], canDeactivate: [canDeactivateGuard] },
+    { path: `${LayoutPaths.USER_DETAILS}/:id`, loadComponent: () => import('./layouts/components/user-details/user-details.component').then(m => m.UserDetailsComponent), canActivate: [authGuard, adminGuard], canDeactivate: [canDeactivateGuard] },
     { path: AuthPaths.NOT_FOUND, component: NotFoundComponent },
     { path: '**', redirectTo: AuthPaths.NOT_FOUND },
 ];

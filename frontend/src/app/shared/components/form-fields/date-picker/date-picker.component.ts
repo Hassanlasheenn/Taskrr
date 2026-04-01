@@ -4,7 +4,7 @@ import { ICustomStyle, IFieldControl } from "../../../interfaces";
 import { ReactiveFormService } from "../../../services/reactive-form.service";
 import { Subscription } from "rxjs";
 import { CommonModule } from "@angular/common";
-import { trackById } from "../../../helpers/trackByFn.helper";
+import { getTomorrowISO, trackById } from "../../../helpers";
 
 @Component({
     selector: 'app-date-picker',
@@ -60,9 +60,7 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
         private readonly cdr: ChangeDetectorRef
     ) {
         if (!this.minDate) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            this.minDate = today.toISOString().split('T')[0];
+            this.minDate = getTomorrowISO();
         }
     }
 
@@ -182,9 +180,11 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
         event.stopPropagation();
         if (!date || this.isDateDisabled(date)) return;
         
-        const offset = date.getTimezoneOffset();
-        const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
-        const dateString = adjustedDate.toISOString().split('T')[0];
+        // Ensure we store only the date part in YYYY-MM-DD format
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
         
         this.innerValue = dateString;
         this.onChange(dateString);
@@ -192,9 +192,11 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
 
         if (this.control) {
             this.control.setValue(dateString);
+            this.control.markAsDirty();
             this.control.markAsTouched();
         }
         this.showPicker = false;
+        this.cdr.markForCheck();
     }
 
     isDateSelected(date: Date | null): boolean {
@@ -202,6 +204,7 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
         const currentVal = this.control ? this.control.value : this.innerValue;
         if (!currentVal) return false;
         
+        // Parse currentVal carefully (could be ISO string or YYYY-MM-DD)
         const d = new Date(currentVal);
         return date.getDate() === d.getDate() && 
                date.getMonth() === d.getMonth() && 
@@ -210,15 +213,19 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
 
     isDateDisabled(date: Date | null): boolean {
         if (!date) return false;
+        
+        const compareDate = new Date(date);
+        compareDate.setHours(0, 0, 0, 0);
+
         if (this.minDate) {
             const min = new Date(this.minDate);
             min.setHours(0, 0, 0, 0);
-            if (date < min) return true;
+            if (compareDate < min) return true;
         }
         if (this.maxDate) {
             const max = new Date(this.maxDate);
             max.setHours(23, 59, 59, 999);
-            if (date > max) return true;
+            if (compareDate > max) return true;
         }
         return false;
     }
@@ -226,6 +233,7 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
     isToday(date: Date | null): boolean {
         if (!date) return false;
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         return date.getDate() === today.getDate() && 
                date.getMonth() === today.getMonth() && 
                date.getFullYear() === today.getFullYear();
@@ -243,7 +251,11 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
     get formattedValue(): string {
         const val = this.control ? this.control.value : this.innerValue;
         if (!val) return '';
+        
+        // Handle potentially different date formats
         const date = new Date(val);
+        if (isNaN(date.getTime())) return '';
+        
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
@@ -260,6 +272,13 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
     // ControlValueAccessor implementation
     writeValue(value: any): void {
         this.innerValue = value || '';
+        if (value) {
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+                this.viewDate = date;
+                this.generateCalendar();
+            }
+        }
         this.cdr.markForCheck();
     }
 

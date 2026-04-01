@@ -14,6 +14,7 @@ import { AuthService } from "../../../../auth/services/auth.service";
 import { TodoService } from "../../../../core/services/todo.service";
 import { trackById } from "../../../helpers/trackByFn.helper";
 import { getTodoType, enrichTodoTypes } from "../../../helpers/todo-type.helper";
+import { getTomorrowISO } from "../../../helpers/date.helper";
 import { ClickThrottleDirective } from "../../../directives/click-throttle.directive";
 
 @Component({
@@ -134,6 +135,7 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
                 value: '',
                 required: false,
                 validations: [],
+                minDate: getTomorrowISO()
             },
             {
                 label: 'Assign To',

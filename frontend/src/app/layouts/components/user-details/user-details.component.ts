@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnInit, OnDestroy, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import { Subject, takeUntil } from "rxjs";
+import { Observable, Subject, map, takeUntil } from "rxjs";
 import { AdminService, IUserWithTodos } from "../../../core/services/admin.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { AuthService } from "../../../auth/services/auth.service";
@@ -16,6 +16,7 @@ import { ConfirmationDialogService } from "../../../core/services/confirmation-d
 import { TodoColumnsComponent, ITodoStatusChange } from "../../../shared/components/todo-columns/todo-columns.component";
 import { TodoDetailDialogService } from "../../../core/services/todo-detail-dialog.service";
 import { getTodoType, enrichTodoTypes, enrichTodo } from "../../../shared/helpers/todo-type.helper";
+import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
 
 @Component({
     selector: 'app-user-details',
@@ -24,7 +25,8 @@ import { getTodoType, enrichTodoTypes, enrichTodo } from "../../../shared/helper
     standalone: true,
     imports: [CommonModule, RouterLink, SharedTableComponent, TodoColumnsComponent]
 })
-export class UserDetailsComponent implements OnInit, OnDestroy {
+export class UserDetailsComponent implements OnInit, OnDestroy, CanComponentDeactivate {
+    @ViewChild(SharedTableComponent) sharedTable?: SharedTableComponent;
     private readonly _destroy$ = new Subject<void>();
     userData: IUserWithTodos | null = null;
     userId: number | null = null;
@@ -372,6 +374,18 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         if (diffDays <= 3) return 'urgency-high';
         if (diffDays <= 10) return 'urgency-medium';
         return 'urgency-low';
+    }
+
+    canDeactivate(): boolean | Observable<boolean> {
+        if (this.sharedTable?.hasChanges()) {
+            return this._confirmationDialog.show({
+                title: 'Unsaved Changes',
+                message: 'You have unsaved inline edits. Are you sure you want to leave?',
+                confirmText: 'Leave',
+                cancelText: 'Stay'
+            }).pipe(map(result => result.confirmed));
+        }
+        return true;
     }
 
     ngOnDestroy(): void {

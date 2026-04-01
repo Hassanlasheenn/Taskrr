@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy, HostListener, ElementRef } from "@angular/core";
+import { Component, OnInit, OnDestroy, HostListener, ElementRef, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { Subject, takeUntil } from "rxjs";
+import { Observable, Subject, map, takeUntil } from "rxjs";
 import { AdminService } from "../../../core/services/admin.service";
 import { AuthService } from "../../../auth/services";
 import { ToastService } from "../../../core/services/toast.service";
@@ -18,6 +18,7 @@ import { IFieldControl } from "../../../shared/interfaces";
 import { InputTypes } from "../../../shared/enums";
 import { ReactiveFormService } from "../../../shared/services/reactive-form.service";
 import { SharedTableComponent } from "../../../shared/components/shared-table/shared-table.component";
+import { CanComponentDeactivate } from "../../../auth/guards/can-deactivate.guard";
 
 @Component({
     selector: 'app-admin',
@@ -26,7 +27,8 @@ import { SharedTableComponent } from "../../../shared/components/shared-table/sh
     standalone: true,
     imports: [CommonModule, CardComponent, FormsModule, ReactiveFormsModule, DynamicFormComponent, SharedTableComponent]
 })
-export class AdminComponent implements OnInit, OnDestroy {
+export class AdminComponent implements OnInit, OnDestroy, CanComponentDeactivate {
+    @ViewChild(SharedTableComponent) sharedTable?: SharedTableComponent;
     private readonly _destroy$ = new Subject<void>();
     users: IUserListResponse[] = [];
     totalUsers: number = 0;
@@ -218,6 +220,18 @@ export class AdminComponent implements OnInit, OnDestroy {
             default: path = LayoutPaths.DASHBOARD; break;
         }
         this._router.navigate([path]);
+    }
+
+    canDeactivate(): boolean | Observable<boolean> {
+        if (this.sharedTable?.hasChanges()) {
+            return this._confirmationDialog.show({
+                title: 'Unsaved Changes',
+                message: 'You have unsaved inline edits. Are you sure you want to leave?',
+                confirmText: 'Leave',
+                cancelText: 'Stay'
+            }).pipe(map(result => result.confirmed));
+        }
+        return true;
     }
 
     ngOnDestroy(): void {

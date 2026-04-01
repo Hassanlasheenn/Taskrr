@@ -79,6 +79,15 @@
     gap: 0.6rem;
     flex: 1;
     min-width: 0;
+
+    @media (max-width: 768px) {
+        &:has(.todo-view-title-container.editing) {
+            flex-direction: column;
+            align-items: flex-start;
+            width: 100%;
+            gap: 0.5rem;
+        }
+    }
 }
 
 .todo-type-badge {
@@ -129,6 +138,14 @@
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1.3;
+
+    @media (max-width: 768px) {
+        font-size: 1.25rem;
+    }
+
+    @media (max-width: 480px) {
+        font-size: 1.1rem;
+    }
 }
 
 .todo-view-title-container {
@@ -145,7 +162,12 @@
     }
 
     &.editing {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
+
+        @media (max-width: 768px) {
+            width: 100%;
+        }
     }
 }
 
@@ -178,62 +200,35 @@
 .title-edit-form {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
 
-    ::ng-deep .dynamic-form-wrapper {
-        flex: 1;
-        .field-container { margin-bottom: 0; }
-        .input-wrapper {
-            min-height: unset;
-            height: 42px;
-            
-            input {
-                font-size: 1.5rem;
-                font-weight: 700;
-                padding: 0 12px;
-            }
+    .title-edit-input {
+        width: 100%;
+        background: var(--bg-soft);
+        border: 1px solid var(--primary-color);
+        border-radius: 8px;
+        padding: 4px 12px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: inherit;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(107, 207, 209, 0.1);
+
+        @media (max-width: 768px) {
+            font-size: 1.25rem;
+            padding: 4px 10px;
         }
-    }
-}
 
-.title-edit-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.action-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    border: 1px solid var(--card-border-color);
-    background: var(--bg-soft);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    i { font-size: 1.1rem; }
-
-    &--save {
-        color: #10b981;
-        &:hover:not(:disabled) {
-            background: rgba(16, 185, 129, 0.1);
-            border-color: #10b981;
+        @media (max-width: 480px) {
+            font-size: 1.1rem;
+            padding: 4px 8px;
         }
-        &:disabled {
-            opacity: 0.5;
-            cursor: default;
-        }
-    }
 
-    &--cancel {
-        color: #ef4444;
-        &:hover {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: #ef4444;
+        &:focus {
+            border-color: var(--primary-color);
+            background: var(--bg-soft);
         }
     }
 }
