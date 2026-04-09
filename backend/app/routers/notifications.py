@@ -167,7 +167,8 @@ async def create_notification(
     message: str,
     assigned_by_username: str,
     assigned_to_email: str,
-    todo_title: str
+    todo_title: str,
+    send_email: bool = False
 ):
     try:
         notification = models.Notification(
@@ -187,7 +188,7 @@ async def create_notification(
             "created_at": notification.created_at.isoformat() if notification.created_at else None
         }
         await notification_manager.send_notification(user_id, notification_data)
-        if assigned_to_email:
+        if send_email and assigned_to_email:
             asyncio.create_task(
                 asyncio.to_thread(
                     email_service.send_notification_email,
