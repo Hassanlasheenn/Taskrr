@@ -11,6 +11,7 @@
                     [label]="field.label"
                     [formControlName]="field.formControlName"
                     [currentPhotoUrl]="field.photoUrl || null"
+                    [disabled]="disabled"
                     (photoSelected)="onPhotoSelected(field.formControlName, $event)"
                     (validationError)="onValidationError($event)"
                     (photoRemoved)="onPhotoRemoved(field.formControlName)"
@@ -30,6 +31,7 @@
                     [showErrors]="isSubmitted"
                     [isFilter]="isFilter"
                     [isBadge]="isBadge"
+                    [disabled]="disabled"
                 />
             </div>
 
@@ -45,6 +47,7 @@
                     [showErrors]="isSubmitted"
                     [isFilter]="isFilter"
                     [isBadge]="isBadge"
+                    [disabled]="disabled"
                 />
             </div>
 
@@ -62,6 +65,7 @@
                     [imagePreviewMode]="field.imagePreviewMode || 'grid'"
                     [disableInternalLightbox]="field.disableInternalLightbox ?? false"
                     [showAttachHint]="field.showAttachHint ?? false"
+                    [disabled]="disabled"
                     (previewActiveChange)="previewActiveChange.emit($event)"
                     (imageClick)="imageClick.emit($event)"
                 />
@@ -77,6 +81,7 @@
                     [customInputClass]="field.customInputClass"
                     [field]="field"
                     [showErrors]="isSubmitted"
+                    [disabled]="disabled"
                 />
             </div>
 
@@ -92,6 +97,7 @@
                     [field]="field"
                     [showErrors]="isSubmitted"
                     [isFilter]="isFilter"
+                    [disabled]="disabled"
                 />
             </div>
         </ng-container>

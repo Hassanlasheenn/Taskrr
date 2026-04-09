@@ -163,6 +163,11 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
         return Array.from({ length: count }, (_, i) => (i + 1) * 5);
     }
 
+    get showActionsColumn(): boolean {
+        if (this.isUsersMode) return this.isAdmin;
+        return this.todos.some(todo => this.canDeleteTodo(todo));
+    }
+
     readonly LayoutPaths = LayoutPaths;
     readonly InputTypes = InputTypes;
     trackById: TrackByFunction<any> = trackById;
@@ -482,7 +487,11 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
     }
 
     canDeleteTodo(todo: ITodo): boolean {
-        return this.isAdmin || todo.user_id === this.currentUserId;
+        return todo.user_id === this.currentUserId;
+    }
+
+    canEditTodo(todo: ITodo): boolean {
+        return todo.user_id === this.currentUserId;
     }
 
     hasChanges(): boolean {

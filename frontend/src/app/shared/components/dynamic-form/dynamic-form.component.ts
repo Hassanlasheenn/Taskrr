@@ -36,6 +36,7 @@ export class DynamicFormComponent implements OnChanges {
     @Input() layout: 'vertical' | 'horizontal' | 'inline' = 'vertical';
     @Input() isFilter: boolean = false;
     @Input() isBadge: boolean = false;
+    @Input() disabled: boolean = false;
     @Output() photoSelected = new EventEmitter<{ fieldName: string; file: File }>();
     @Output() errorSummaryChange = new EventEmitter<string | null>();
     @Output() photoRemoved = new EventEmitter<string>();
@@ -49,6 +50,14 @@ export class DynamicFormComponent implements OnChanges {
         if (changes['isSubmitted'] && this.isSubmitted) {
             this.form.markAllAsTouched();
             this.form.updateValueAndValidity({ emitEvent: true });
+        }
+
+        if (changes['disabled']) {
+            if (this.disabled) {
+                this.form.disable({ emitEvent: false });
+            } else {
+                this.form.enable({ emitEvent: false });
+            }
         }
     }
 

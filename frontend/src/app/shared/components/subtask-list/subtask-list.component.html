@@ -7,7 +7,7 @@
             {{ labels.plural }}
             <span class="subtask-badge">{{ subtasks.length }}</span>
         </span>
-        <button type="button" class="subtask-add-btn" (click)="openAddForm.emit()">
+        <button *ngIf="canAddSubtask" type="button" class="subtask-add-btn" (click)="openAddForm.emit()">
             <i class="bi bi-plus-lg"></i>
             Add {{ labels.singular }}
         </button>
@@ -30,6 +30,7 @@
         >
             <!-- Status toggle -->
             <button
+                *ngIf="canEditSubtask(subtask)"
                 type="button"
                 class="subtask-status-btn"
                 (click)="onToggleStatus(subtask)"
@@ -37,6 +38,9 @@
             >
                 <i class="bi" [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
             </button>
+            <div *ngIf="!canEditSubtask(subtask)" class="subtask-status-icon">
+                <i class="bi" [ngClass]="subtask.status === 'done' ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+            </div>
 
             <!-- Title -->
             <span class="subtask-title" (click)="onViewSubtask(subtask)">{{ subtask.title }}</span>
@@ -55,6 +59,7 @@
 
             <!-- Edit -->
             <button
+                *ngIf="canEditSubtask(subtask)"
                 type="button"
                 class="subtask-action-btn"
                 (click)="editSubtask.emit(subtask)"
@@ -78,6 +83,11 @@
     </ul>
 
     <p *ngIf="subtasks.length === 0" class="subtask-empty">
-        No {{ labels.plural.toLowerCase() }} yet. Click <strong>Add {{ labels.singular }}</strong> to get started.
+        <ng-container *ngIf="canAddSubtask">
+            No {{ labels.plural.toLowerCase() }} yet. Click <strong>Add {{ labels.singular }}</strong> to get started.
+        </ng-container>
+        <ng-container *ngIf="!canAddSubtask">
+            No {{ labels.plural.toLowerCase() }} yet.
+        </ng-container>
     </p>
 </div>

@@ -25,6 +25,7 @@ export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
     @Input() field?: IFieldControl;
     @Input() showErrors: boolean = false;
     @Input() isFilter: boolean = false;
+    @Input() disabled: boolean = false;
     
     errorMessage: string | null = null;
     showPassword: boolean = false;
@@ -45,6 +46,13 @@ export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['showErrors'] && !changes['showErrors'].firstChange) {
             this.updateErrorMessage();
+        }
+        if (changes['disabled']) {
+            if (this.disabled) {
+                this.control?.disable({ emitEvent: false });
+            } else {
+                this.control?.enable({ emitEvent: false });
+            }
         }
     }
 
@@ -75,13 +83,14 @@ export class InputFormComponent implements OnInit, OnDestroy, OnChanges {
 
     getInputClasses(): { [key: string]: boolean } {
         const classes: { [key: string]: boolean } = {
-            'input-error': this.isInvalid
+            'input-error': this.isInvalid,
+            'disabled': this.disabled
         };
-        
+
         if (this.customInputClass) {
             classes[this.customInputClass] = true;
         }
-        
+
         return classes;
     }
 

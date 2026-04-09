@@ -34,6 +34,7 @@ export class DropdownFormComponent implements OnInit, OnDestroy, OnChanges, Cont
     @Input() showErrors: boolean = false;
     @Input() isFilter: boolean = false;
     @Input() isBadge: boolean = false;
+    @Input() disabled: boolean = false;
     
     errorMessage: string | null = null;
     isOpen: boolean = false;
@@ -44,7 +45,6 @@ export class DropdownFormComponent implements OnInit, OnDestroy, OnChanges, Cont
     innerValue: any = null;
     onChange: any = () => {};
     onTouched: any = () => {};
-    disabled: boolean = false;
     
     constructor(
         private readonly formService: ReactiveFormService,
@@ -75,6 +75,13 @@ export class DropdownFormComponent implements OnInit, OnDestroy, OnChanges, Cont
         }
         if (changes['value'] && !changes['value'].firstChange) {
             this.innerValue = this.value;
+        }
+        if (changes['disabled']) {
+            if (this.disabled) {
+                this.control?.disable({ emitEvent: false });
+            } else {
+                this.control?.enable({ emitEvent: false });
+            }
         }
     }
 

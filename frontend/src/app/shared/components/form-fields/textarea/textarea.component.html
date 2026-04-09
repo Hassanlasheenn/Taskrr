@@ -27,6 +27,7 @@
                     [ngClass]="getInputClasses()"
                     [ngStyle]="customInputStyle"
                     [rows]="rows"
+                    [disabled]="disabled"
                     (input)="onVisibleTextareaInput($event)"
                     (blur)="onVisibleTextareaBlur()"
                     appPasteImage
@@ -43,6 +44,7 @@
                 [ngClass]="getInputClasses()"
                 [ngStyle]="customInputStyle"
                 [rows]="rows"
+                [disabled]="disabled"
                 appPasteImage
                 (imageUploading)="onImageUploading($event)"
             ></textarea>
@@ -59,7 +61,7 @@
                 class="textarea-form__attach-hint"
                 (click)="onAttachIconClick()"
                 title="Click to upload or paste images here"
-                [disabled]="isUploading"
+                [disabled]="isUploading || disabled"
             >
                 <i class="bi bi-paperclip"></i>
             </button>
@@ -113,6 +115,7 @@
                                     class="textarea-form__carousel-img"
                                 />
                                 <button
+                                    *ngIf="!disabled"
                                     type="button"
                                     class="textarea-form__preview-remove textarea-form__preview-remove--carousel"
                                     (click)="removeImage(url)"
@@ -182,6 +185,7 @@
                                 title="Click to preview"
                             />
                             <button
+                                *ngIf="!disabled"
                                 type="button"
                                 class="textarea-form__preview-remove textarea-form__preview-remove--filmstrip"
                                 (click)="removeImage(url)"
@@ -225,6 +229,7 @@
                     <i class="bi bi-zoom-in"></i>
                 </div>
                 <button
+                    *ngIf="!disabled"
                     type="button"
                     class="textarea-form__gallery-remove"
                     (click)="removeImage(url)"

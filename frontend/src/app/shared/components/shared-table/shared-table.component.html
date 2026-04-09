@@ -82,7 +82,7 @@
                         <th>Username</th>
                         <th>Email</th>
                         <th>Role</th>
-                        <th class="actions-col">Actions</th>
+                        <th *ngIf="showActionsColumn" class="actions-col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -102,7 +102,7 @@
                                 [customInputClass]="'role-dropdown'"
                             />
                         </td>
-                        <td class="actions-cell" data-label="Actions">
+                        <td *ngIf="showActionsColumn" class="actions-cell" data-label="Actions">
                             <div class="table-actions">
                                 <button
                                     class="table-action-btn delete"
@@ -116,7 +116,7 @@
                         </td>
                     </tr>
                     <tr *ngIf="users.length === 0">
-                        <td colspan="6" class="empty-row-cell">
+                        <td [attr.colspan]="showActionsColumn ? 6 : 5" class="empty-row-cell">
                             <div class="empty-table-msg">{{ emptyMessage }}</div>
                         </td>
                     </tr>
@@ -137,7 +137,7 @@
                             Created
                             <i class="bi" [class.bi-arrow-down-short]="sortOrder === 'desc'" [class.bi-arrow-up-short]="sortOrder === 'asc'"></i>
                         </th>
-                        <th class="actions-col">Actions</th>
+                        <th *ngIf="showActionsColumn" class="actions-col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -149,7 +149,7 @@
                             <div class="title-wrapper" *ngIf="editingTitleId !== todo.id; else editTitleTpl">
                                 <a [routerLink]="['/', LayoutPaths.TODO_VIEW, todo.id]" class="todo-link">{{ todo.title }}</a>
                                 <button
-                                    *ngIf="!todo.is_deleted"
+                                    *ngIf="!todo.is_deleted && canEditTodo(todo)"
                                     class="title-edit-btn"
                                     (click)="startEditTitle(todo); $event.preventDefault()"
                                     title="Edit title"
@@ -188,7 +188,8 @@
                                 (ngModelChange)="onFieldChange(todo, 'status', $event)"
                                 [isBadge]="true"
                                 [customInputClass]="getStatusClass($any(todo).status)"
-                                [class.disabled-field]="todo.is_deleted"
+                                [class.disabled-field]="todo.is_deleted || !canEditTodo(todo)"
+                                [disabled]="!canEditTodo(todo)"
                             />
                         </td>
                         <td data-label="Priority">
@@ -199,7 +200,8 @@
                                 (ngModelChange)="onFieldChange(todo, 'priority', $event)"
                                 [isBadge]="true"
                                 [customInputClass]="getPriorityClass($any(todo).priority)"
-                                [class.disabled-field]="todo.is_deleted"
+                                [class.disabled-field]="todo.is_deleted || !canEditTodo(todo)"
+                                [disabled]="!canEditTodo(todo)"
                             />
                         </td>
                         <td data-label="Category">
@@ -211,7 +213,8 @@
                                 (ngModelChange)="onCategoryChange(todo, $event)"
                                 [isBadge]="true"
                                 customInputClass="inline-category-dropdown"
-                                [class.disabled-field]="todo.is_deleted"
+                                [class.disabled-field]="todo.is_deleted || !canEditTodo(todo)"
+                                [disabled]="!canEditTodo(todo)"
                             />
                             <div *ngIf="customCategoryTodoId === todo.id" class="custom-category-inline">
                                 <input
@@ -233,11 +236,12 @@
                                 (ngModelChange)="onFieldChange(todo, 'due_date', $event)"
                                 [isBadge]="true"
                                 [customInputClass]="getDueDateUrgencyClass(todo.due_date)"
-                                [class.disabled-field]="todo.is_deleted"
+                                [class.disabled-field]="todo.is_deleted || !canEditTodo(todo)"
+                                [disabled]="!canEditTodo(todo)"
                             />
                         </td>
                         <td data-label="Created">{{ formatCreatedAt(todo.created_at) }}</td>
-                        <td class="actions-cell" data-label="Actions">
+                        <td *ngIf="showActionsColumn" class="actions-cell" data-label="Actions">
                             <div class="table-actions">
                                 <button *ngIf="canDeleteTodo(todo)" (click)="onDelete(todo)" class="table-action-btn delete" title="Delete"
                                     [disabled]="todo.is_deleted">
@@ -247,7 +251,7 @@
                         </td>
                     </tr>
                     <tr *ngIf="todos.length === 0">
-                        <td colspan="8" class="empty-row-cell">
+                        <td [attr.colspan]="showActionsColumn ? 9 : 8" class="empty-row-cell">
                             <div class="empty-table-msg">{{ emptyMessage }}</div>
                         </td>
                     </tr>

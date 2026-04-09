@@ -32,6 +32,7 @@ export class TextareaFormComponent implements OnInit, OnDestroy, OnChanges {
     @Input() imagePreviewMode: 'grid' | 'carousel' | 'filmstrip' = 'grid';
     @Input() disableInternalLightbox: boolean = false;
     @Input() showAttachHint: boolean = false;
+    @Input() disabled: boolean = false;
 
     @Output() previewActiveChange = new EventEmitter<boolean>();
     @Output() imageClick = new EventEmitter<string>();
@@ -61,6 +62,13 @@ export class TextareaFormComponent implements OnInit, OnDestroy, OnChanges {
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['showErrors'] && !changes['showErrors'].firstChange) {
             this.updateErrorMessage();
+        }
+        if (changes['disabled']) {
+            if (this.disabled) {
+                this.control?.disable({ emitEvent: false });
+            } else {
+                this.control?.enable({ emitEvent: false });
+            }
         }
     }
 
@@ -109,7 +117,8 @@ export class TextareaFormComponent implements OnInit, OnDestroy, OnChanges {
 
     getInputClasses(): { [key: string]: boolean } {
         const classes: { [key: string]: boolean } = {
-            'input-error': this.isInvalid
+            'input-error': this.isInvalid,
+            'disabled': this.disabled
         };
         if (this.customInputClass) {
             classes[this.customInputClass] = true;

@@ -452,6 +452,11 @@ export class TodoColumnsComponent implements OnChanges {
 
     canDeleteTodo(todo: ITodo): boolean {
         const currentUserId = this._authService.getCurrentUserId();
-        return this._authService.isAdmin() || todo.user_id === currentUserId;
+        return todo.user_id === currentUserId;
+    }
+
+    canEditTodo(todo: ITodo): boolean {
+        const currentUserId = this._authService.getCurrentUserId();
+        return todo.user_id === currentUserId;
     }
 }

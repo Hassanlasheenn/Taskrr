@@ -17,6 +17,7 @@
             [ngClass]="getInputClasses()"
             [class.input-with-icon]="isPasswordField || field?.icon"
             [class.input-with-left-icon]="field?.icon"
+            [attr.disabled]="disabled ? true : null"
         />
         <div *ngIf="isCheckbox" class="checkbox-wrapper">
             <input
@@ -24,6 +25,7 @@
                 type="checkbox"
                 [formControlName]="name"
                 [ngClass]="getInputClasses()"
+                [attr.disabled]="disabled ? true : null"
             />
             <label class="checkbox-label" for="input-{{ name }}">
                 <span class="checkbox-custom"></span>
@@ -36,6 +38,7 @@
             class="input-form__toggle-password"
             (click)="togglePasswordVisibility()"
             tabindex="-1"
+            [disabled]="disabled"
         >
             <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
         </button>

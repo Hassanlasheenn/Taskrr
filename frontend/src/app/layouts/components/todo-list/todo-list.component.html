@@ -164,10 +164,10 @@
                                             <button type="button" class="todo-actions-item" (click)="onViewTodo(todo); closeActionsMenu()">
                                                 <i class="bi bi-eye"></i> View
                                             </button>
-                                            <button type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
+                                            <button *ngIf="canEditTodo(todo)" type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
                                                 <i class="bi bi-pencil"></i> Edit
                                             </button>
-                                            <button type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
+                                            <button *ngIf="canEditTodo(todo)" type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
                                                 <i class="bi bi-diagram-3"></i> Add Task
                                             </button>
                                             <button *ngIf="canDeleteTodo(todo)" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
@@ -266,10 +266,10 @@
                                 <button type="button" class="todo-actions-item" (click)="onViewTodo(todo); closeActionsMenu()">
                                     <i class="bi bi-eye"></i> View
                                 </button>
-                                <button type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
+                                <button *ngIf="canEditTodo(todo)" type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
                                     <i class="bi bi-pencil"></i> Edit
                                 </button>
-                                <button type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
+                                <button *ngIf="canEditTodo(todo)" type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
                                     <i class="bi bi-diagram-3"></i> Add Task
                                 </button>
                                 <button *ngIf="canDeleteTodo(todo)" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">
@@ -336,10 +336,10 @@
                                     <button type="button" class="todo-actions-item" (click)="onViewTodo(todo); closeActionsMenu()">
                                         <i class="bi bi-eye"></i> View
                                     </button>
-                                    <button type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
+                                    <button *ngIf="canEditTodo(todo)" type="button" class="todo-actions-item" (click)="onEditTodo(todo); closeActionsMenu()">
                                         <i class="bi bi-pencil"></i> Edit
                                     </button>
-                                    <button type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
+                                    <button *ngIf="canEditTodo(todo)" type="button" class="todo-actions-item" (click)="onAddSubtask(todo); closeActionsMenu()">
                                         <i class="bi bi-diagram-3"></i> Add Task
                                     </button>
                                     <button *ngIf="canDeleteTodo(todo)" type="button" class="todo-actions-item todo-actions-item--delete" (click)="onDeleteTodo(todo); closeActionsMenu()">

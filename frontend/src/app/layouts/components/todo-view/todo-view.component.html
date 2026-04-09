@@ -18,7 +18,7 @@
                                 <div class="todo-view-title-container" [class.editing]="isEditingTitle">
                                     <ng-container *ngIf="!isEditingTitle">
                                         <h1 class="todo-view-title">{{ todo.title }}</h1>
-                                        <button type="button" class="title-edit-btn" (click)="onStartEditTitle()" title="Edit Title">
+                                        <button *ngIf="canEditTodo" type="button" class="title-edit-btn" (click)="onStartEditTitle()" title="Edit Title">
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                     </ng-container>
@@ -45,6 +45,7 @@
                                         [fields]="[dueDateField]"
                                         [isFilter]="false"
                                         [isBadge]="true"
+                                        [disabled]="!canEditTodo"
                                     />
                                 </div>
                             </div>
@@ -79,6 +80,7 @@
                                     [label]="'Assignee'"
                                     [field]="assigneeField"
                                     [isBadge]="true"
+                                    [disabled]="!canEditTodo"
                                     [customInputClass]="((todoType === 'story' || todoType === 'task') && !todoForm.get('assigned_to_user_id')?.value) ? 'status-unassigned' : ''"
                                     class="todo-view-dropdown-wrap"
                                 />
@@ -90,6 +92,7 @@
                                     [label]="'Status'"
                                     [field]="statusField"
                                     [isBadge]="true"
+                                    [disabled]="!canEditTodo"
                                     [customInputClass]="'status-' + todoForm.get('status')?.value"
                                     class="todo-view-dropdown-wrap"
                                 />
@@ -102,6 +105,7 @@
                                     [label]="'Priority'"
                                     [field]="priorityField"
                                     [isBadge]="true"
+                                    [disabled]="!canEditTodo"
                                     [customInputClass]="'priority-' + todoForm.get('priority')?.value"
                                     class="todo-view-dropdown-wrap"
                                 />
@@ -124,6 +128,7 @@
                                 </button>
 
                                 <button
+                                    *ngIf="canEditTodo"
                                     type="submit"
                                     class="todo-view-save-btn"
                                     [disabled]="!hasChanges || saving"
@@ -140,6 +145,7 @@
                             <app-dynamic-form
                                 [form]="todoForm"
                                 [fields]="[descriptionField]"
+                                [disabled]="!canEditTodo"
                                 (previewActiveChange)="descriptionPreviewOpen = $event"
                                 (imageClick)="openPreview($event, 'Description Image')"
                             />

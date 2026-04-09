@@ -19,6 +19,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@a
 export class UploadPhotoComponent implements ControlValueAccessor, OnChanges, OnInit {
     @Input() label: string = 'Profile Photo';
     @Input() currentPhotoUrl: string | null = null;
+    @Input() disabled: boolean = false;
     @Output() photoSelected = new EventEmitter<File>();
     @Output() validationError = new EventEmitter<string>();
     @Output() photoRemoved = new EventEmitter<void>();
@@ -161,7 +162,7 @@ export class UploadPhotoComponent implements ControlValueAccessor, OnChanges, On
     }
 
     setDisabledState(isDisabled: boolean): void {
-        // Handle disabled state if needed
+        this.disabled = isDisabled;
     }
 }
 

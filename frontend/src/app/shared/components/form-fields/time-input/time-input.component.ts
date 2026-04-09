@@ -28,6 +28,7 @@ export class TimeInputComponent implements OnInit, OnDestroy, OnChanges, Control
     @Input() customInputClass?: string;
     @Input() field?: IFieldControl;
     @Input() showErrors: boolean = false;
+    @Input() disabled: boolean = false;
     
     errorMessage: string | null = null;
     typeError: string | null = null;
@@ -37,7 +38,6 @@ export class TimeInputComponent implements OnInit, OnDestroy, OnChanges, Control
     innerValue: string = '';
     onChange: any = () => {};
     onTouched: any = () => {};
-    disabled: boolean = false;
 
     static validateTimeString(value: string): string | null {
         if (!value?.trim()) return null;
@@ -97,6 +97,13 @@ export class TimeInputComponent implements OnInit, OnDestroy, OnChanges, Control
         }
         if ((changes['formGroup'] || changes['name']) && !changes['formGroup']?.firstChange && !changes['name']?.firstChange) {
             this.setupValidation();
+        }
+        if (changes['disabled']) {
+            if (this.disabled) {
+                this.control?.disable({ emitEvent: false });
+            } else {
+                this.control?.enable({ emitEvent: false });
+            }
         }
     }
 

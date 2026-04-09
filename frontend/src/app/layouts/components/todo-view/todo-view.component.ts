@@ -231,7 +231,12 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
 
     get canDeleteTodo(): boolean {
         if (!this.todo) return false;
-        return this.isAdmin || this.todo.user_id === this.userId;
+        return this.todo.user_id === this.userId;
+    }
+
+    get canEditTodo(): boolean {
+        if (!this.todo) return false;
+        return this.todo.user_id === this.userId;
     }
 
     get todoType(): TodoType {

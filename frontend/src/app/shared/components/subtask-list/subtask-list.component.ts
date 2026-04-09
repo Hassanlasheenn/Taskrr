@@ -100,6 +100,15 @@ export class SubtaskListComponent implements OnChanges {
     }
 
     canDeleteSubtask(subtask: ITodo): boolean {
-        return this._authService.isAdmin() || subtask.user_id === this._authService.getCurrentUserId();
+        return subtask.user_id === this._authService.getCurrentUserId();
+    }
+
+    canEditSubtask(subtask: ITodo): boolean {
+        return subtask.user_id === this._authService.getCurrentUserId();
+    }
+
+    get canAddSubtask(): boolean {
+        // userId input is the owner of the parent todo
+        return this.userId === this._authService.getCurrentUserId();
     }
 }

@@ -1,12 +1,13 @@
 <section class="upload-photo">
     <label class="upload-photo__label" [for]="'upload-photo-' + label">{{ label }}</label>
     
-    <div class="upload-photo__wrapper">
+    <div class="upload-photo__wrapper" [class.disabled]="disabled">
         <button 
             type="button"
             class="upload-photo__circle"
             (click)="triggerFileInput()"
             [attr.aria-label]="'Upload ' + label"
+            [disabled]="disabled"
         >
             <input
                 #fileInput
@@ -15,6 +16,7 @@
                 accept="image/*"
                 class="upload-photo__input"
                 (change)="onFileSelected($event)"
+                [disabled]="disabled"
             />
             
             <!-- Photo Preview -->
@@ -38,6 +40,7 @@
             class="upload-photo__remove"
             (click)="removePhoto(); $event.stopPropagation()"
             aria-label="Remove photo"
+            [disabled]="disabled"
         >
             <i class="bi bi-x-circle"></i>
         </button>

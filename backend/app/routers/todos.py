@@ -213,7 +213,8 @@ async def create_todo(
                     message,
                     creator_username,
                     assigned_user.email,
-                    db_todo.title
+                    db_todo.title,
+                    send_email=True
                 )
 
     invalidate_todo_list_for_user(user_id)
@@ -994,7 +995,8 @@ async def update_todo(
                         message,
                         updater_username,
                         new_assigned_user.email,
-                        todo_db.title
+                        todo_db.title,
+                        send_email=True
                     )
             
             # Case 3: Assigning to a new user (old was None, new exists)
@@ -1012,7 +1014,8 @@ async def update_todo(
                         message,
                         updater_username,
                         new_assigned_user.email,
-                        todo_db.title
+                        todo_db.title,
+                        send_email=True
                     )
     
     final_assigned_user_id = todo_db.assigned_to_user_id
@@ -1162,22 +1165,24 @@ async def delete_todo(
     todo_id: int,
     user_id: int,
     db: Session = Depends(database.get_db),
-    _ = Depends(todo_limiter)
+    _ = Depends(todo_limiter),
+    current_user: models.User = Depends(get_current_user)
 ):
     todo = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
     if not todo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
     
-    if todo.user_id != user_id:
+    # Check authorization: owner or admin
+    if todo.user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to delete this todo")
 
+    # Delete existing notifications before deleting the todo
     db.query(models.Notification).filter(
         models.Notification.todo_id == todo_id
     ).delete()
     db.flush()
     
-    deleter = db.query(models.User).filter(models.User.id == user_id).first()
-    deleter_username = deleter.username if deleter else "Admin"
+    deleter_username = current_user.username or "Admin"
     
     todo_title = todo.title
     
@@ -1185,11 +1190,12 @@ async def delete_todo(
         assigned_user = db.query(models.User).filter(
             models.User.id == todo.assigned_to_user_id
         ).first()
-        if assigned_user and assigned_user.id != user_id:
+        # Notify the assigned user if someone else deleted the todo
+        if assigned_user and assigned_user.id != current_user.id:
             message = f"{deleter_username} deleted the todo: {todo_title}"
             notification = models.Notification(
                 user_id=assigned_user.id,
-                todo_id=todo_id,
+                todo_id=None,  # Set to None since todo is being deleted
                 message=message
             )
             db.add(notification)
@@ -1206,18 +1212,7 @@ async def delete_todo(
             }
             
             await notification_manager.send_notification(assigned_user.id, notification_data)
-            
-            if assigned_user.email:
-                import asyncio
-                asyncio.create_task(
-                    asyncio.to_thread(
-                        email_service.send_notification_email,
-                        assigned_user.email,
-                        todo_title,
-                        deleter_username
-                    )
-                )
-
+    
     # Soft-delete all subtasks before deleting the parent
     if not todo.parent_id:
         subtask_ids = [s.id for s in todo.subtasks if not s.is_deleted]
@@ -1239,6 +1234,8 @@ async def delete_todo(
     if todo.assigned_to_user_id:
         invalidate_todo_list_for_user(todo.assigned_to_user_id)
     invalidate_admin_users_with_todos()
+    
+    return {"message": "Todo deleted successfully"}
 
 
 @router.post("/upload-image")

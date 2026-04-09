@@ -75,13 +75,14 @@ class Todo(Base):
     comments = relationship("TodoComment", back_populates="todo", cascade="all, delete-orphan")
     comment_history = relationship("TodoCommentHistory", back_populates="todo", foreign_keys="[TodoCommentHistory.todo_id]", cascade="all, delete-orphan")
     field_history = relationship("TodoFieldHistory", back_populates="todo", foreign_keys="[TodoFieldHistory.todo_id]", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="todo", cascade="all, delete-orphan")
 
 
 class TodoComment(Base):
     __tablename__ = "todo_comments"
 
     id = Column(Integer, primary_key=True, index=True)
-    todo_id = Column(Integer, ForeignKey("todos.id"), nullable=False)
+    todo_id = Column(Integer, ForeignKey("todos.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
     attachment_url = Column(String(500), nullable=True)
@@ -102,7 +103,7 @@ class TodoCommentHistory(Base):
     __tablename__ = "todo_comment_history"
 
     id = Column(Integer, primary_key=True, index=True)
-    todo_id = Column(Integer, ForeignKey("todos.id"), nullable=False)
+    todo_id = Column(Integer, ForeignKey("todos.id", ondelete="CASCADE"), nullable=False)
     comment_id = Column(Integer, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     action = Column(String(20), nullable=False)
@@ -118,7 +119,7 @@ class TodoFieldHistory(Base):
     __tablename__ = "todo_field_history"
 
     id = Column(Integer, primary_key=True, index=True)
-    todo_id = Column(Integer, ForeignKey("todos.id"), nullable=False)
+    todo_id = Column(Integer, ForeignKey("todos.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     field = Column(String(50), nullable=False)
     old_value = Column(Text, nullable=True)
@@ -134,10 +135,10 @@ class Notification(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    todo_id = Column(Integer, ForeignKey("todos.id"), nullable=True)
+    todo_id = Column(Integer, ForeignKey("todos.id", ondelete="CASCADE"), nullable=True)
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     user = relationship("User", foreign_keys=[user_id])
-    todo = relationship("Todo", foreign_keys=[todo_id])
+    todo = relationship("Todo", back_populates="notifications", foreign_keys=[todo_id])

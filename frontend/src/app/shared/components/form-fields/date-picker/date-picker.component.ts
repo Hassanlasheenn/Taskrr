@@ -33,6 +33,7 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
     @Input() maxDate: string = '';
     @Input() isFilter: boolean = false;
     @Input() isBadge: boolean = false;
+    @Input() disabled: boolean = false;
 
     errorMessage: string | null = null;
     showPicker: boolean = false;
@@ -52,7 +53,6 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
     innerValue: string = '';
     onChange: any = () => {};
     onTouched: any = () => {};
-    disabled: boolean = false;
 
     constructor(
         private readonly formService: ReactiveFormService,
@@ -97,6 +97,13 @@ export class DatePickerComponent implements OnInit, OnDestroy, OnChanges, Contro
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['showErrors'] && !changes['showErrors'].firstChange) {
             this.updateErrorMessage();
+        }
+        if (changes['disabled']) {
+            if (this.disabled) {
+                this.control?.disable({ emitEvent: false });
+            } else {
+                this.control?.enable({ emitEvent: false });
+            }
         }
     }
 
