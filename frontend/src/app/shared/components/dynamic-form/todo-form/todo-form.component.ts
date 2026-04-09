@@ -53,6 +53,7 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
     fields: IFieldControl[] = [];
     private _allTodos: ITodo[] = [];
     private _allTodosLoaded = false;
+    private _initialFormValue: any = null;
 
     private _getDefaultFields(): IFieldControl[] {
         return [
@@ -669,25 +670,41 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
         if (this.form) {
             this.form.patchValue(formValue, { emitEvent: false });
             this.form.markAsPristine();
+            this._initialFormValue = this.form.getRawValue();
         }
     }
 
     hasChanges(): boolean {
+        // Primary check: Angular's dirty flag
         if (this.form.dirty) return true;
         
-        if (this.isEditMode && this.editingTodo) {
-            const formValue = this.form.value;
-            const finalCategory = formValue.category === 'Other' ? formValue.custom_category : formValue.category;
+        // Secondary check: Deep comparison if we have an initial value
+        if (this._initialFormValue) {
+            const currentFormValue = this.form.getRawValue();
+            const keys = Object.keys(this._initialFormValue);
             
-            const priorityChanged = formValue.priority !== (this.editingTodo.priority || 'medium');
-            const statusChanged = formValue.status !== (this.editingTodo.status || 'new');
-            const categoryChanged = finalCategory !== (this.editingTodo.category || '');
-            const timeEstimateChanged = formValue.time_estimate !== (this.editingTodo.time_estimate || '');
-            const titleChanged = formValue.title !== this.editingTodo.title;
-            const descriptionChanged = formValue.description !== (this.editingTodo.description || '');
-            
-            return priorityChanged || statusChanged || categoryChanged || timeEstimateChanged || titleChanged || descriptionChanged;
+            for (const key of keys) {
+                let currentVal = currentFormValue[key];
+                let initialVal = this._initialFormValue[key];
+
+                // Normalize empty values
+                if (currentVal === '' || currentVal === undefined) currentVal = null;
+                if (initialVal === '' || initialVal === undefined) initialVal = null;
+
+                if (currentVal !== initialVal) {
+                    // Special case for due_date (ISO string vs date string)
+                    if (key === 'due_date' && currentVal && initialVal) {
+                        try {
+                            const d1 = new Date(currentVal).toISOString().split('T')[0];
+                            const d2 = new Date(initialVal).toISOString().split('T')[0];
+                            if (d1 === d2) continue;
+                        } catch(e) { /* ignore parse error */ }
+                    }
+                    return true;
+                }
+            }
         }
-        return this.form.dirty;
+        
+        return false;
     }
 }

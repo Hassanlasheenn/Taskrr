@@ -579,7 +579,7 @@
     [isOpen]="isSubtaskSidebarOpen"
     [title]="subtaskSidebarTitle"
     width="450px"
-    (closed)="isSubtaskSidebarOpen = false; subtaskToEdit = null"
+    (closed)="onSubtaskSidebarClose()"
 >
     <app-todo-form
         #subtaskForm
@@ -589,7 +589,7 @@
         [forcedType]="forcedSubtaskType"
         (submitTodo)="onSubtaskFormSubmit($event)"
         (updateTodo)="onSubtaskUpdateSubmit($event)"
-        (cancel)="isSubtaskSidebarOpen = false; subtaskToEdit = null"
+        (cancel)="onSubtaskSidebarClose()"
     />
 </app-sidebar>
 

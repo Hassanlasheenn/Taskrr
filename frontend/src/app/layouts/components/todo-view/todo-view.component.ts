@@ -289,8 +289,33 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
 
     get hasChanges(): boolean {
         if (!this.todo || !this.initialFormValue) return false;
+        
         const currentFormValue = this.todoForm.value;
-        const hasTodoChanges = JSON.stringify(currentFormValue) !== JSON.stringify(this.initialFormValue);
+        const keys = Object.keys(this.initialFormValue);
+        
+        let hasTodoChanges = false;
+        for (const key of keys) {
+            let currentVal = currentFormValue[key];
+            let initialVal = this.initialFormValue[key];
+
+            // Normalize empty values
+            if (currentVal === '' || currentVal === undefined) currentVal = null;
+            if (initialVal === '' || initialVal === undefined) initialVal = null;
+
+            if (currentVal !== initialVal) {
+                // Special case for due_date (ISO string vs date string)
+                if (key === 'due_date' && currentVal && initialVal) {
+                    try {
+                        const d1 = new Date(currentVal).toISOString().split('T')[0];
+                        const d2 = new Date(initialVal).toISOString().split('T')[0];
+                        if (d1 === d2) continue;
+                    } catch(e) { /* ignore parse error */ }
+                }
+                hasTodoChanges = true;
+                break;
+            }
+        }
+
         const hasTimeLogChanges = !!this.logTimeForm.get('time_to_log')?.value;
         return hasTodoChanges || hasTimeLogChanges || this.isEditingTitle;
     }
@@ -670,6 +695,32 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
             this.subtaskFormComponent.resetForm();
         }
         this.isSubtaskSidebarOpen = true;
+    }
+
+    onSubtaskSidebarClose(): void {
+        if (this.subtaskFormComponent?.hasChanges()) {
+            this._confirmationDialog.show({
+                title: 'Unsaved Changes',
+                message: 'You have unsaved changes in your subtask. Are you sure you want to discard them?',
+                confirmText: 'Discard',
+                cancelText: 'Keep Editing',
+                confirmButtonClass: 'btn-danger'
+            }).pipe(takeUntil(this._destroy$)).subscribe(result => {
+                if (result.confirmed) {
+                    this._closeSubtaskSidebarInternal();
+                }
+            });
+        } else {
+            this._closeSubtaskSidebarInternal();
+        }
+    }
+
+    private _closeSubtaskSidebarInternal(): void {
+        this.isSubtaskSidebarOpen = false;
+        this.subtaskToEdit = null;
+        if (this.subtaskFormComponent) {
+            this.subtaskFormComponent.resetForm();
+        }
     }
 
     onEditSubtask(subtask: ITodo): void {
