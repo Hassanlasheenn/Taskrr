@@ -1231,14 +1231,16 @@ async def delete_todo(
                 invalidate_todo_detail(sid)
 
     parent_id = todo.parent_id
+    todo_user_id = todo.user_id
+    todo_assigned_to_user_id = todo.assigned_to_user_id
     db.delete(todo)
     db.commit()
     invalidate_todo_detail(todo_id)
     if parent_id:
         invalidate_todo_detail(parent_id)
-    invalidate_todo_list_for_user(todo.user_id)
-    if todo.assigned_to_user_id:
-        invalidate_todo_list_for_user(todo.assigned_to_user_id)
+    invalidate_todo_list_for_user(todo_user_id)
+    if todo_assigned_to_user_id:
+        invalidate_todo_list_for_user(todo_assigned_to_user_id)
     invalidate_admin_users_with_todos()
     
     return {"message": "Todo deleted successfully"}
