@@ -487,7 +487,7 @@ export class SharedTableComponent implements AfterViewChecked, OnInit, OnDestroy
     }
 
     canDeleteTodo(todo: ITodo): boolean {
-        return todo.user_id === this.currentUserId;
+        return this.isAdmin || todo.assigned_to_user_id === this.currentUserId;
     }
 
     canEditTodo(todo: ITodo): boolean {

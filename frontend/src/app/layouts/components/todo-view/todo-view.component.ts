@@ -231,7 +231,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
 
     get canDeleteTodo(): boolean {
         if (!this.todo) return false;
-        return this.todo.user_id === this.userId;
+        return this.isAdmin || this.todo.assigned_to_user_id === this.userId;
     }
 
     get canEditTodo(): boolean {
@@ -1257,8 +1257,7 @@ export class TodoViewComponent implements OnInit, OnDestroy, CanComponentDeactiv
                     description: this.todo.description || '',
                     due_date: this.todo.due_date ? this.todo.due_date.split('T')[0] : '',
                     time_estimate: this.todo.time_estimate || '',
-                    time_logged: this.todo.time_logged || '',
-                    category: this.todo.category || ''
+                    time_logged: this.todo.time_logged || ''
                 };
                 
                 this.initialFormValue = { ...newFormValue };

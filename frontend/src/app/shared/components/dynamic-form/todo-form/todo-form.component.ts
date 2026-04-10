@@ -620,6 +620,7 @@ export class TodoFormComponent implements OnInit, OnDestroy, OnChanges {
         this.editingTodo = null;
         this.isSubmitted = false;
         this.errorSummary = null;
+        this._initialFormValue = null;
         this.initForm();
     }
 

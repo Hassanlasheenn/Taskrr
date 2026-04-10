@@ -538,7 +538,7 @@ async def create_todo_comment(
                 mentioned_user = db.query(models.User).filter(models.User.id == m_id).first()
                 if mentioned_user:
                     message = f"{author_username} mentioned you in a comment on todo: {todo_title}"
-                    await create_notification(db, mentioned_user.id, todo_id, message, author_username, mentioned_user.email or "", todo_title)
+                    await create_notification(db, mentioned_user.id, todo_id, message, author_username, mentioned_user.email or "", todo_title, send_email=False)
         except:
             pass
 
@@ -961,7 +961,8 @@ async def update_todo(
                         message,
                         updater_username,
                         old_assigned_user.email,
-                        todo_db.title
+                        todo_db.title,
+                        send_email=False
                     )
             
             # Case 2: Reassigning (both old and new users exist, and they're different)
@@ -979,7 +980,8 @@ async def update_todo(
                         message,
                         updater_username,
                         old_assigned_user.email,
-                        todo_db.title
+                        todo_db.title,
+                        send_email=False
                     )
                 
                 # Notify new user they were assigned
@@ -1049,7 +1051,8 @@ async def update_todo(
                     message,
                     updater_username,
                     creator.email,
-                    todo_db.title
+                    todo_db.title,
+                    send_email=False
                 )
             except Exception as e:
                 import logging
@@ -1095,7 +1098,8 @@ async def update_todo(
                 message,
                 updater_username,
                 assigned_user.email,
-                todo_db.title
+                todo_db.title,
+                send_email=False
             )
     
     db.commit()
@@ -1172,8 +1176,10 @@ async def delete_todo(
     if not todo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found")
     
-    # Check authorization: owner or admin
-    if todo.user_id != current_user.id and current_user.role != "admin":
+    # Check authorization: only admins or the user the todo is assigned to can delete
+    is_admin = current_user.role == "admin"
+    is_assigned_to_user = todo.assigned_to_user_id == current_user.id
+    if not is_admin and not is_assigned_to_user:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized to delete this todo")
 
     # Delete existing notifications before deleting the todo
